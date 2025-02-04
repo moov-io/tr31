@@ -34,6 +34,10 @@ func generateCBCMAC(key []byte, data []byte, padding int, length int, algorithm 
 		blockSize = 8
 		implementation = EncryptTDESCBC
 	}
+	if algorithm == AES {
+		blockSize = 16
+		implementation = DecryptAESCBC
+	}
 
 	paddedData, err := _padDispatch[padding](data, blockSize)
 	if err != nil {

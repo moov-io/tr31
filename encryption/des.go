@@ -1,6 +1,7 @@
 package encryption
 
 import (
+	"bytes"
 	"crypto/cipher"
 	"crypto/des"
 	"fmt"
@@ -86,8 +87,15 @@ func EncryptTDESCBC(key, iv, data []byte) ([]byte, error) {
 	if len(data)%8 != 0 {
 		return nil, fmt.Errorf("Data length must be multiple of DES block size 8")
 	}
+	formattedKey := key
+	if len(formattedKey) < 24 {
+		// Calculate the number of zero bytes needed
+		padding := 24 - len(formattedKey)
+		// Append the zero bytes to formattedKey
+		formattedKey = append(formattedKey, bytes.Repeat([]byte{0x00}, padding)...)
+	}
 
-	block, err := des.NewTripleDESCipher(key)
+	block, err := des.NewTripleDESCipher(formattedKey)
 	if err != nil {
 		return nil, err
 	}
@@ -104,8 +112,14 @@ func DecryptTDESCBC(key, iv, data []byte) ([]byte, error) {
 	if len(data)%8 != 0 {
 		return nil, fmt.Errorf("Data length must be multiple of DES block size 8")
 	}
-
-	block, err := des.NewTripleDESCipher(key)
+	formattedKey := key
+	if len(formattedKey) < 24 {
+		// Calculate the number of zero bytes needed
+		padding := 24 - len(formattedKey)
+		// Append the zero bytes to formattedKey
+		formattedKey = append(formattedKey, bytes.Repeat([]byte{0x00}, padding)...)
+	}
+	block, err := des.NewTripleDESCipher(formattedKey)
 	if err != nil {
 		return nil, err
 	}
@@ -122,8 +136,14 @@ func EncryptTDSECB(key, data []byte) ([]byte, error) {
 	if len(data)%8 != 0 {
 		return nil, fmt.Errorf("Data length must be multiple of DES block size 8")
 	}
-
-	block, err := des.NewTripleDESCipher(key)
+	formattedKey := key
+	if len(formattedKey) < 24 {
+		// Calculate the number of zero bytes needed
+		padding := 24 - len(formattedKey)
+		// Append the zero bytes to formattedKey
+		formattedKey = append(formattedKey, bytes.Repeat([]byte{0x00}, padding)...)
+	}
+	block, err := des.NewTripleDESCipher(formattedKey)
 	if err != nil {
 		return nil, err
 	}
@@ -142,8 +162,14 @@ func DecryptTDSECB(key, data []byte) ([]byte, error) {
 	if len(data)%8 != 0 {
 		return nil, fmt.Errorf("Data length must be multiple of DES block size 8")
 	}
-
-	block, err := des.NewTripleDESCipher(key)
+	formattedKey := key
+	if len(formattedKey) < 24 {
+		// Calculate the number of zero bytes needed
+		padding := 24 - len(formattedKey)
+		// Append the zero bytes to formattedKey
+		formattedKey = append(formattedKey, bytes.Repeat([]byte{0x00}, padding)...)
+	}
+	block, err := des.NewTripleDESCipher(formattedKey)
 	if err != nil {
 		return nil, err
 	}

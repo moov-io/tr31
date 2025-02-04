@@ -411,7 +411,7 @@ func Test_kb_sanity(t *testing.T) {
 		versionID string
 		kbpk      []byte
 	}{
-		//{"A", append(bytes.Repeat([]byte("A"), 8), append(bytes.Repeat([]byte("B"), 8), bytes.Repeat([]byte("C"), 8)...)...)},
+		{"A", append(bytes.Repeat([]byte("A"), 8), append(bytes.Repeat([]byte("B"), 8), bytes.Repeat([]byte("C"), 8)...)...)},
 		{"A", append(bytes.Repeat([]byte("A"), 8), bytes.Repeat([]byte("B"), 8)...)},
 		{"A", bytes.Repeat([]byte("A"), 8)},
 		{"B", append(bytes.Repeat([]byte("A"), 8), append(bytes.Repeat([]byte("B"), 8), bytes.Repeat([]byte("C"), 8)...)...)},

@@ -898,7 +898,7 @@ func (kb *KeyBlock) DWrap(header string, key []byte, extraPad int) (string, erro
 	}
 
 	// Derive Key Block Encryption and Authentication Keys
-	kbek, kbak, err := kb.BDerive()
+	kbek, kbak, err := kb.dDerive()
 	if err != nil {
 		return "", err
 	}
@@ -1028,11 +1028,11 @@ func (kb *KeyBlock) dGenerateMAC(kbak []byte, header, keyData []byte) ([]byte, e
 	// Combine the sliced macData (without last 16 bytes) with the XORed result
 	macData = append(macData[:len(macData)-16], xored...)
 
-	return macData, nil
+	return generateCBCMAC(kbak, macData, 1, 16, AES)
 }
 func (kb *KeyBlock) deriveAESCMACSubkeys(key []byte) ([]byte, []byte, error) {
 	// Derive two subkeys from an AES key. Each subkey is 16 bytes.
-	r64 := []byte{0x87}
+	r64 := []byte{0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x87}
 
 	// Encrypt a block of zeros
 	zeroBytes := make([]byte, 16)
