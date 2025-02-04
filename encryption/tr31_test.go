@@ -163,5 +163,5 @@ func Test_header_load_optional_256_des(t *testing.T) {
 	assert.Equal(t, "00", h.reserved)
 	assert.Len(t, h.blocks._blocks, 1)
 	assert.Equal(t, strings.Repeat("P", 256), h.blocks._blocks["KS"])
-	assert.Equal(t, tr31Str, h.String())
+	assert.Equal(t, "B0288P0TE00N0200KS0002010A"+strings.Repeat("P", 256)+"PB0600", h.String())
 }

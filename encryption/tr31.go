@@ -7,6 +7,7 @@ import (
 	"encoding/hex"
 	"errors"
 	"fmt"
+	"strconv"
 	"strings"
 )
 
@@ -150,6 +151,55 @@ func (b *Blocks) Dump(algoBlockSize int) (int, string, error) {
 	return len(b._blocks), blocks, nil
 }
 
+// Parse the extended length of a block.
+func (b *Blocks) parseExtendedLen(blockID string, blocks string, i int) (int, int, error) {
+	// Get 2 character long optional block length of length.
+	blockLenLenS := blocks[i : i+2]
+	if len(blockLenLenS) != 2 || !isAsciiHex(blockLenLenS) {
+		return 0, i, &HeaderError{
+			message: fmt.Sprintf("Block %s length of length (%s) is malformed. Expecting 2 hexchars.", blockID, blockLenLenS),
+		}
+	}
+	i += 2
+
+	// Convert length to integer (in hex), and multiply by 2 to get the byte length.
+	blockLenLen, err := strconv.ParseInt(blockLenLenS, 16, 0)
+	if err != nil {
+		return 0, i, &HeaderError{
+			message: fmt.Sprintf("Failed to parse block length length (%s) for block %s: %v", blockLenLenS, blockID, err),
+		}
+	}
+	blockLenLen *= 2
+
+	// Ensure blockLenLen is not zero.
+	if blockLenLen == 0 {
+		return 0, i, &HeaderError{
+			message: fmt.Sprintf("Block %s length of length must not be 0.", blockID),
+		}
+	}
+
+	// Extract actual block length.
+	blockLenS := blocks[i : i+int(blockLenLen)]
+	if len(blockLenS) != int(blockLenLen) || !isAsciiHex(blockLenS) {
+		return 0, i, &HeaderError{
+			message: fmt.Sprintf("Block %s length (%s) is malformed. Expecting %d hexchars.", blockID, blockLenS, blockLenLen),
+		}
+	}
+
+	// Convert block length to integer.
+	blockLen, err := strconv.ParseInt(blockLenS, 16, 0)
+	if err != nil {
+		return 0, i, &HeaderError{
+			message: fmt.Sprintf("Failed to parse block length (%s) for block %s: %v", blockLenS, blockID, err),
+		}
+	}
+
+	// Block length includes ID, 00 length indicator, length of length and actual length in it.
+	// Remove that to return block data length.
+	blockDataLen := int(blockLen) - 6 - int(blockLenLen)
+	return blockDataLen, i + int(blockLenLen), nil
+}
+
 func (b *Blocks) Load(blocksNum int, blocks string) (int, error) {
 	b._blocks = make(map[string]string)
 
@@ -168,6 +218,9 @@ func (b *Blocks) Load(blocksNum int, blocks string) (int, error) {
 		if blockLen == 0 {
 			// Handle extended length
 			// Add logic to parse extended length if necessary
+			block_len_extend, new_index, _ := b.parseExtendedLen(blockID, blocks, i)
+			blockLen = block_len_extend
+			i = new_index
 		} else {
 			blockLen -= 4
 		}

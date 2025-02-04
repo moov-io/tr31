@@ -5,6 +5,7 @@ import (
 	"encoding/binary"
 	"fmt"
 	"math/rand"
+	"regexp"
 	"time"
 	"unicode"
 )
@@ -118,6 +119,12 @@ True if the string is an ASCII hex character. False otherwise.
 func asciiHexChar(s string) bool {
 	asciiH := "abcdefABCDEF0123456789"
 	return isSubset(s, asciiH)
+}
+
+// Check if the string contains only valid hex characters.
+func isAsciiHex(s string) bool {
+	re := regexp.MustCompile("^[0-9A-Fa-f]+$")
+	return re.MatchString(s)
 }
 
 func bytesToInt(b []byte) int64 {
