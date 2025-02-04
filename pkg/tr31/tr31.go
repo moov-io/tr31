@@ -59,7 +59,7 @@ func wrap(kbpk []byte, header string, key []byte, maskedKeyLen *int) (string, er
 	// Call the Wrap method on the KeyBlock instance
 	return kb.Wrap(key, maskedKeyLen)
 }
-func unwrap(kbpk []byte, key_block string) (encryption.Header, []byte, error) {
+func unwrap(kbpk []byte, key_block string) (*encryption.Header, []byte, error) {
 	//	Unwrap key from a TR-31 key block version A, B, C or D.
 	//
 	//		Parameters
