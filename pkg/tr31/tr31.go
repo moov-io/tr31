@@ -1,11 +1,10 @@
 package tr31
 
-import "C"
 import (
 	"github.com/moov-io/psec/encryption"
 )
 
-func wrap(kbpk []byte, header string, key []byte, maskedKeyLen *int) (string, error) {
+func Wrap(kbpk []byte, header string, key []byte, maskedKeyLen *int) (string, error) {
 	//	Wrap key into a TR-31 key block version A, B, C or D.
 	//
 	//		Parameters
@@ -59,7 +58,8 @@ func wrap(kbpk []byte, header string, key []byte, maskedKeyLen *int) (string, er
 	// Call the Wrap method on the KeyBlock instance
 	return kb.Wrap(key, maskedKeyLen)
 }
-func unwrap(kbpk []byte, key_block string) (*encryption.Header, []byte, error) {
+
+func Unwrap(kbpk []byte, key_block string) (*encryption.Header, []byte, error) {
 	//	Unwrap key from a TR-31 key block version A, B, C or D.
 	//
 	//		Parameters

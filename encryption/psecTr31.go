@@ -404,7 +404,9 @@ func NewKeyBlock(kbpk []byte, header interface{}) (*KeyBlock, error) {
 		kb.header = iheader
 	} else if iheader, ok := header.(string); ok {
 		kb.header = NewHeader("", "", "", "", "", "")
-		if _, err := kb.header.Load(iheader); err != nil {
+		if len(iheader) < 5 {
+			kb.header = NewHeader("B", "00", "0", "0", "00", "N")
+		} else if _, err := kb.header.Load(iheader); err != nil {
 			return nil, fmt.Errorf("failed to load header: %v", err)
 		}
 	} else {

@@ -8,8 +8,8 @@ import (
 func Test_wrap_unwrap_functions(t *testing.T) {
 	kbpk := []byte{0xAB, 0xAB, 0xAB, 0xAB, 0xAB, 0xAB, 0xAB, 0xAB, 0xAB, 0xAB, 0xAB, 0xAB, 0xAB, 0xAB, 0xAB, 0xAB}
 	key := []byte{0xCD, 0xCD, 0xCD, 0xCD, 0xCD, 0xCD, 0xCD, 0xCD, 0xCD, 0xCD, 0xCD, 0xCD, 0xCD, 0xCD, 0xCD, 0xCD}
-	kb, _ := wrap(kbpk, "B0096P0TE00N0000", key, nil)
-	hOut, keyOut, _ := unwrap(kbpk, kb)
+	kb, _ := Wrap(kbpk, "B0096P0TE00N0000", key, nil)
+	hOut, keyOut, _ := Unwrap(kbpk, kb)
 
 	assert.Equal(t, key, keyOut)
 	assert.Equal(t, "B", hOut.VersionID)
@@ -19,7 +19,13 @@ func Test_wrap_unwrap_functions(t *testing.T) {
 	assert.Equal(t, "00", hOut.VersionNum)
 	assert.Equal(t, "N", hOut.Exportability)
 	assert.Equal(t, "00", hOut.Reserved)
-	assert.Equal(t, 1, len(hOut.GetBlocks()))
-	assert.Equal(t, "00604B120F9292800000", hOut.GetBlocks()["KS"])
+	assert.Equal(t, 0, len(hOut.GetBlocks()))
+}
+func Test_wrap_unwrap_header_functions(t *testing.T) {
+	kbpk := []byte{0xEF, 0xEF, 0xEF, 0xEF, 0xAB, 0xAB, 0xAB, 0xAB, 0xAB, 0xEF, 0xEF, 0xEF, 0xEF, 0xEF, 0xEF, 0xEF}
+	key := []byte{0x55, 0x55, 0x55, 0x55, 0xCD, 0xCD, 0xCD, 0xCD, 0xCD, 0xCD, 0xCD, 0x55, 0x55, 0x55, 0x55, 0x55}
+	kb, _ := Wrap(kbpk, "", key, nil)
+	_, keyOut, _ := Unwrap(kbpk, kb)
 
+	assert.Equal(t, key, keyOut)
 }
