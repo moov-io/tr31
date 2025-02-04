@@ -205,6 +205,9 @@ func (b *Blocks) Load(blocksNum int, blocks string) (int, error) {
 
 	i := 0
 	for j := 0; j < blocksNum; j++ {
+		if len(blocks) < 2 {
+			return 0, &HeaderError{message: fmt.Sprintf("Block ID () is malformed.")}
+		}
 		blockID := blocks[i : i+2]
 		if len(blockID) != 2 {
 			return 0, &HeaderError{message: fmt.Sprintf("Block ID (%s) is malformed.", blockID)}
@@ -360,8 +363,8 @@ func (h *Header) Load(header string) (int, error) {
 	}
 
 	blocksNum := int(header[12]-'0')*10 + int(header[13]-'0')
-	blocksLen, _ := h.blocks.Load(blocksNum, header[16:])
-	return 16 + blocksLen, nil
+	blocksLen, err := h.blocks.Load(blocksNum, header[16:])
+	return 16 + blocksLen, err
 }
 
 var _versionIDKeyBlockMacLen = map[string]int{

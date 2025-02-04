@@ -268,3 +268,63 @@ func Test_header_load_optional_reset(t *testing.T) {
 	assert.Len(t, h.blocks._blocks, 0)
 	assert.Equal(t, "B0016P0TE00N0000", h.String())
 }
+
+type HeaderErrorItem struct {
+	header      string
+	exceptError string
+}
+
+var InitialHeaderErrorSequence = []HeaderErrorItem{
+	{
+		header:      "B0000P0TE00N0100",
+		exceptError: "Block ID () is malformed.",
+	},
+	{
+		header:      "B0000P0TE00N0100K",
+		exceptError: "Block ID (K) is malformed.",
+	},
+	{header: "B0000P0TE00N0100KS", exceptError: "Block KS length () is malformed. Expecting 2 hexchars."},
+	{header: "B0000P0TE00N0100KS1", exceptError: "Block KS length (1) is malformed. Expecting 2 hexchars."},
+	{header: "B0000P0TE00N0100KS1Y", exceptError: "Block KS length (1Y) is malformed. Expecting 2 hexchars."},
+	{header: "B0000P0TE00N0100KS02", exceptError: "Block KS length does not include block ID and length."},
+	{header: "B0000P0TE00N0100KS071", exceptError: "Block KS data is malformed. Received 1/3. Block data: '1'"},
+	{header: "B0000P0TE00N0100KS00", exceptError: "Block KS length of length () is malformed. Expecting 2 hexchars."},
+	{header: "B0000P0TE00N0100KS001", exceptError: "Block KS length of length (1) is malformed. Expecting 2 hexchars."},
+	{header: "B0000P0TE00N0100KS001S", exceptError: "Block KS length of length (1S) is malformed. Expecting 2 hexchars."},
+	{header: "B0000P0TE00N0100KS0000", exceptError: "Block KS length of length must not be 0."},
+	{header: "B0000P0TE00N0100KS0001", exceptError: "Block KS length () is malformed. Expecting 2 hexchars."},
+	{header: "B0000P0TE00N0100KS00010", exceptError: "Block KS length (0) is malformed. Expecting 2 hexchars."},
+	{header: "B0000P0TE00N0100KS00010H", exceptError: "Block KS length (0H) is malformed. Expecting 2 hexchars."},
+	{header: "B0000P0TE00N0100KS000101", exceptError: "Block KS length does not include block ID and length."},
+	{header: "B0000P0TE00N0100KS0001FF", exceptError: "Block KS data is malformed. Received 0/247. Block data: ''"},
+	{header: "B0000P0TE00N0200KS07000T", exceptError: "Block ID (T) is malformed."},
+	{header: "B0000P0TE00N0200KS0600TT", exceptError: "Block TT length () is malformed. Expecting 2 hexchars."},
+	{header: "B0000P0TE00N0200KS050TT1", exceptError: "Block TT length (1) is malformed. Expecting 2 hexchars."},
+	{header: "B0000P0TE00N0200KS04TT1X", exceptError: "Block TT length (1X) is malformed. Expecting 2 hexchars."},
+	{header: "B0000P0TE00N0200KS04TT03", exceptError: "Block TT length does not include block ID and length."},
+	{header: "B0000P0TE00N0200KS04TT05", exceptError: "Block TT data is malformed. Received 0/1. Block data: ''"},
+	{header: "B0000P0TE00N0200KS04TT00", exceptError: "Block TT length of length () is malformed. Expecting 2 hexchars."},
+	{header: "B0000P0TE00N0200KS04TT001", exceptError: "Block TT length of length (1) is malformed. Expecting 2 hexchars."},
+	{header: "B0000P0TE00N0200KS04TT001S", exceptError: "Block TT length of length (1S) is malformed. Expecting 2 hexchars."},
+	{header: "B0000P0TE00N0200KS04TT0000", exceptError: "Block TT length of length must not be 0."},
+	{header: "B0000P0TE00N0200KS04TT0001", exceptError: "Block TT length () is malformed. Expecting 2 hexchars."},
+	{header: "B0000P0TE00N0200KS04TT00010", exceptError: "Block TT length (0) is malformed. Expecting 2 hexchars."},
+	{header: "B0000P0TE00N0200KS04TT00010H", exceptError: "Block TT length (0H) is malformed. Expecting 2 hexchars."},
+	{header: "B0000P0TE00N0200KS04TT000101", exceptError: "Block TT length does not include block ID and length."},
+	{header: "B0000P0TE00N0200KS04TT00011F", exceptError: "Block TT data is malformed. Received 0/23. Block data: ''"},
+	{header: "B0000P0TE00N0100**04", exceptError: "Block ID (**) is invalid. Expecting 2 alphanumeric characters."},
+	{header: "B0000P0TE00N0200KS0600??04", exceptError: "Block ID (??) is invalid. Expecting 2 alphanumeric characters."},
+	{header: "B0000P0TE00N0100KS05\x03", exceptError: "Block KS data is invalid. Expecting ASCII printable characters. Data: '\x03'"},
+	{header: "B0000P0TE00N0200KS04TT05\xFF", exceptError: "Block TT data is invalid. Expecting ASCII printable characters. Data: '\xFF'"},
+}
+
+func Test_header_block_load_exceptions(t *testing.T) {
+	for _, item := range InitialHeaderErrorSequence {
+		h := NewHeader("", "", "", "", "", "")
+		_, err := h.Load(item.header)
+		assert.IsType(t, &HeaderError{}, err)
+		if headerErr, ok := err.(*HeaderError); ok {
+			assert.Contains(t, item.exceptError, headerErr.message)
+		}
+	}
+}
