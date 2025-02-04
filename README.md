@@ -1,9 +1,9 @@
 [![Moov Banner Logo](https://user-images.githubusercontent.com/20115216/104214617-885b3c80-53ec-11eb-8ce0-9fc745fb5bfc.png)](https://github.com/moov-io)
 
 <p align="center">
-  <a href="https://moov-io.github.io/dukpt/">Project Documentation</a>
+  <a href="https://moov-io.github.io/psec/">Project Documentation</a>
   ·
-  <a href="https://moov-io.github.io/dukpt/api/#overview">API Endpoints</a>
+  <a href="https://moov-io.github.io/psec/api/#overview">API Endpoints</a>
   ·
   <a href="https://slack.moov.io/">Community</a>
   ·
@@ -13,7 +13,7 @@
 </p>
 
 
-# moov-io/dukpt
+# moov-io/psec
 This project implements the ANSI X9.24-3:2017 standard for TDES and AES Derived Unique Key Per Transaction (DUKPT) key management. Since most uses of this standard involve dedicated security hardware, this implementation is mostly for validation and debugging. 
 
 ## Table of contents
