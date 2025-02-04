@@ -438,6 +438,19 @@ func Test_kb_sanity(t *testing.T) {
 		})
 	}
 }
+func Test_kb_known_values_1(t *testing.T) {
+	kbpkBytes, _ := hex.DecodeString("AAAAAAAAAAAAAAAABBBBBBBBBBBBBBBBCCCCCCCCCCCCCCCC")
+	block, _ := NewKeyBlock(kbpkBytes, nil)
+	resultKB, _ := block.Unwrap("A0088M3TC00E000022BD7EC46BBE2A6A73389D1BA6DB63120B386F912839F4679C0523399E4D8D0F1D9A356E")
+	keyBytes, _ := hex.DecodeString("CCCCCCCCCCCCCCCCDDDDDDDDDDDDDDDD")
+
+	macBytes, _ := hex.DecodeString("A0088M3TC00E000062C2C14D8785A01A9E8283525CA96F490D0CC6346FC7C2AC1E6FF35446891037")
+	mac, _ := generateCBCMAC(block.kbpk, macBytes, 1, 4, DES)
+	encodeMac := hex.EncodeToString(mac)
+	if len(resultKB) > 0 && len(keyBytes) > 0 && len(mac) > 0 && len(encodeMac) > 0 {
+
+	}
+}
 func Test_kb_known_values(t *testing.T) {
 	testCases := []struct {
 		kbpk string

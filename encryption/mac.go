@@ -28,7 +28,7 @@ func generateCBCMAC(key []byte, data []byte, padding int, length int, algorithm 
 	}
 
 	implementation := EncryptTDESCBC
-	blockSize := 16
+	blockSize := 8
 
 	if algorithm == DES {
 		blockSize = 8
