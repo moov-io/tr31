@@ -165,3 +165,51 @@ func Test_header_load_optional_256_des(t *testing.T) {
 	assert.Equal(t, strings.Repeat("P", 256), h.blocks._blocks["KS"])
 	assert.Equal(t, "B0288P0TE00N0200KS0002010A"+strings.Repeat("P", 256)+"PB0600", h.String())
 }
+func Test_header_load_optional_256_aes(t *testing.T) {
+	h := NewHeader("", "", "", "", "", "")
+	tr31Str := "D0000P0TE00N0200KS0002010A" + strings.Repeat("P", 256) + "PB0600"
+	length, _ := h.Load(tr31Str)
+
+	assert.Equal(t, 288, length)
+	assert.Equal(t, "D", h.versionID)
+	assert.Equal(t, "P0", h.keyUsage)
+	assert.Equal(t, "T", h.algorithm)
+	assert.Equal(t, "E", h.modeOfUse)
+	assert.Equal(t, "N", h.exportability)
+	assert.Equal(t, "00", h.reserved)
+	assert.Len(t, h.blocks._blocks, 1)
+	assert.Equal(t, strings.Repeat("P", 256), h.blocks._blocks["KS"])
+	assert.Equal(t, "D0288P0TE00N0200KS0002010A"+strings.Repeat("P", 256)+"PB0600", h.String())
+}
+func Test_header_load_optional_extended_length_des(t *testing.T) {
+	h := NewHeader("", "", "", "", "", "")
+	tr31Str := "B0000P0TE00N0200KS00011600604B120F9292PB0A000000"
+	length, _ := h.Load(tr31Str)
+
+	assert.Equal(t, 48, length)
+	assert.Equal(t, "B", h.versionID)
+	assert.Equal(t, "P0", h.keyUsage)
+	assert.Equal(t, "T", h.algorithm)
+	assert.Equal(t, "E", h.modeOfUse)
+	assert.Equal(t, "N", h.exportability)
+	assert.Equal(t, "00", h.reserved)
+	assert.Len(t, h.blocks._blocks, 1)
+	assert.Equal(t, "00604B120F9292", h.blocks._blocks["KS"])
+	assert.Equal(t, "B0040P0TE00N0200KS1200604B120F9292PB0600", h.String())
+}
+func Test_header_load_optional_extended_length_aes(t *testing.T) {
+	h := NewHeader("", "", "", "", "", "")
+	tr31Str := "D0000P0TE00N0200KS00011600604B120F9292PB0A000000"
+	length, _ := h.Load(tr31Str)
+
+	assert.Equal(t, 48, length)
+	assert.Equal(t, "D", h.versionID)
+	assert.Equal(t, "P0", h.keyUsage)
+	assert.Equal(t, "T", h.algorithm)
+	assert.Equal(t, "E", h.modeOfUse)
+	assert.Equal(t, "N", h.exportability)
+	assert.Equal(t, "00", h.reserved)
+	assert.Len(t, h.blocks._blocks, 1)
+	assert.Equal(t, "00604B120F9292", h.blocks._blocks["KS"])
+	assert.Equal(t, "D0048P0TE00N0200KS1200604B120F9292PB0E0000000000", h.String())
+}
