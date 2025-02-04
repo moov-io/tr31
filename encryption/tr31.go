@@ -40,7 +40,7 @@ type Header struct {
 
 type KeyBlock struct {
 	kbpk   []byte
-	header Header
+	header *Header
 }
 
 // NewHeaderError is a constructor function to create a new HeaderError.
@@ -397,25 +397,23 @@ func NewKeyBlock(kbpk []byte, header interface{}) (*KeyBlock, error) {
 		kbpk: kbpk,
 	}
 
-	switch h := header.(type) {
-	case string:
-		kb.header = Header{}
-		if _, err := kb.header.Load(h); err != nil {
+	if iheader, ok := header.(*Header); ok {
+		kb.header = iheader
+	} else if iheader, ok := header.(string); ok {
+		kb.header = NewHeader("", "", "", "", "", "")
+		if _, err := kb.header.Load(iheader); err != nil {
 			return nil, fmt.Errorf("failed to load header: %v", err)
 		}
-	case Header:
-		kb.header = h
-	default:
-		kb.header = Header{}
+	} else {
+		kb.header = NewHeader("", "", "", "", "", "")
 	}
-
 	return kb, nil
 }
 
 func (kb *KeyBlock) String() string {
 	return fmt.Sprintf("%v", kb.header)
 }
-func (kb *KeyBlock) GetHeader() Header {
+func (kb *KeyBlock) GetHeader() *Header {
 	return kb.header
 }
 func (kb *KeyBlock) Wrap(key []byte, maskedKeyLen *int) (string, error) {
@@ -426,17 +424,18 @@ func (kb *KeyBlock) Wrap(key []byte, maskedKeyLen *int) (string, error) {
 	}
 
 	// If maskedKeyLen is nil, use max key size for the algorithm
+	wrappedMaskedLen := 0
 	if maskedKeyLen == nil {
 		if maxLen, exists := _algoIDMaxKeyLen[kb.header.algorithm]; exists {
 			// Use the max key length for the algorithm
-			*maskedKeyLen = max(maxLen, len(key))
+			wrappedMaskedLen = max(maxLen, len(key))
 		} else {
-			*maskedKeyLen = len(key)
+			wrappedMaskedLen = len(key)
 		}
 	} else {
-		*maskedKeyLen = max(*maskedKeyLen, len(key))
+		wrappedMaskedLen = max(*maskedKeyLen, len(key))
 	}
-
+	maskedKeyLen = &wrappedMaskedLen
 	// Call the wrap function based on the header's versionID
 	headerDump, _ := kb.header.Dump(*maskedKeyLen)
 	wrapData, err := wrapFunc(kb, headerDump, key, *maskedKeyLen-len(key))
@@ -444,6 +443,11 @@ func (kb *KeyBlock) Wrap(key []byte, maskedKeyLen *int) (string, error) {
 }
 func (kb *KeyBlock) Unwrap(keyBlock string) ([]byte, error) {
 	// Extract header from the key block
+	if len(keyBlock) < 5 {
+		return nil, &KeyBlockError{
+			message: fmt.Sprintf("Key block header length is malformed. Expecting 4 digits."),
+		}
+	}
 	headerLen, _ := kb.header.Load(keyBlock)
 
 	// Verify block length
@@ -470,39 +474,61 @@ func (kb *KeyBlock) Unwrap(keyBlock string) ([]byte, error) {
 
 	// Extract MAC from the key block
 	algoMacLen := _versionIDKeyBlockMacLen[kb.header.versionID]
-	receivedMacS := keyBlock[headerLen:][len(keyBlock)-algoMacLen*2:]
-	receivedMac, err := hex.DecodeString(receivedMacS)
-	if err != nil {
+
+	keyBlockBytes := []byte(keyBlock)
+	if headerLen < len(keyBlockBytes) {
+		// Correct slice calculation to avoid out of bounds
+		receivedMacS := keyBlockBytes[headerLen:]
+		if len(receivedMacS) > algoMacLen*2 {
+			receivedMacS = receivedMacS[len(receivedMacS)-algoMacLen*2:]
+			receivedMac, err := hex.DecodeString(string(receivedMacS))
+			if err != nil {
+				return nil, &KeyBlockError{
+					message: fmt.Sprintf("Key block MAC must be valid hexchars. MAC: '%s'", receivedMacS),
+				}
+			}
+
+			if len(receivedMac) != algoMacLen {
+				return nil, &KeyBlockError{
+					message: fmt.Sprintf("Key block MAC is malformed. Received %d bytes MAC. Expecting %d bytes for key block version %s. MAC: '%s'", len(receivedMacS), algoMacLen*2, kb.header.versionID, receivedMacS),
+				}
+			}
+
+			// Extract encrypted key data from the key block
+			keyDataS := keyBlockBytes[headerLen:]
+			keyDataS = keyDataS[:len(keyDataS)-algoMacLen*2]
+			keyDataS_S := string(keyDataS)
+			if len(keyDataS_S) > 0 {
+
+			}
+			keyData, err := hex.DecodeString(string(keyDataS))
+			if err != nil {
+				return nil, &KeyBlockError{
+					message: fmt.Sprintf("Key block must be valid hexchars. KEY: '%s'", keyData),
+				}
+			}
+
+			// Call unwrap function based on version ID
+			unwrapFunc, exists := _unwrapDispatch[kb.header.versionID]
+			if !exists {
+				return nil, &KeyBlockError{
+					message: fmt.Sprintf("Key block version ID (%s) is not supported.", kb.header.versionID),
+				}
+			}
+
+			unwrapData, err := unwrapFunc(kb, keyBlock[:headerLen], keyData, receivedMac)
+			return unwrapData, err
+		} else {
+			// Handle case where the slice is too short
+			return nil, &KeyBlockError{
+				message: fmt.Sprintf("Key block MAC must be valid hexchars. MAC: '%s'", receivedMacS),
+			}
+		}
+	} else {
 		return nil, &KeyBlockError{
-			message: fmt.Sprintf("Key block MAC must be valid hexchars. MAC: '%s'", receivedMacS),
+			message: fmt.Sprintf("headerLen is out of bounds"),
 		}
 	}
-
-	if len(receivedMac) != algoMacLen {
-		return nil, &KeyBlockError{
-			message: fmt.Sprintf("Key block MAC is malformed. Received %d bytes MAC. Expecting %d bytes for key block version %s. MAC: '%s'", len(receivedMacS), algoMacLen*2, kb.header.versionID, receivedMacS),
-		}
-	}
-
-	// Extract encrypted key data from the key block
-	keyDataS := keyBlock[headerLen:][:len(keyBlock)-algoMacLen*2]
-	keyData, err := hex.DecodeString(keyDataS)
-	if err != nil {
-		return nil, &KeyBlockError{
-			message: fmt.Sprintf("Encrypted key must be valid hexchars. Key data: '%s'", keyDataS),
-		}
-	}
-
-	// Call unwrap function based on version ID
-	unwrapFunc, exists := _unwrapDispatch[kb.header.versionID]
-	if !exists {
-		return nil, &KeyBlockError{
-			message: fmt.Sprintf("Key block version ID (%s) is not supported.", kb.header.versionID),
-		}
-	}
-
-	unwrapData, err := unwrapFunc(kb, keyBlock[:headerLen], keyData, receivedMac)
-	return unwrapData, err
 }
 
 type WrapFunc func(keyBlock *KeyBlock, header string, key []byte, extraPad int) (string, error)
@@ -846,7 +872,7 @@ func (kb *KeyBlock) CUnwrap(header string, keyData []byte, receivedMAC []byte) (
 	}
 
 	// Extract key from key data: 2-byte key length measured in bits + key + pad
-	keyLength := int(binary.BigEndian.Uint16(clearKeyData[:2]))
+	keyLength := binary.BigEndian.Uint16(clearKeyData[:2])
 
 	// This library does not support keys not measured in whole bytes
 	if keyLength%8 != 0 {
@@ -855,7 +881,7 @@ func (kb *KeyBlock) CUnwrap(header string, keyData []byte, receivedMAC []byte) (
 
 	keyLength = keyLength / 8
 	key := clearKeyData[2 : keyLength+2]
-	if len(key) != keyLength {
+	if len(key) != int(keyLength) {
 		return nil, errors.New("Decrypted key is malformed.")
 	}
 

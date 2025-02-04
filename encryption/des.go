@@ -99,6 +99,24 @@ func EncryptTDESCBC(key, iv, data []byte) ([]byte, error) {
 	return encryptedData, nil
 }
 
+// DecryptTDESCBC decrypts data using Triple DES CBC algorithm.
+func DecryptTDESCBC(key, iv, data []byte) ([]byte, error) {
+	if len(data)%8 != 0 {
+		return nil, fmt.Errorf("Data length must be multiple of DES block size 8")
+	}
+
+	block, err := des.NewTripleDESCipher(key)
+	if err != nil {
+		return nil, err
+	}
+
+	cbc := cipher.NewCBCDecrypter(block, iv)
+	decryptedData := make([]byte, len(data))
+	cbc.CryptBlocks(decryptedData, data)
+
+	return decryptedData, nil
+}
+
 // EncryptTDSECB encrypts data using Triple DES ECB algorithm.
 func EncryptTDSECB(key, data []byte) ([]byte, error) {
 	if len(data)%8 != 0 {
@@ -117,24 +135,6 @@ func EncryptTDSECB(key, data []byte) ([]byte, error) {
 	}
 
 	return encryptedData, nil
-}
-
-// DecryptTDESCBC decrypts data using Triple DES CBC algorithm.
-func DecryptTDESCBC(key, iv, data []byte) ([]byte, error) {
-	if len(data)%8 != 0 {
-		return nil, fmt.Errorf("Data length must be multiple of DES block size 8")
-	}
-
-	block, err := des.NewTripleDESCipher(key)
-	if err != nil {
-		return nil, err
-	}
-
-	cbc := cipher.NewCBCDecrypter(block, iv)
-	decryptedData := make([]byte, len(data))
-	cbc.CryptBlocks(decryptedData, data)
-
-	return decryptedData, nil
 }
 
 // DecryptTDSECB decrypts data using Triple DES ECB algorithm.

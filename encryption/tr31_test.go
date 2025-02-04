@@ -1,6 +1,7 @@
 package encryption
 
 import (
+	"bytes"
 	"fmt"
 	"github.com/stretchr/testify/assert"
 	"strings"
@@ -381,6 +382,58 @@ func Test_header_attributes_exceptions(t *testing.T) {
 			// Validate header using the test case inputs
 			actualError := validateHeader(tc.versionID, tc.keyUsage, tc.algorithm, tc.modeOfUse, tc.versionNum, tc.exportability)
 			assert.Equal(t, tc.expectedError, actualError)
+		})
+	}
+}
+
+func sanityCheck(kbpk, key []byte, header *Header) error {
+	kb, _ := NewKeyBlock(kbpk, header)
+	rawKb, _ := kb.Wrap(key, nil)
+
+	// Test if unwrap after wrap returns the original key
+	decKey, _ := kb.Unwrap(rawKb)
+	if string(key) != string(decKey) {
+		return fmt.Errorf("unwrap failed: key mismatch after wrap")
+	}
+
+	// Create another KeyBlock instance to test with only kbpk
+	kb2, _ := NewKeyBlock(kbpk, NewHeader("", "", "", "", "", ""))
+	decKey2, _ := kb2.Unwrap(rawKb)
+	if string(key) != string(decKey2) {
+		return fmt.Errorf("unwrap failed: key mismatch after wrap (second instance)")
+	}
+
+	return nil
+}
+
+func Test_kb_sanity(t *testing.T) {
+	tests := []struct {
+		versionID string
+		kbpk      []byte
+	}{
+		//{"A", append(bytes.Repeat([]byte("A"), 8), append(bytes.Repeat([]byte("B"), 8), bytes.Repeat([]byte("C"), 8)...)...)},
+		{"A", append(bytes.Repeat([]byte("A"), 8), bytes.Repeat([]byte("B"), 8)...)},
+		{"A", bytes.Repeat([]byte("A"), 8)},
+		{"B", append(bytes.Repeat([]byte("A"), 8), append(bytes.Repeat([]byte("B"), 8), bytes.Repeat([]byte("C"), 8)...)...)},
+		{"B", append(bytes.Repeat([]byte("A"), 8), bytes.Repeat([]byte("B"), 8)...)},
+		{"C", append(bytes.Repeat([]byte("A"), 8), append(bytes.Repeat([]byte("B"), 8), bytes.Repeat([]byte("C"), 8)...)...)},
+		{"C", append(bytes.Repeat([]byte("A"), 8), bytes.Repeat([]byte("B"), 8)...)},
+		{"C", bytes.Repeat([]byte("A"), 8)},
+		{"D", append(bytes.Repeat([]byte("A"), 16), append(bytes.Repeat([]byte("B"), 8), bytes.Repeat([]byte("C"), 8)...)...)},
+		{"D", append(bytes.Repeat([]byte("A"), 16), bytes.Repeat([]byte("B"), 8)...)},
+		{"D", bytes.Repeat([]byte("A"), 16)},
+	}
+
+	// Loop through each test case
+	for _, tt := range tests {
+		t.Run(tt.versionID, func(t *testing.T) {
+			h := NewHeader(tt.versionID, "P0", "T", "E", "00", "N")
+			//keyLens := []int{0, 1, 8, 16, 24, 32, 99, 999}
+			keyLens := []int{24}
+			for _, keyLen := range keyLens {
+				err := sanityCheck(tt.kbpk, urandom(keyLen), h)
+				assert.Equal(t, nil, err)
+			}
 		})
 	}
 }

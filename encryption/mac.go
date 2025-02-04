@@ -27,12 +27,12 @@ func generateCBCMAC(key []byte, data []byte, padding int, length int, algorithm 
 		}
 	}
 
-	implementation := aesEncryptCBC
+	implementation := EncryptTDESCBC
 	blockSize := 16
 
 	if algorithm == DES {
 		blockSize = 8
-		implementation = desEncryptCBC
+		implementation = EncryptTDESCBC
 	}
 
 	paddedData, err := _padDispatch[padding](data, blockSize)
@@ -41,8 +41,8 @@ func generateCBCMAC(key []byte, data []byte, padding int, length int, algorithm 
 	}
 
 	// Encrypt the data
-	mac := implementation(key, make([]byte, blockSize), paddedData)
-	return mac[:length], nil
+	mac, err := implementation(key, make([]byte, blockSize), paddedData)
+	return mac[:length], err
 }
 
 func generateRetailMAC(key1 []byte, key2 []byte, data []byte, padding int, length int) ([]byte, error) {
@@ -56,11 +56,15 @@ func generateRetailMAC(key1 []byte, key2 []byte, data []byte, padding int, lengt
 	}
 
 	// First, encrypt using key1
-	data = desEncryptCBC(key1, make([]byte, 8), paddedData)
-
+	data, err = EncryptTDESCBC(key1, make([]byte, 8), paddedData)
+	if err != nil {
+		return nil, fmt.Errorf("invalid encrypt using key1: %v", err)
+	}
 	// Then, encrypt the last block using TDES with key2 and key1
-	data = desEncryptCBC(key2, data, data)
-
+	data, err = EncryptTDESCBC(key2, data, data)
+	if err != nil {
+		return nil, fmt.Errorf("encrypt the last block using TDES with key2 and key1: %v", err)
+	}
 	return data[:length], nil
 }
 
@@ -90,16 +94,4 @@ func padISO3(data []byte, blockSize int) ([]byte, error) {
 		return nil, err
 	}
 	return append(lengthBytes, paddedData...), nil
-}
-
-func desEncryptCBC(key []byte, iv []byte, data []byte) []byte {
-	// Implement DES CBC encryption here
-	// For example purposes, this function is a placeholder.
-	return nil
-}
-
-func aesEncryptCBC(key []byte, iv []byte, data []byte) []byte {
-	// Implement AES CBC encryption here
-	// For example purposes, this function is a placeholder.
-	return nil
 }
