@@ -319,12 +319,68 @@ var InitialHeaderErrorSequence = []HeaderErrorItem{
 }
 
 func Test_header_block_load_exceptions(t *testing.T) {
-	for _, item := range InitialHeaderErrorSequence {
-		h := NewHeader("", "", "", "", "", "")
-		_, err := h.Load(item.header)
-		assert.IsType(t, &HeaderError{}, err)
-		if headerErr, ok := err.(*HeaderError); ok {
-			assert.Contains(t, item.exceptError, headerErr.message)
-		}
+	//for _, item := range InitialHeaderErrorSequence {
+	//	h := NewHeader("", "", "", "", "", "")
+	//	_, err := h.Load(item.header)
+	//	assert.IsType(t, &HeaderError{}, err)
+	//	if headerErr, ok := err.(*HeaderError); ok {
+	//		assert.Contains(t, item.exceptError, headerErr.message)
+	//	}
+	//}
+	assert.Equal(t, 1, 2)
+}
+func Test_header_block_dump_exception_block_too_large(t *testing.T) {
+	//h := NewHeader("", "", "", "", "", "")
+	//tr31Str := "B0000P0TE00N0400KS1800604B120F9292800000T104T20600PB0600"
+	//_, err := h.Load(item.header)
+	assert.Equal(t, 1, 2)
+}
+func Test_header_block_dump_exception_too_many_blocks(t *testing.T) {
+	assert.Equal(t, 1, 2)
+}
+
+type TestCaseHeaderParam struct {
+	versionID     string
+	keyUsage      string
+	algorithm     string
+	modeOfUse     string
+	versionNum    string
+	exportability string
+	expectedError string
+}
+
+func validateHeader(versionID, keyUsage, algorithm, modeOfUse, versionNum, exportability string) string {
+	_ = NewHeader(versionID, keyUsage, algorithm, modeOfUse, versionNum, exportability)
+	return ""
+}
+
+func Test_header_attributes_exceptions(t *testing.T) {
+	testCases := []TestCaseHeaderParam{
+		{"_", "P0", "T", "E", "00", "N", "Version ID (_) is not supported."},
+		{"B0", "P0", "T", "E", "00", "N", "Version ID (B0) is not supported."},
+		{"", "P0", "T", "E", "00", "N", "Version ID () is not supported."},
+		{"B", "P_", "T", "E", "00", "N", "Key usage (P_) is invalid."},
+		{"B", "P", "T", "E", "00", "N", "Key usage (P) is invalid."},
+		{"B", "P00", "T", "E", "00", "N", "Key usage (P00) is invalid."},
+		{"B", "P0", "", "E", "00", "N", "Algorithm () is invalid."},
+		{"B", "P0", "_", "E", "00", "N", "Algorithm (_) is invalid."},
+		{"B", "P0", "T0", "E", "00", "N", "Algorithm (T0) is invalid."},
+		{"B", "P0", "T", "_", "00", "N", "Mode of use (_) is invalid."},
+		{"B", "P0", "T", "", "00", "N", "Mode of use () is invalid."},
+		{"B", "P0", "T", "EE", "00", "N", "Mode of use (EE) is invalid."},
+		{"B", "P0", "T", "E", "0", "N", "Version number (0) is invalid."},
+		{"B", "P0", "T", "E", "000", "N", "Version number (000) is invalid."},
+		{"B", "P0", "T", "E", "0_", "N", "Version number (0_) is invalid."},
+		{"B", "P0", "T", "E", "00", "", "Exportability () is invalid."},
+		{"B", "P0", "T", "E", "00", "NN", "Exportability (NN) is invalid."},
+		{"B", "P0", "T", "E", "00", "_", "Exportability (_) is invalid."},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.versionID, func(t *testing.T) {
+			// Validate header using the test case inputs
+			actualError := validateHeader(tc.versionID, tc.keyUsage, tc.algorithm, tc.modeOfUse, tc.versionNum, tc.exportability)
+			assert.Equal(t, tc.expectedError, actualError)
+		})
 	}
 }
