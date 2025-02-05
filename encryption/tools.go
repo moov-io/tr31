@@ -23,11 +23,13 @@ https://stackoverflow.com/a/29409299
 	A byte slice that is the result of XOR'ing data with the key.
 */
 func xor(data, key []byte) []byte {
-	key = key[:len(data)]
-	intVar := int(bytesToInt(data))
-	intKey := int(bytesToInt(key))
-	intEnc := intVar ^ intKey
-	return intToBytes(intEnc, len(data))
+	result := make([]byte, len(data))
+
+	for i := range data {
+		result[i] = data[i] ^ key[i%len(key)]
+	}
+
+	return result
 }
 
 /*

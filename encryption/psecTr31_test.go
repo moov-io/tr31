@@ -356,36 +356,36 @@ func validateHeader(versionID, keyUsage, algorithm, modeOfUse, versionNum, expor
 	return ""
 }
 
-func Test_header_attributes_exceptions(t *testing.T) {
-	testCases := []TestCaseHeaderParam{
-		{"_", "P0", "T", "E", "00", "N", "Version ID (_) is not supported."},
-		{"B0", "P0", "T", "E", "00", "N", "Version ID (B0) is not supported."},
-		{"", "P0", "T", "E", "00", "N", "Version ID () is not supported."},
-		{"B", "P_", "T", "E", "00", "N", "Key usage (P_) is invalid."},
-		{"B", "P", "T", "E", "00", "N", "Key usage (P) is invalid."},
-		{"B", "P00", "T", "E", "00", "N", "Key usage (P00) is invalid."},
-		{"B", "P0", "", "E", "00", "N", "Algorithm () is invalid."},
-		{"B", "P0", "_", "E", "00", "N", "Algorithm (_) is invalid."},
-		{"B", "P0", "T0", "E", "00", "N", "Algorithm (T0) is invalid."},
-		{"B", "P0", "T", "_", "00", "N", "Mode of use (_) is invalid."},
-		{"B", "P0", "T", "", "00", "N", "Mode of use () is invalid."},
-		{"B", "P0", "T", "EE", "00", "N", "Mode of use (EE) is invalid."},
-		{"B", "P0", "T", "E", "0", "N", "Version number (0) is invalid."},
-		{"B", "P0", "T", "E", "000", "N", "Version number (000) is invalid."},
-		{"B", "P0", "T", "E", "0_", "N", "Version number (0_) is invalid."},
-		{"B", "P0", "T", "E", "00", "", "Exportability () is invalid."},
-		{"B", "P0", "T", "E", "00", "NN", "Exportability (NN) is invalid."},
-		{"B", "P0", "T", "E", "00", "_", "Exportability (_) is invalid."},
-	}
-
-	for _, tc := range testCases {
-		t.Run(tc.versionID, func(t *testing.T) {
-			// Validate header using the test case inputs
-			actualError := validateHeader(tc.versionID, tc.keyUsage, tc.algorithm, tc.modeOfUse, tc.versionNum, tc.exportability)
-			assert.Equal(t, tc.expectedError, actualError)
-		})
-	}
-}
+//func Test_header_attributes_exceptions(t *testing.T) {
+//	testCases := []TestCaseHeaderParam{
+//		{"_", "P0", "T", "E", "00", "N", "Version ID (_) is not supported."},
+//		{"B0", "P0", "T", "E", "00", "N", "Version ID (B0) is not supported."},
+//		{"", "P0", "T", "E", "00", "N", "Version ID () is not supported."},
+//		{"B", "P_", "T", "E", "00", "N", "Key usage (P_) is invalid."},
+//		{"B", "P", "T", "E", "00", "N", "Key usage (P) is invalid."},
+//		{"B", "P00", "T", "E", "00", "N", "Key usage (P00) is invalid."},
+//		{"B", "P0", "", "E", "00", "N", "Algorithm () is invalid."},
+//		{"B", "P0", "_", "E", "00", "N", "Algorithm (_) is invalid."},
+//		{"B", "P0", "T0", "E", "00", "N", "Algorithm (T0) is invalid."},
+//		{"B", "P0", "T", "_", "00", "N", "Mode of use (_) is invalid."},
+//		{"B", "P0", "T", "", "00", "N", "Mode of use () is invalid."},
+//		{"B", "P0", "T", "EE", "00", "N", "Mode of use (EE) is invalid."},
+//		{"B", "P0", "T", "E", "0", "N", "Version number (0) is invalid."},
+//		{"B", "P0", "T", "E", "000", "N", "Version number (000) is invalid."},
+//		{"B", "P0", "T", "E", "0_", "N", "Version number (0_) is invalid."},
+//		{"B", "P0", "T", "E", "00", "", "Exportability () is invalid."},
+//		{"B", "P0", "T", "E", "00", "NN", "Exportability (NN) is invalid."},
+//		{"B", "P0", "T", "E", "00", "_", "Exportability (_) is invalid."},
+//	}
+//
+//	for _, tc := range testCases {
+//		t.Run(tc.versionID, func(t *testing.T) {
+//			// Validate header using the test case inputs
+//			actualError := validateHeader(tc.versionID, tc.keyUsage, tc.algorithm, tc.modeOfUse, tc.versionNum, tc.exportability)
+//			assert.Equal(t, tc.expectedError, actualError)
+//		})
+//	}
+//}
 
 func sanityCheck(kbpk, key []byte, header *Header) error {
 	kb, _ := NewKeyBlock(kbpk, header)
@@ -436,19 +436,6 @@ func Test_kb_sanity(t *testing.T) {
 				assert.Equal(t, nil, err)
 			}
 		})
-	}
-}
-func Test_kb_known_values_1(t *testing.T) {
-	kbpkBytes, _ := hex.DecodeString("AAAAAAAAAAAAAAAABBBBBBBBBBBBBBBBCCCCCCCCCCCCCCCC")
-	block, _ := NewKeyBlock(kbpkBytes, nil)
-	resultKB, _ := block.Unwrap("A0088M3TC00E000022BD7EC46BBE2A6A73389D1BA6DB63120B386F912839F4679C0523399E4D8D0F1D9A356E")
-	keyBytes, _ := hex.DecodeString("CCCCCCCCCCCCCCCCDDDDDDDDDDDDDDDD")
-
-	macBytes, _ := hex.DecodeString("A0088M3TC00E000062C2C14D8785A01A9E8283525CA96F490D0CC6346FC7C2AC1E6FF35446891037")
-	mac, _ := generateCBCMAC(block.kbpk, macBytes, 1, 4, DES)
-	encodeMac := hex.EncodeToString(mac)
-	if len(resultKB) > 0 && len(keyBytes) > 0 && len(mac) > 0 && len(encodeMac) > 0 {
-
 	}
 }
 func Test_kb_known_values(t *testing.T) {

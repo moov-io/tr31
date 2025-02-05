@@ -5,6 +5,7 @@ import (
 	"crypto/cipher"
 	"crypto/des"
 	"fmt"
+	"strings"
 )
 
 // ApplyKeyVariant applies the variant to the most significant byte of each DES key pair.
@@ -137,8 +138,8 @@ func EncryptTDESCBC(key, iv, data []byte) ([]byte, error) {
 		desKey = key
 	} else if len(key) == 8 {
 		desKey = append(desKey, key...)
+	} else {
 	}
-
 	block, err := des.NewTripleDESCipher(desKey)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create 3DES cipher: %v", err)
@@ -149,31 +150,14 @@ func EncryptTDESCBC(key, iv, data []byte) ([]byte, error) {
 	mode := cipher.NewCBCEncrypter(block, iv)
 	mode.CryptBlocks(ciphertext, data)
 
+	fmt.Println("Triple des")
+	fmt.Println(strings.ToUpper(strings.Join(strings.Split(fmt.Sprintf("% x", desKey), " "), ":")))
+	fmt.Println(strings.ToUpper(strings.Join(strings.Split(fmt.Sprintf("% x", iv), " "), ":")))
+	fmt.Println(strings.ToUpper(strings.Join(strings.Split(fmt.Sprintf("% x", data), " "), ":")))
+	fmt.Println(strings.ToUpper(strings.Join(strings.Split(fmt.Sprintf("% x", ciphertext), " "), ":")))
 	return ciphertext, nil
 }
 
-// DecryptTDESCBC decrypts data using Triple DES CBC algorithm.
-//
-//	func DecryptTDESCBC(key, iv, data []byte) ([]byte, error) {
-//		if len(data)%8 != 0 {
-//			return nil, fmt.Errorf("Data length must be multiple of DES block size 8")
-//		}
-//		formattedKey := key
-//		if len(formattedKey) == 16 {
-//			formattedKey = append(formattedKey, key[:8]...)
-//		}
-//		block, err := des.NewTripleDESCipher(formattedKey)
-//		if err != nil {
-//			return nil, err
-//		}
-//
-//		cbc := cipher.NewCBCDecrypter(block, iv)
-//		decryptedData := make([]byte, len(data))
-//		cbc.CryptBlocks(decryptedData, data)
-//
-//		return decryptedData, nil
-//	}
-//
 // Decrypt3DESCBC decrypts ciphertext using 3DES in CBC mode with the provided 16-byte key and IV.
 func DecryptTDESCBC(key, iv, data []byte) ([]byte, error) {
 	if len(key) != 8 && len(key) != 16 && len(key) != 24 {
