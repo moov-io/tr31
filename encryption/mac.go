@@ -2,7 +2,6 @@ package encryption
 
 import (
 	"encoding/binary"
-	"encoding/hex"
 	"fmt"
 )
 
@@ -47,9 +46,7 @@ func generateCBCMAC(key []byte, data []byte, padding int, length int, algorithm 
 
 	// Encrypt the data
 	mac, err := implementation(key, make([]byte, blockSize), paddedData)
-	fmt.Println(hex.EncodeToString(mac))
 	mac = mac[len(mac)-blockSize:]
-	fmt.Println(hex.EncodeToString(mac))
 	return mac[:length], err
 }
 

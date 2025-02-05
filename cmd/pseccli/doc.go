@@ -27,7 +27,7 @@ EXAMPLES
   pseccli -de         Decrypt data using dukpt transaction key
 
 FLAGS
-`), dukpt.Version)
+`), psec.Version)
 	fmt.Println("")
 	flag.PrintDefaults()
 }

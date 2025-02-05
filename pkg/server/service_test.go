@@ -1,11 +1,11 @@
 package server
 
 import (
+	"strconv"
 	"strings"
 	"testing"
 
-	"github.com/moov-io/dukpt/pkg"
-	"github.com/moov-io/dukpt/pkg/aes"
+	"github.com/moov-io/psec/pkg"
 	"github.com/stretchr/testify/require"
 )
 
@@ -27,7 +27,7 @@ func mockBaseAesKey() BaseKey {
 		Algorithm:         pkg.AlgorithmAes,
 		BaseDerivativeKey: "FEDCBA9876543210F1F1F1F1F1F1F1F1",
 		KeySerialNumber:   "123456789012345600000001",
-		AlgorithmKey:      aes.KeyAES128Type,
+		AlgorithmKey:      strconv.Itoa(0),
 	}
 }
 

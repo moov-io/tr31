@@ -4,8 +4,7 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/moov-io/dukpt/pkg"
-	"github.com/moov-io/dukpt/pkg/aes"
+	"github.com/moov-io/psec/pkg"
 )
 
 var (
@@ -197,17 +196,17 @@ func (s *service) GenerateMac(ik, data, action, macType string) (string, error) 
 	}
 
 	// workaround for hmac
-	if macType == pkg.MaxTypeHmac && m.Algorithm == pkg.AlgorithmAes {
-		if m.AlgorithmKey == aes.KeyAES128Type {
-			params.AlgorithmKey = aes.KeyHMAC128Type
-		}
-		if m.AlgorithmKey == aes.KeyAES192Type {
-			params.AlgorithmKey = aes.KeyHMAC192Type
-		}
-		if m.AlgorithmKey == aes.KeyAES256Type {
-			params.AlgorithmKey = aes.KeyHMAC256Type
-		}
-	}
+	//if macType == pkg.MaxTypeHmac && m.Algorithm == pkg.AlgorithmAes {
+	//	if m.AlgorithmKey == aes.KeyAES128Type {
+	//		params.AlgorithmKey = aes.KeyHMAC128Type
+	//	}
+	//	if m.AlgorithmKey == aes.KeyAES192Type {
+	//		params.AlgorithmKey = aes.KeyHMAC192Type
+	//	}
+	//	if m.AlgorithmKey == aes.KeyAES256Type {
+	//		params.AlgorithmKey = aes.KeyHMAC256Type
+	//	}
+	//}
 
 	return GenerateMac(params)
 }

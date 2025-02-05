@@ -97,7 +97,7 @@ func main() {
 		params.BKD = *flagInitialKeyBKD
 		params.KSN = *flagInitialKeyKSN
 
-		makeFuncCall(server.InitialKey, params)
+		//makeFuncCall(server.InitialKey, params)
 		return
 	}
 
@@ -115,7 +115,7 @@ func main() {
 		params.IK = *flagTransactionKeyIK
 		params.KSN = *flagTransactionKeyKSN
 
-		makeFuncCall(server.TransactionKey, params)
+		//makeFuncCall(server.TransactionKey, params)
 		return
 	}
 
@@ -152,7 +152,7 @@ func main() {
 		params.KSN = *flagEncryptPinKSN
 		params.Format = *flagEncryptPinFormat
 
-		makeFuncCall(server.EncryptPin, params)
+		//makeFuncCall(server.EncryptPin, params)
 		return
 	}
 
@@ -189,7 +189,7 @@ func main() {
 		params.KSN = *flagDecryptPinKSN
 		params.Format = *flagDecryptPinFormat
 
-		makeFuncCall(server.DecryptPin, params)
+		//makeFuncCall(server.DecryptPin, params)
 		return
 	}
 
@@ -225,7 +225,7 @@ func main() {
 		params.MacType = *flagGenerateMacType
 		params.KSN = *flagGenerateMacKSN
 
-		makeFuncCall(server.GenerateMac, params)
+		//makeFuncCall(server.GenerateMac, params)
 		return
 	}
 
@@ -257,7 +257,7 @@ func main() {
 		params.KSN = *flagEncryptKSN
 		params.Action = *flagEncryptAction
 
-		makeFuncCall(server.EncryptData, params)
+		//makeFuncCall(server.EncryptData, params)
 		return
 	}
 
@@ -289,7 +289,7 @@ func main() {
 		params.KSN = *flagDecryptKSN
 		params.Action = *flagDecryptAction
 
-		makeFuncCall(server.DecryptData, params)
+		//makeFuncCall(server.DecryptData, params)
 		return
 	}
 
@@ -297,17 +297,17 @@ func main() {
 	os.Exit(1)
 }
 
-func makeFuncCall(f server.WrapperCall, params server.UnifiedParams) {
-	if err := params.ValidateAlgorithm(); err != nil {
-		fmt.Printf("%s\n", err.Error())
-		os.Exit(2)
-	}
-
-	result, err := f(params)
-	if err != nil {
-		fmt.Printf("%s\n", err.Error())
-		os.Exit(2)
-	}
-
-	fmt.Printf("RESULT: %s\n", result)
-}
+//func makeFuncCall(f server.WrapperCall, params server.UnifiedParams) {
+//	if err := params.ValidateAlgorithm(); err != nil {
+//		fmt.Printf("%s\n", err.Error())
+//		os.Exit(2)
+//	}
+//
+//	result, err := f(params)
+//	if err != nil {
+//		fmt.Printf("%s\n", err.Error())
+//		os.Exit(2)
+//	}
+//
+//	fmt.Printf("RESULT: %s\n", result)
+//}

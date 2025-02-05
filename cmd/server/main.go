@@ -14,8 +14,8 @@ import (
 	"github.com/moov-io/base/admin"
 	"github.com/moov-io/base/http/bind"
 	"github.com/moov-io/base/log"
-	"github.com/moov-io/dukpt"
-	"github.com/moov-io/dukpt/pkg/server"
+	"github.com/moov-io/psec"
+	"github.com/moov-io/psec/pkg/server"
 
 	kitlog "github.com/go-kit/log"
 )
@@ -45,7 +45,7 @@ func main() {
 	}
 
 	logger := log.NewLogger(kitlogger)
-	logger.Logf("Starting dukpt server version %s", dukpt.Version)
+	logger.Logf("Starting dukpt server version %s", psec.Version)
 
 	// Setup underlying dukpt service
 	r := server.NewRepositoryInMemory(logger)
@@ -97,7 +97,7 @@ func main() {
 
 	// Admin server (metrics and debugging)
 	adminServer, _ := admin.New(admin.Opts{Addr: *adminAddr})
-	adminServer.AddVersionHandler(dukpt.Version) // Setup 'GET /version'
+	adminServer.AddVersionHandler(psec.Version) // Setup 'GET /version'
 	go func() {
 		logger.Logf("admin listening on %s", adminServer.BindAddr())
 		if err := adminServer.Listen(); err != nil {

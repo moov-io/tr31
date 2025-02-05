@@ -5,7 +5,6 @@ import (
 	"crypto/cipher"
 	"crypto/des"
 	"fmt"
-	"strings"
 )
 
 // ApplyKeyVariant applies the variant to the most significant byte of each DES key pair.
@@ -150,11 +149,6 @@ func EncryptTDESCBC(key, iv, data []byte) ([]byte, error) {
 	mode := cipher.NewCBCEncrypter(block, iv)
 	mode.CryptBlocks(ciphertext, data)
 
-	fmt.Println("Triple des")
-	fmt.Println(strings.ToUpper(strings.Join(strings.Split(fmt.Sprintf("% x", desKey), " "), ":")))
-	fmt.Println(strings.ToUpper(strings.Join(strings.Split(fmt.Sprintf("% x", iv), " "), ":")))
-	fmt.Println(strings.ToUpper(strings.Join(strings.Split(fmt.Sprintf("% x", data), " "), ":")))
-	fmt.Println(strings.ToUpper(strings.Join(strings.Split(fmt.Sprintf("% x", ciphertext), " "), ":")))
 	return ciphertext, nil
 }
 

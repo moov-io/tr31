@@ -15,7 +15,7 @@
 // specific language governing permissions and limitations
 // under the License.
 
-package dukpt
+package psec
 
 // Version Number
 const Version = "v1.0.0"
