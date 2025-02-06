@@ -844,7 +844,7 @@ func (kb *KeyBlock) cDerive() ([]byte, []byte, error) {
 func (kb *KeyBlock) cGenerateMAC(kbak []byte, header string, keyData []byte) ([]byte, error) {
 	// Concatenate header and key data
 	data := append([]byte(header), keyData...)
-	encData, _ := generateCBCMAC(kb.kbpk, data, 1, 4, DES)
+	encData, _ := generateCBCMAC(kbak, data, 1, 4, DES)
 	// Return the last block of the encrypted data as the MAC
 	return encData, nil
 }
@@ -867,7 +867,7 @@ func (kb *KeyBlock) CUnwrap(header string, keyData []byte, receivedMAC []byte) (
 	// Validate MAC
 	mac, _ := kb.cGenerateMAC(kbak, header, keyData)
 	if !compareMAC(mac, receivedMAC) {
-		//	return nil, errors.New("Key block MAC doesn't match generated MAC.")
+		return nil, errors.New("Key block MAC doesn't match generated MAC.")
 	}
 
 	// Decrypt key data

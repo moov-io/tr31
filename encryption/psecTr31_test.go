@@ -437,6 +437,22 @@ func Test_kb_sanity(t *testing.T) {
 		})
 	}
 }
+func Test_kb_know_values_with_python(t *testing.T) {
+	kbpkBytes, err := hex.DecodeString("AAAAAAAAAAAAAAAABBBBBBBBBBBBBBBBCCCCCCCCCCCCCCCC")
+	if kbpkBytes == nil || err != nil {
+		fmt.Println("Error decoding kbpk:", err)
+		return
+	}
+	keyBytes, err := hex.DecodeString("CCCCCCCCCCCCCCCCDDDDDDDDDDDDDDDD")
+	if err != nil {
+		fmt.Println("Error decoding key:", err)
+		return
+	}
+	kb := "A0088M3TC00E000022BD7EC46BBE2A6A73389D1BA6DB63120B386F912839F4679C0523399E4D8D0F1D9A356E"
+	block, _ := NewKeyBlock(kbpkBytes, nil)
+	resultKB, _ := block.Unwrap(kb)
+	assert.Equal(t, keyBytes, resultKB)
+}
 func Test_kb_known_values(t *testing.T) {
 	testCases := []struct {
 		kbpk string
