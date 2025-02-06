@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"crypto/cipher"
 	"crypto/des"
-	"encoding/hex"
 	"fmt"
 )
 
@@ -149,17 +148,6 @@ func EncryptTDESCBC(key, iv, data []byte) ([]byte, error) {
 	ciphertext := make([]byte, len(data))
 	mode := cipher.NewCBCEncrypter(block, iv)
 	mode.CryptBlocks(ciphertext, data)
-
-	println("----------DES----------------")
-	println("key:")
-	println(hex.EncodeToString(desKey))
-	println("iv:")
-	println(hex.EncodeToString(iv))
-	println("data:")
-	println(hex.EncodeToString(data))
-	println("ciphertext:")
-	println(hex.EncodeToString(ciphertext))
-
 	return ciphertext, nil
 }
 
