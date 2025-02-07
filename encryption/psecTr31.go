@@ -154,6 +154,11 @@ func (b *Blocks) Dump(algoBlockSize int) (int, string, error) {
 // Parse the extended length of a block.
 func (b *Blocks) parseExtendedLen(blockID string, blocks string, i int) (int, int, error) {
 	// Get 2 character long optional block length of length.
+	if len(blocks) < i+2 {
+		return 0, i, &HeaderError{
+			message: fmt.Sprintf("Block %s length of length (%s) is malformed. Expecting 2 hexchars.", blockID, blocks[i:]),
+		}
+	}
 	blockLenLenS := blocks[i : i+2]
 	if len(blockLenLenS) != 2 || !isAsciiHex(blockLenLenS) {
 		return 0, i, &HeaderError{
@@ -177,7 +182,11 @@ func (b *Blocks) parseExtendedLen(blockID string, blocks string, i int) (int, in
 			message: fmt.Sprintf("Block %s length of length must not be 0.", blockID),
 		}
 	}
-
+	if len(blocks) < i+int(blockLenLen) {
+		return 0, i, &HeaderError{
+			message: fmt.Sprintf("Block %s length of length (%s) is malformed. Expecting 2 hexchars.", blockID, blocks[i+4:]),
+		}
+	}
 	// Extract actual block length.
 	blockLenS := blocks[i : i+int(blockLenLen)]
 	if len(blockLenS) != int(blockLenLen) || !isAsciiHex(blockLenS) {
@@ -205,15 +214,18 @@ func (b *Blocks) Load(blocksNum int, blocks string) (int, error) {
 
 	i := 0
 	for j := 0; j < blocksNum; j++ {
-		if len(blocks) < 2 {
+		if len(blocks) < 1 {
 			return 0, &HeaderError{message: fmt.Sprintf("Block ID () is malformed.")}
 		}
-		blockID := blocks[i : i+2]
-		if len(blockID) != 2 {
-			return 0, &HeaderError{message: fmt.Sprintf("Block ID (%s) is malformed.", blockID)}
+		if len(blocks) < 2 || len(blocks[:2]) != 2 {
+			return 0, &HeaderError{message: fmt.Sprintf("Block ID (%v) is malformed.", blocks[:1])}
 		}
+		blockID := blocks[i : i+2]
 		i += 2
 
+		if len(blocks) < 4 {
+			return 0, &HeaderError{message: fmt.Sprintf("Block %s length (%s) is malformed. Expecting 2 hexchars.", blockID, blocks[2:])}
+		}
 		blockLenS := blocks[i : i+2]
 		i += 2
 
@@ -221,7 +233,10 @@ func (b *Blocks) Load(blocksNum int, blocks string) (int, error) {
 		if blockLen == 0 {
 			// Handle extended length
 			// Add logic to parse extended length if necessary
-			block_len_extend, new_index, _ := b.parseExtendedLen(blockID, blocks, i)
+			block_len_extend, new_index, err := b.parseExtendedLen(blockID, blocks, i)
+			if err != nil {
+				return 0, err
+			}
 			blockLen = block_len_extend
 			i = new_index
 		} else {
@@ -231,7 +246,9 @@ func (b *Blocks) Load(blocksNum int, blocks string) (int, error) {
 		if blockLen < 0 {
 			return 0, &HeaderError{message: fmt.Sprintf("Block %s length does not include block ID and length.", blockID)}
 		}
-
+		if len(blocks) < i+blockLen {
+			return 0, &HeaderError{fmt.Sprintf("Block %s data is malformed. Received 1/3. Block data: '%s'", blockID, blocks[i:])}
+		}
 		blockData := blocks[i : i+blockLen]
 		if len(blockData) != blockLen {
 			return 0, &HeaderError{message: fmt.Sprintf("Block %s data is malformed. Received %d/%d. Block data: '%s'", blockID, len(blockData), blockLen, blockData)}
@@ -245,39 +262,59 @@ func (b *Blocks) Load(blocksNum int, blocks string) (int, error) {
 
 	return i, nil
 }
-
-func NewHeader(versionID, keyUsage, algorithm, modeOfUse, versionNum, exportability string) *Header {
+func DefaultHeader() *Header {
 	header := &Header{
-		VersionID:                versionID,
-		KeyUsage:                 keyUsage,
-		Algorithm:                algorithm,
-		ModeOfUse:                modeOfUse,
-		VersionNum:               versionNum,
-		Exportability:            exportability,
+		VersionID:                "B",
+		KeyUsage:                 "00",
+		Algorithm:                "0",
+		ModeOfUse:                "0",
+		VersionNum:               "00",
+		Exportability:            "N",
 		Reserved:                 "00",
 		Blocks:                   *NewBlocks(),
 		_versionIDAlgoBlockSize:  map[string]int{"A": 8, "B": 8, "C": 8, "D": 16},
 		_versionIDKeyBlockMacLen: map[string]int{"A": 4, "B": 8, "C": 4, "D": 16},
 	}
-	if versionID == "" {
-		header.VersionID = "B"
-	}
-	if keyUsage == "" {
-		header.KeyUsage = "00"
-	}
-	if algorithm == "" {
-		header.KeyUsage = "0"
-	}
-	if modeOfUse == "" {
-		header.ModeOfUse = "0"
-	}
-	if versionNum == "" {
-		header.VersionNum = "00"
-	}
-	if exportability == "" {
-		header.Exportability = "N"
-	}
 	return header
+}
+func NewHeader(versionID, keyUsage, algorithm, modeOfUse, versionNum, exportability string) (*Header, error) {
+	header := &Header{
+		VersionID:                "",
+		KeyUsage:                 "",
+		Algorithm:                "",
+		ModeOfUse:                "",
+		VersionNum:               "",
+		Exportability:            "",
+		Reserved:                 "00",
+		Blocks:                   *NewBlocks(),
+		_versionIDAlgoBlockSize:  map[string]int{"A": 8, "B": 8, "C": 8, "D": 16},
+		_versionIDKeyBlockMacLen: map[string]int{"A": 4, "B": 8, "C": 4, "D": 16},
+	}
+	err := header.SetVersionID(versionID)
+	if err != nil {
+		return nil, err
+	}
+	err = header.SetKeyUsage(keyUsage)
+	if err != nil {
+		return nil, err
+	}
+	err = header.SetAlgorithm(algorithm)
+	if err != nil {
+		return nil, err
+	}
+	err = header.SetModeOfUse(modeOfUse)
+	if err != nil {
+		return nil, err
+	}
+	err = header.SetVersionNum(versionNum)
+	if err != nil {
+		return nil, err
+	}
+	err = header.SetExportability(exportability)
+	if err != nil {
+		return nil, err
+	}
+	return header, nil
 }
 func (h *Header) String() string {
 	blocksNum, blocks, _ := h.Blocks.Dump(h._versionIDAlgoBlockSize[h.VersionID])
@@ -352,13 +389,30 @@ func (h *Header) Load(header string) (int, error) {
 	if len(header) < 16 {
 		return 0, &HeaderError{message: fmt.Sprintf("Header length (%d) must be >=16. Header: '%s'", len(header), header[:16])}
 	}
-
-	h.VersionID = string(header[0])
-	h.KeyUsage = header[5:7]
-	h.Algorithm = string(header[7])
-	h.ModeOfUse = string(header[8])
-	h.VersionNum = header[9:11]
-	h.Exportability = string(header[11])
+	err := h.SetVersionID(string(header[0]))
+	if err != nil {
+		return 0, err
+	}
+	err = h.SetKeyUsage(header[5:7])
+	if err != nil {
+		return 0, err
+	}
+	err = h.SetAlgorithm(string(header[7]))
+	if err != nil {
+		return 0, err
+	}
+	err = h.SetModeOfUse(string(header[8]))
+	if err != nil {
+		return 0, err
+	}
+	err = h.SetVersionNum(header[9:11])
+	if err != nil {
+		return 0, err
+	}
+	err = h.SetExportability(string(header[11]))
+	if err != nil {
+		return 0, err
+	}
 	h.Reserved = header[14:16]
 
 	if !asciiNumeric(header[12:14]) {
@@ -403,14 +457,13 @@ func NewKeyBlock(kbpk []byte, header interface{}) (*KeyBlock, error) {
 	if iheader, ok := header.(*Header); ok {
 		kb.header = iheader
 	} else if iheader, ok := header.(string); ok {
-		kb.header = NewHeader("", "", "", "", "", "")
+		kb.header = DefaultHeader()
 		if len(iheader) < 5 {
-			kb.header = NewHeader("B", "00", "0", "0", "00", "N")
 		} else if _, err := kb.header.Load(iheader); err != nil {
 			return nil, fmt.Errorf("failed to load header: %v", err)
 		}
 	} else {
-		kb.header = NewHeader("B", "00", "0", "0", "00", "N")
+		kb.header = DefaultHeader()
 	}
 	return kb, nil
 }
