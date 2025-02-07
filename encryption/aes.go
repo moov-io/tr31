@@ -20,7 +20,6 @@ func EncryptAESCBC(key []byte, iv []byte, data []byte) ([]byte, error) {
 	blockMode := cipher.NewCBCEncrypter(block, iv)
 	encrypted := make([]byte, len(data))
 	blockMode.CryptBlocks(encrypted, data)
-
 	return encrypted, nil
 }
 

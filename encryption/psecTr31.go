@@ -7,6 +7,7 @@ import (
 	"encoding/hex"
 	"errors"
 	"fmt"
+	"math/big"
 	"strconv"
 	"strings"
 )
@@ -960,7 +961,6 @@ func (kb *KeyBlock) DWrap(header string, key []byte, extraPad int) (string, erro
 	if err != nil {
 		return "", err
 	}
-
 	// Format key data: 2-byte key length measured in bits + key + pad
 	padLen := 16 - ((2 + len(key) + extraPad) % 16)
 	pad := make([]byte, padLen+extraPad)
@@ -1041,7 +1041,6 @@ func (kb *KeyBlock) dDerive() ([]byte, []byte, error) {
 	}
 
 	_, k2, _ := kb.deriveAESCMACSubkeys(kb.kbpk)
-
 	// Produce the same number of keying material as the key's length.
 	// Each call to CMAC produces 128 bits of keying material.
 	// AES-128 -> 1 call to CMAC  -> AES-128 KBEK/KBAK
@@ -1063,12 +1062,15 @@ func (kb *KeyBlock) dDerive() ([]byte, []byte, error) {
 		encData2, _ := generateCBCMAC(kb.kbpk, xor(kdInput, k2), 1, 16, AES)
 		kbak = append(kbek, encData2...)
 	}
-
-	return kbek[:len(kb.kbpk)], kbak[:len(kb.kbpk)], nil
+	cropedKbak := kbak[len(kbak)-len(kb.kbpk):]
+	return kbek[:len(kb.kbpk)], cropedKbak, nil
 }
 func (kb *KeyBlock) dGenerateMAC(kbak []byte, header, keyData []byte) ([]byte, error) {
 	// Derive AES-CMAC subkeys
 	k1, _, err := kb.deriveAESCMACSubkeys(kbak)
+	println("dGenerateMAC---------------------------------")
+	println("k1:", hex.EncodeToString(k1))
+	println("kbak", hex.EncodeToString(kbak))
 	if err != nil {
 		return nil, err
 	}
@@ -1085,13 +1087,35 @@ func (kb *KeyBlock) dGenerateMAC(kbak []byte, header, keyData []byte) ([]byte, e
 
 	// Combine the sliced macData (without last 16 bytes) with the XORed result
 	macData = append(macData[:len(macData)-16], xored...)
-
 	return generateCBCMAC(kbak, macData, 1, 16, AES)
+}
+func dShiftLeft1(inBytes []byte) []byte {
+	// Shift the byte array left by 1 bit
+	// Ensure the most significant bit of the first byte is cleared
+	copyByte := make([]byte, len(inBytes)) // Allocate memory for the destination slice
+	copy(copyByte, inBytes)
+	copyByte[0] &= 0b01111111
+
+	// Convert to big integer
+	intIn := new(big.Int).SetBytes(copyByte)
+
+	// Shift left by 1
+	intIn.Lsh(intIn, 1)
+
+	// Convert back to byte slice with the same length
+	outBytes := intIn.Bytes()
+
+	// Ensure the result is the same length as input (may need padding)
+	if len(outBytes) < len(copyByte) {
+		padding := make([]byte, len(copyByte)-len(outBytes))
+		outBytes = append(padding, outBytes...)
+	}
+
+	return outBytes
 }
 func (kb *KeyBlock) deriveAESCMACSubkeys(key []byte) ([]byte, []byte, error) {
 	// Derive two subkeys from an AES key. Each subkey is 16 bytes.
 	r64 := []byte{0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x87}
-
 	// Encrypt a block of zeros
 	zeroBytes := make([]byte, 16)
 	s, err := EncryptAESECB(key, zeroBytes)
@@ -1101,17 +1125,16 @@ func (kb *KeyBlock) deriveAESCMACSubkeys(key []byte) ([]byte, []byte, error) {
 
 	var k1, k2 []byte
 	if s[0]&0b10000000 != 0 {
-		k1 = xor(shiftLeft1(s), r64)
+		shiteByte := dShiftLeft1(s)
+		k1 = xor(shiteByte, r64)
 	} else {
-		k1 = shiftLeft1(s)
+		k1 = dShiftLeft1(s)
 	}
-
 	if k1[0]&0b10000000 != 0 {
-		k2 = xor(shiftLeft1(k1), r64)
+		k2 = xor(dShiftLeft1(k1), r64)
 	} else {
-		k2 = shiftLeft1(k1)
+		k2 = dShiftLeft1(k1)
 	}
-
 	return k1, k2, nil
 }
 func (kb *KeyBlock) DUnwrap(header string, keyData, receivedMAC []byte) ([]byte, error) {
@@ -1130,7 +1153,6 @@ func (kb *KeyBlock) DUnwrap(header string, keyData, receivedMAC []byte) ([]byte,
 
 	// Derive Key Block Encryption and Authentication Keys
 	kbek, kbak, _ := kb.dDerive()
-
 	// Decrypt key data
 	clearKeyData, err := DecryptAESCBC(kbek, receivedMAC, keyData)
 	if err != nil {
