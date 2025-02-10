@@ -486,6 +486,9 @@ func (kb *KeyBlock) GetHeader() *Header {
 }
 func (kb *KeyBlock) Wrap(key []byte, maskedKeyLen *int) (string, error) {
 	// Check if header version is supported
+	if kb == nil {
+		return "", fmt.Errorf("kb is not supported")
+	}
 	wrapFunc, exists := _wrapDispatch[kb.header.VersionID]
 	if !exists {
 		return "", fmt.Errorf("Key block version ID (%s) is not supported", kb.header.VersionID)
