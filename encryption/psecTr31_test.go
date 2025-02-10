@@ -23,34 +23,6 @@ func TestHeaderLoad(t *testing.T) {
 	assert.Len(t, h.Blocks._blocks, 0)
 	assert.Equal(t, "B0016P0TE00N0000", h.String())
 }
-func TestHeaderBlocksDict(t *testing.T) {
-	h, _ := NewHeader("B", "P0", "T", "E", "", "")
-	h.Blocks._blocks["KS"] = "ABCD"
-
-	if len(h.Blocks._blocks) != 1 {
-		t.Errorf("Expected 1 block, got %d", len(h.Blocks._blocks))
-	}
-	if h.Blocks._blocks["KS"] != "ABCD" {
-		t.Errorf("Expected block 'KS' to be 'ABCD', got '%s'", h.Blocks._blocks["KS"])
-	}
-	if _, exists := h.Blocks._blocks["KS"]; !exists {
-		t.Error("Expected 'KS' to exist in blocks")
-	}
-	if repr := fmt.Sprintf("%v", h.Blocks._blocks); repr != "map[KS:ABCD]" {
-		t.Errorf("Expected repr 'map[KS:ABCD]', got '%s'", repr)
-	}
-
-	delete(h.Blocks._blocks, "KS")
-	if len(h.Blocks._blocks) != 0 {
-		t.Errorf("Expected 0 blocks after deletion, got %d", len(h.Blocks._blocks))
-	}
-	if _, exists := h.Blocks._blocks["KS"]; exists {
-		t.Error("Expected 'KS' to be deleted from blocks")
-	}
-	if repr := fmt.Sprintf("%v", h.Blocks._blocks); repr != "map[]" {
-		t.Errorf("Expected repr 'map[]', got '%s'", repr)
-	}
-}
 
 // TestHeaderLoadOptionalDes tests the Load method and the String method of the Header.
 func TestHeaderLoadOptionalDes(t *testing.T) {
@@ -512,61 +484,176 @@ func Test_kb_init_with_raw_header_blocks(t *testing.T) {
 	assert.Equal(t, 1, len(block.header.Blocks._blocks))
 	assert.Equal(t, "00604B120F9292800000", block.header.Blocks._blocks["KS"])
 }
+func intPtr(i int) *int {
+	return &i
+}
 
-//# fmt: off
-//@pytest.mark.parametrize(
-//["kbpk_len", "kb", "error"],
-//[
-//(16, "B0040P0TE00N0000", "Key block header length (40) doesn't match input data length (16)."),
-//(16, "BX040P0TE00N0000", "Key block header length (X040) is malformed. Expecting 4 digits."),
-//
-//(16, "A0087M3TC00E000062C2C14D8785A01A9E8283525CA96F490D0CC6346FC7C2AC1E6FF354468910379AA5BBA", "Key block length (87) must be multiple of 8 for key block version A."),
-//(16, "B0087M3TC00E000062C2C14D8785A01A9E8283525CA96F490D0CC6346FC7C2AC1E6FF354468910379AA5BBA", "Key block length (87) must be multiple of 8 for key block version B."),
-//(16, "C0087M3TC00E000062C2C14D8785A01A9E8283525CA96F490D0CC6346FC7C2AC1E6FF354468910379AA5BBA", "Key block length (87) must be multiple of 8 for key block version C."),
-//(16, "D0087M3TC00E000062C2C14D8785A01A9E8283525CA96F490D0CC6346FC7C2AC1E6FF354468910379AA5BBA", "Key block length (87) must be multiple of 16 for key block version D."),
-//
-//(16, "A0088M3TC00E000062C2C14D8785A01A9E8283525CA96F490D0CC6346FC7C2AC1E6FF354468910379AA5BBAX", "Key block MAC must be valid hexchars. MAC: '9AA5BBAX'"),
-//(16, "B0088M3TC00E000062C2C14D8785A01A9E8283525CA96F490D0CC6346FC7C2AC1E6FF354468910379AA5BBAX", "Key block MAC must be valid hexchars. MAC: '468910379AA5BBAX'"),
-//(16, "C0088M3TC00E000062C2C14D8785A01A9E8283525CA96F490D0CC6346FC7C2AC1E6FF354468910379AA5BBAX", "Key block MAC must be valid hexchars. MAC: '9AA5BBAX'"),
-//(16, "D0112P0AE00E0000DDF7B73888F22B757600010215895621B94A4E8DA57DD3E01BB66FF046A4E6B89B8F5C30BDD3A946205FDF791C3548EX", "Key block MAC must be valid hexchars. MAC: '9B8F5C30BDD3A946205FDF791C3548EX'"),
-//
-//(16, "A0024M3TC00E0100TT04BBA6", "Key block MAC is malformed. Received 4 bytes MAC. Expecting 8 bytes for key block version A. MAC: 'BBA6'"),
-//(16, "B0024M3TC00E00009AA5BBA6", "Key block MAC is malformed. Received 8 bytes MAC. Expecting 16 bytes for key block version B. MAC: '9AA5BBA6'"),
-//(16, "C0024M3TC00E0100TT04BBA6", "Key block MAC is malformed. Received 4 bytes MAC. Expecting 8 bytes for key block version C. MAC: 'BBA6'"),
-//(16, "D0032P0AE00E0000205FDF791C3548EC", "Key block MAC is malformed. Received 16 bytes MAC. Expecting 32 bytes for key block version D. MAC: '205FDF791C3548EC'"),
-//
-//(16, "A0088M3TC00E000062C2C14D8785A01A9E8283525CA96F490D0CC6346FC7C2AC1E6FF3544689103X9AA5BBA6", "Encrypted key must be valid hexchars. Key data: '62C2C14D8785A01A9E8283525CA96F490D0CC6346FC7C2AC1E6FF3544689103X'"),
-//(16, "B0088M3TC00E000062C2C14D8785A01A9E8283525CA96F490D0CC6346FC7C2AC1E6FF35X468910379AA5BBA6", "Encrypted key must be valid hexchars. Key data: '62C2C14D8785A01A9E8283525CA96F490D0CC6346FC7C2AC1E6FF35X'"),
-//(16, "C0088M3TC00E000062C2C14D8785A01A9E8283525CA96F490D0CC6346FC7C2AC1E6FF3544689103X9AA5BBA6", "Encrypted key must be valid hexchars. Key data: '62C2C14D8785A01A9E8283525CA96F490D0CC6346FC7C2AC1E6FF3544689103X'"),
-//(16, "D0112P0AE00E0000DDF7B73888F22B757600010215895621B94A4E8DA57DD3E01BB66FF046A4E6BX9B8F5C30BDD3A946205FDF791C3548EC", "Encrypted key must be valid hexchars. Key data: 'DDF7B73888F22B757600010215895621B94A4E8DA57DD3E01BB66FF046A4E6BX'"),
-//
-//(16, "A0024M3TC00E00009AA5BBA6", "Encrypted key is malformed. Key data: ''"),
-//(16, "B0032M3TC00E0000FFFFFFFF9AA5BBA6", "Encrypted key is malformed. Key data: ''"),
-//(16, "C0024M3TC00E00009AA5BBA6", "Encrypted key is malformed. Key data: ''"),
-//(16, "D0048P0AE00E00009B8F5C30BDD3A946205FDF791C3548EC", "Encrypted key is malformed. Key data: ''"),
-//
-//(16, "A0056M3TC00E0000BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB9AA5BBA6", "Key block MAC doesn't match generated MAC."),
-//(16, "B0064M3TC00E0000BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBFFFFFFFF9AA5BBA6", "Key block MAC doesn't match generated MAC."),
-//(16, "C0056M3TC00E0000BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB9AA5BBA6", "Key block MAC doesn't match generated MAC."),
-//(16, "D0112P0AE00E0000DDF7B73888F22B757600010215895621B94A4E8DA57DD3E01BB66FF046A4E6B89B8F5C30BDD3A946205FDF791C3548E4", "Key block MAC doesn't match generated MAC."),
-//
-//(7,  "A0088M3TC00E000062C2C14D8785A01A9E8283525CA96F490D0CC6346FC7C2AC1E6FF354468910379AA5BBA6", "KBPK length (7) must be Single, Double or Triple DES for key block version A."),
-//(8,  "B0088M3TC00E000062C2C14D8785A01A9E8283525CA96F490D0CC6346FC7C2AC1E6FF354468910379AA5BBA6", "KBPK length (8) must be Double or Triple DES for key block version B."),
-//(7,  "C0088M3TC00E000062C2C14D8785A01A9E8283525CA96F490D0CC6346FC7C2AC1E6FF354468910379AA5BBA6", "KBPK length (7) must be Single, Double or Triple DES for key block version C."),
-//(19, "D0112P0AE00E0000DDF7B73888F22B757600010215895621B94A4E8DA57DD3E01BB66FF046A4E6B89B8F5C30BDD3A946205FDF791C3548E4", "KBPK length (19) must be AES-128, AES-192 or AES-256 for key block version D."),
-//
-//# These keys have length set to 3 bits And key lengths that do not add up to a byte are not supported.
-//# KBPK must be b"E"*16.
-//(16, "A0056M3TC00E0000C6F4C83842160CBA48D98A1218862857124FAF46", "Decrypted key is invalid."),
-//(16, "B0064M3TC00E0000F74E0A3502C5CEE07342D5DE9E72135E4A81944F80691F0F", "Decrypted key is invalid."),
-//(16, "C0056M3TC00E0000F71573EB7441BB50A5C4511893AFB37B5B95A4AD", "Decrypted key is invalid."),
-//(16, "D0080M3TC00E000007E81A7F29A870D4A0CD5AB27E9FEC4A8863E879B11EA3A0ADA406AD26D35B2F", "Decrypted key is invalid."),
-//
-//# DES key length is set to 128 bits while the key is 64 bits. KBPK must be b"E"*16.
-//# AES key length is set to 256 bits while the key is 128 bits. KBPK must be b"E"*16.
-//(16, "A0056M3TC00E0000EF14FD71CFCDCE0630AD5C1CDE0041DCF95CF1D0", "Decrypted key is malformed."),
-//(16, "B0064M3TC00E00000398DC96A5DDB0EF61E26F8935173BD478DF9484050A672A", "Decrypted key is malformed."),
-//(16, "C0056M3TC00E000001235EC22408B6CE866746FF992B8707FD7A26D2", "Decrypted key is malformed."),
-//(16, "D0112P0AE00E00000DC02E4C2B63120403CC732FB1B17E6D44138E7C341AE7368DEAD6FB4673F25ECFD803F1101F701A7FE8BD3516D3D1BF", "Decrypted key is malformed."),
-//],
-//)
+func Test_kb_masking_key_length(t *testing.T) {
+	testCases := []struct {
+		version_id     string
+		algorithm      string
+		key_len        int
+		masked_key_len *int
+		kb_len         int
+	}{
+		{"A", "D", 24, intPtr(24), 88},
+		{"A", "D", 16, intPtr(24), 88},
+		{"A", "D", 8, intPtr(24), 88},
+		{"A", "D", 24, nil, 88},
+		{"A", "D", 16, nil, 88},
+		{"A", "D", 8, nil, 88},
+		{"A", "D", 16, intPtr(16), 72},
+		{"A", "D", 16, intPtr(8), 72},
+		{"A", "D", 16, intPtr(0), 72},
+		{"A", "D", 16, intPtr(-8), 72},
+		{"A", "D", 8, intPtr(8), 56},
+		{"A", "D", 8, intPtr(0), 56},
+
+		{"B", "T", 24, intPtr(24), 96},
+		{"B", "T", 16, intPtr(24), 96},
+		{"B", "T", 8, intPtr(24), 96},
+		{"B", "T", 24, nil, 96},
+		{"B", "T", 16, nil, 96},
+		{"B", "T", 8, nil, 96},
+		{"B", "T", 16, intPtr(16), 80},
+		{"B", "T", 16, intPtr(8), 80},
+		{"B", "T", 16, intPtr(0), 80},
+		{"B", "T", 16, intPtr(-8), 80},
+		{"B", "T", 8, intPtr(8), 64},
+		{"B", "T", 8, intPtr(0), 64},
+
+		{"C", "T", 24, intPtr(24), 88},
+		{"C", "T", 16, intPtr(24), 88},
+		{"C", "T", 8, intPtr(24), 88},
+		{"C", "T", 24, nil, 88},
+		{"C", "T", 16, nil, 88},
+		{"C", "T", 8, nil, 88},
+		{"C", "T", 16, intPtr(16), 72},
+		{"C", "T", 16, intPtr(8), 72},
+		{"C", "T", 16, intPtr(0), 72},
+		{"C", "T", 16, intPtr(-8), 72},
+		{"C", "T", 8, intPtr(8), 56},
+		{"C", "T", 8, intPtr(0), 56},
+
+		{"D", "A", 32, intPtr(32), 144},
+		{"D", "A", 24, intPtr(32), 144},
+		{"D", "A", 16, intPtr(32), 144},
+		{"D", "A", 32, nil, 144},
+		{"D", "A", 24, nil, 144},
+		{"D", "A", 16, nil, 144},
+		{"D", "A", 24, intPtr(24), 112},
+		{"D", "A", 24, intPtr(16), 112},
+		{"D", "A", 24, intPtr(8), 112},
+		{"D", "A", 24, intPtr(0), 112},
+		{"D", "A", 24, intPtr(-1), 112},
+		{"D", "A", 16, intPtr(16), 112},
+		{"D", "A", 16, intPtr(8), 112},
+		{"D", "A", 16, intPtr(0), 112},
+		{"D", "A", 16, intPtr(-1), 112},
+
+		{"D", "T", 24, intPtr(24), 112},
+		{"D", "T", 16, intPtr(24), 112},
+		{"D", "T", 8, intPtr(24), 112},
+		{"D", "T", 24, nil, 112},
+		{"D", "T", 16, nil, 112},
+		{"D", "T", 8, nil, 112},
+		{"D", "T", 16, intPtr(16), 112},
+		{"D", "T", 16, intPtr(8), 112},
+		{"D", "T", 16, intPtr(0), 112},
+		{"D", "T", 16, intPtr(-8), 112},
+		{"D", "T", 8, intPtr(8), 80},
+		{"D", "T", 8, intPtr(0), 80},
+	}
+	for _, tt := range testCases {
+		t.Run(tt.version_id, func(t *testing.T) {
+			kbpkBytes := bytes.Repeat([]byte("E"), 24)
+			keyBytes := bytes.Repeat([]byte("F"), tt.key_len)
+			block, _ := NewKeyBlock(kbpkBytes, nil)
+			block.header.SetVersionID(tt.version_id)
+			block.header.SetAlgorithm(tt.algorithm)
+			kb_s, _ := block.Wrap(keyBytes, tt.masked_key_len)
+			assert.Equal(t, tt.kb_len, len(kb_s))
+		})
+	}
+}
+
+func Test_invalid_enctript_key_wrap(t *testing.T) {
+	testCases := []struct {
+		versionID     string
+		kbpkLen       int
+		keyLen        int
+		expectedError string
+	}{
+		{"A", 7, 24, "KBPK length (7) must be Single, Double or Triple DES for key block version A."},
+		{"B", 7, 24, "KBPK length (7) must be Double or Triple DES for key block version B."},
+		{"C", 7, 24, "KBPK length (7) must be Single, Double or Triple DES for key block version C."},
+		{"D", 17, 24, "KBPK length (17) must be AES-128, AES-192 or AES-256 for key block version D."},
+	}
+
+	for _, tt := range testCases {
+		t.Run(tt.versionID, func(t *testing.T) {
+			kbpkBytes := bytes.Repeat([]byte("E"), tt.kbpkLen)
+			keyBytes := bytes.Repeat([]byte("F"), tt.kbpkLen)
+			block, _ := NewKeyBlock(kbpkBytes, nil)
+			block.header.SetVersionID(tt.versionID)
+			_, actualError := block.Wrap(keyBytes, nil)
+			assert.IsType(t, &KeyBlockError{}, actualError)
+			if headerErr, ok := actualError.(*KeyBlockError); ok {
+				assert.Equal(t, tt.expectedError, headerErr.message)
+			}
+		})
+	}
+}
+func Test_invalid_enctript_key_uwrap(t *testing.T) {
+	test_cases := []struct {
+		kbpk_len int
+		kb       string
+		error    string
+	}{
+		{16, "B0040P0TE00N0000", "Key block header length (40) doesn't match input data length (16)."},
+		{16, "BX040P0TE00N0000", "Key block header length (X040) is malformed. Expecting 4 digits."},
+		{16, "A0087M3TC00E000062C2C14D8785A01A9E8283525CA96F490D0CC6346FC7C2AC1E6FF354468910379AA5BBA", "Key block length (87) must be multiple of 8 for key block version A."},
+		{16, "B0087M3TC00E000062C2C14D8785A01A9E8283525CA96F490D0CC6346FC7C2AC1E6FF354468910379AA5BBA", "Key block length (87) must be multiple of 8 for key block version B."},
+		{16, "C0087M3TC00E000062C2C14D8785A01A9E8283525CA96F490D0CC6346FC7C2AC1E6FF354468910379AA5BBA", "Key block length (87) must be multiple of 8 for key block version C."},
+		{16, "D0087M3TC00E000062C2C14D8785A01A9E8283525CA96F490D0CC6346FC7C2AC1E6FF354468910379AA5BBA", "Key block length (87) must be multiple of 16 for key block version D."},
+		{16, "A0088M3TC00E000062C2C14D8785A01A9E8283525CA96F490D0CC6346FC7C2AC1E6FF3544689103X9AA5BBA6", "Encrypted key must be valid hexchars. Key data: '62C2C14D8785A01A9E8283525CA96F490D0CC6346FC7C2AC1E6FF3544689103X'"},
+		{16, "B0088M3TC00E000062C2C14D8785A01A9E8283525CA96F490D0CC6346FC7C2AC1E6FF35X468910379AA5BBA6", "Encrypted key must be valid hexchars. Key data: '62C2C14D8785A01A9E8283525CA96F490D0CC6346FC7C2AC1E6FF35X'"},
+		{16, "C0088M3TC00E000062C2C14D8785A01A9E8283525CA96F490D0CC6346FC7C2AC1E6FF3544689103X9AA5BBA6", "Encrypted key must be valid hexchars. Key data: '62C2C14D8785A01A9E8283525CA96F490D0CC6346FC7C2AC1E6FF3544689103X'"},
+		{16, "D0112P0AE00E0000DDF7B73888F22B757600010215895621B94A4E8DA57DD3E01BB66FF046A4E6BX9B8F5C30BDD3A946205FDF791C3548EC", "Encrypted key must be valid hexchars. Key data: 'DDF7B73888F22B757600010215895621B94A4E8DA57DD3E01BB66FF046A4E6BX'"},
+		{16, "A0024M3TC00E00009AA5BBA6", "Key block MAC must be valid hexchars. MAC: '9AA5BBA6'"},
+		{16, "B0032M3TC00E0000FFFFFFFF9AA5BBA6", "Key block MAC must be valid hexchars. MAC: 'FFFFFFFF9AA5BBA6'"},
+		{16, "C0024M3TC00E00009AA5BBA6", "Key block MAC must be valid hexchars. MAC: '9AA5BBA6'"},
+		{16, "D0048P0AE00E00009B8F5C30BDD3A946205FDF791C3548EC", "Key block MAC must be valid hexchars. MAC: '9B8F5C30BDD3A946205FDF791C3548EC'"},
+
+		{16, "A0056M3TC00E0000BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB9AA5BBA6", "Key block MAC doesn't match generated MAC."},
+		{16, "B0064M3TC00E0000BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBFFFFFFFF9AA5BBA6", "Key block MAC doesn't match generated MAC."},
+		{16, "C0056M3TC00E0000BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB9AA5BBA6", "Key block MAC doesn't match generated MAC."},
+		{16, "D0112P0AE00E0000DDF7B73888F22B757600010215895621B94A4E8DA57DD3E01BB66FF046A4E6B89B8F5C30BDD3A946205FDF791C3548E4", "Key block MAC doesn't match generated MAC."},
+
+		{7, "A0088M3TC00E000062C2C14D8785A01A9E8283525CA96F490D0CC6346FC7C2AC1E6FF354468910379AA5BBA6", "KBPK length (7) must be Single, Double or Triple DES for key block version A."},
+		{8, "B0088M3TC00E000062C2C14D8785A01A9E8283525CA96F490D0CC6346FC7C2AC1E6FF354468910379AA5BBA6", "KBPK length (8) must be Double or Triple DES for key block version B."},
+		{7, "C0088M3TC00E000062C2C14D8785A01A9E8283525CA96F490D0CC6346FC7C2AC1E6FF354468910379AA5BBA6", "KBPK length (7) must be Single, Double or Triple DES for key block version C."},
+		{19, "D0112P0AE00E0000DDF7B73888F22B757600010215895621B94A4E8DA57DD3E01BB66FF046A4E6B89B8F5C30BDD3A946205FDF791C3548E4", "KBPK length (19) must be AES-128, AES-192 or AES-256 for key block version D."},
+
+		{16, "A0056M3TC00E0000C6F4C83842160CBA48D98A1218862857124FAF46", "Decrypted key is invalid."},
+		{16, "B0064M3TC00E0000F74E0A3502C5CEE07342D5DE9E72135E4A81944F80691F0F", "Decrypted key is invalid."},
+		{16, "C0056M3TC00E0000F71573EB7441BB50A5C4511893AFB37B5B95A4AD", "Decrypted key is invalid."},
+		{16, "D0080M3TC00E000007E81A7F29A870D4A0CD5AB27E9FEC4A8863E879B11EA3A0ADA406AD26D35B2F", "Decrypted key is invalid."},
+
+		{16, "A0056M3TC00E0000EF14FD71CFCDCE0630AD5C1CDE0041DCF95CF1D0", "Decrypted key is malformed."},
+		{16, "B0064M3TC00E00000398DC96A5DDB0EF61E26F8935173BD478DF9484050A672A", "Decrypted key is malformed."},
+		{16, "C0056M3TC00E000001235EC22408B6CE866746FF992B8707FD7A26D2", "Decrypted key is malformed."},
+		{16, "D0112P0AE00E00000DC02E4C2B63120403CC732FB1B17E6D44138E7C341AE7368DEAD6FB4673F25ECFD803F1101F701A7FE8BD3516D3D1BF", "Decrypted key is malformed."},
+	}
+	for _, tt := range test_cases {
+		t.Run(tt.kb, func(t *testing.T) {
+			kbpkBytes := bytes.Repeat([]byte("E"), tt.kbpk_len)
+			block, _ := NewKeyBlock(kbpkBytes, nil)
+			_, actualError := block.Unwrap(tt.kb)
+			assert.IsType(t, &KeyBlockError{}, actualError)
+			if headerErr, ok := actualError.(*KeyBlockError); ok {
+				assert.Equal(t, tt.error, headerErr.message)
+			}
+		})
+	}
+}

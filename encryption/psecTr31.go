@@ -572,7 +572,7 @@ func (kb *KeyBlock) Unwrap(keyBlock string) ([]byte, error) {
 			keyData, err := hex.DecodeString(string(keyDataS))
 			if err != nil {
 				return nil, &KeyBlockError{
-					message: fmt.Sprintf("Key block must be valid hexchars. KEY: '%s'", keyData),
+					message: fmt.Sprintf("Encrypted key must be valid hexchars. Key data: '%s'", keyDataS),
 				}
 			}
 
@@ -788,7 +788,7 @@ func (kb *KeyBlock) BUnwrap(header string, keyData []byte, receivedMac []byte) (
 	// Ensure KBPK length is valid
 	if len(kb.kbpk) != 16 && len(kb.kbpk) != 24 {
 		return nil, &KeyBlockError{
-			message: fmt.Sprintf("KBPK length (%d) must be Double or Triple DES for key block version %s", len(kb.kbpk), kb.header.VersionID),
+			message: fmt.Sprintf("KBPK length (%d) must be Double or Triple DES for key block version %s.", len(kb.kbpk), kb.header.VersionID),
 		}
 	}
 
@@ -834,6 +834,9 @@ func (kb *KeyBlock) BUnwrap(header string, keyData []byte, receivedMac []byte) (
 
 	// Convert to bytes
 	keyLength = keyLength / 8
+	if len(clearKeyData) < int(keyLength)+2 {
+		return nil, &KeyBlockError{fmt.Sprintf("Decrypted key is malformed.")}
+	}
 	key := clearKeyData[2 : keyLength+2]
 	if len(key) != int(keyLength) {
 		return nil, &KeyBlockError{
@@ -916,12 +919,12 @@ func (kb *KeyBlock) cGenerateMAC(kbak []byte, header string, keyData []byte) ([]
 func (kb *KeyBlock) CUnwrap(header string, keyData []byte, receivedMAC []byte) ([]byte, error) {
 	// Ensure KBPK length is valid (8, 16, or 24 bytes)
 	if len(kb.kbpk) != 8 && len(kb.kbpk) != 16 && len(kb.kbpk) != 24 {
-		return nil, fmt.Errorf("KBPK length must be 8, 16, or 24 bytes")
+		return nil, &KeyBlockError{fmt.Sprintf("KBPK length (%d) must be Single, Double or Triple DES for key block version %s.", len(kb.kbpk), kb.header.VersionID)}
 	}
 
 	// Validate key data length
 	if len(keyData) < 8 || len(keyData)%8 != 0 {
-		return nil, fmt.Errorf("Encrypted key is malformed. Key data: '%X'", keyData)
+		return nil, &KeyBlockError{fmt.Sprintf("Encrypted key is malformed. Key data: '%X'", keyData)}
 	}
 
 	// Derive Key Block Encryption and Authentication Keys
@@ -930,7 +933,7 @@ func (kb *KeyBlock) CUnwrap(header string, keyData []byte, receivedMAC []byte) (
 	// Validate MAC
 	mac, _ := kb.cGenerateMAC(kbak, header, keyData)
 	if !compareMAC(mac, receivedMAC) {
-		return nil, errors.New("Key block MAC doesn't match generated MAC.")
+		return nil, &KeyBlockError{fmt.Sprintf("Key block MAC doesn't match generated MAC.")}
 	}
 
 	// Decrypt key data
@@ -944,13 +947,16 @@ func (kb *KeyBlock) CUnwrap(header string, keyData []byte, receivedMAC []byte) (
 
 	// This library does not support keys not measured in whole bytes
 	if keyLength%8 != 0 {
-		return nil, errors.New("Decrypted key is invalid.")
+		return nil, &KeyBlockError{fmt.Sprintf("Decrypted key is invalid.")}
 	}
 
 	keyLength = keyLength / 8
+	if len(clearKeyData) < int(keyLength)+2 {
+		return nil, &KeyBlockError{fmt.Sprintf("Decrypted key is malformed.")}
+	}
 	key := clearKeyData[2 : keyLength+2]
 	if len(key) != int(keyLength) {
-		return nil, errors.New("Decrypted key is malformed.")
+		return nil, &KeyBlockError{fmt.Sprintf("Decrypted key is malformed.")}
 	}
 
 	return key, nil
@@ -961,7 +967,7 @@ func (kb *KeyBlock) DWrap(header string, key []byte, extraPad int) (string, erro
 	// Ensure KBPK length is valid
 	if len(kb.kbpk) != 16 && len(kb.kbpk) != 24 && len(kb.kbpk) != 32 {
 		return "", &KeyBlockError{
-			message: fmt.Sprintf("KBPK length (%d) must be AES-128, AES-192, or AES-256 for key block version D.", len(kb.kbpk)),
+			message: fmt.Sprintf("KBPK length (%d) must be AES-128, AES-192 or AES-256 for key block version D.", len(kb.kbpk)),
 		}
 	}
 
@@ -1077,9 +1083,6 @@ func (kb *KeyBlock) dDerive() ([]byte, []byte, error) {
 func (kb *KeyBlock) dGenerateMAC(kbak []byte, header, keyData []byte) ([]byte, error) {
 	// Derive AES-CMAC subkeys
 	k1, _, err := kb.deriveAESCMACSubkeys(kbak)
-	println("dGenerateMAC---------------------------------")
-	println("k1:", hex.EncodeToString(k1))
-	println("kbak", hex.EncodeToString(kbak))
 	if err != nil {
 		return nil, err
 	}
@@ -1149,15 +1152,15 @@ func (kb *KeyBlock) deriveAESCMACSubkeys(key []byte) ([]byte, []byte, error) {
 func (kb *KeyBlock) DUnwrap(header string, keyData, receivedMAC []byte) ([]byte, error) {
 	// Check for valid KBPK length (AES-128, AES-192, AES-256)
 	if len(kb.kbpk) != 16 && len(kb.kbpk) != 24 && len(kb.kbpk) != 32 {
-		return nil, fmt.Errorf(
+		return nil, &KeyBlockError{fmt.Sprintf(
 			"KBPK length (%d) must be AES-128, AES-192 or AES-256 for key block version %s.",
 			len(kb.kbpk), kb.header.VersionID,
-		)
+		)}
 	}
 
 	// Check if key data length is valid
 	if len(keyData) < 16 || len(keyData)%16 != 0 {
-		return nil, fmt.Errorf("Encrypted key is malformed. Key data: '%X'", keyData)
+		return nil, &KeyBlockError{fmt.Sprintf("Encrypted key is malformed. Key data: '%X'", keyData)}
 	}
 
 	// Derive Key Block Encryption and Authentication Keys
@@ -1171,7 +1174,7 @@ func (kb *KeyBlock) DUnwrap(header string, keyData, receivedMAC []byte) ([]byte,
 	// Validate MAC
 	mac, _ := kb.dGenerateMAC(kbak, []byte(header), clearKeyData)
 	if !bytes.Equal(mac, receivedMAC) {
-		return nil, errors.New("Key block MAC doesn't match generated MAC.")
+		return nil, &KeyBlockError{fmt.Sprintf("Key block MAC doesn't match generated MAC.")}
 	}
 
 	// Extract key length from clear key data (2 byte key length in bits)
@@ -1179,16 +1182,19 @@ func (kb *KeyBlock) DUnwrap(header string, keyData, receivedMAC []byte) ([]byte,
 
 	// Check if the key length is a valid multiple of 8
 	if keyLength%8 != 0 {
-		return nil, errors.New("Decrypted key is invalid.")
+		return nil, &KeyBlockError{fmt.Sprintf("Decrypted key is invalid.")}
 	}
 
 	// Convert key length from bits to bytes
 	keyLength = keyLength / 8
+	if len(clearKeyData) < int(keyLength)+2 {
+		return nil, &KeyBlockError{fmt.Sprintf("Decrypted key is malformed.")}
+	}
 	key := clearKeyData[2 : 2+keyLength]
 
 	// Check if key is malformed
 	if len(key) != int(keyLength) {
-		return nil, errors.New("Decrypted key is malformed.")
+		return nil, &KeyBlockError{fmt.Sprintf("Decrypted key is malformed.")}
 	}
 
 	return key, nil
