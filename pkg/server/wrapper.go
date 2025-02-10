@@ -5,7 +5,8 @@ import (
 )
 
 type UnifiedParams struct {
-	VAULT_ADDR   String
+	VaultAddr    String
+	VaultToken   String
 	Algorithm    string
 	AlgorithmKey string
 	BKD          string

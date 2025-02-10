@@ -18,7 +18,7 @@ var _padDispatch = map[int]func(data []byte, blockSize int) ([]byte, error){
 	3: padISO3,
 }
 
-func generateCBCMAC(key []byte, data []byte, padding int, length int, algorithm Algorithm) ([]byte, error) {
+func GenerateCBCMAC(key []byte, data []byte, padding int, length int, algorithm Algorithm) ([]byte, error) {
 	if length == 0 {
 		if algorithm == AES {
 			length = 16

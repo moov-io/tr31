@@ -704,7 +704,7 @@ func (kb *KeyBlock) BDerive() ([]byte, []byte, error) {
 
 		// Encryption key
 		kdInput[1], kdInput[2] = 0x00, 0x00
-		encKey, err := generateCBCMAC(kb.kbpk, xor(kdInput, k1), 1, 8, DES)
+		encKey, err := GenerateCBCMAC(kb.kbpk, xor(kdInput, k1), 1, 8, DES)
 		if err != nil {
 			return nil, nil, err
 		}
@@ -712,7 +712,7 @@ func (kb *KeyBlock) BDerive() ([]byte, []byte, error) {
 
 		// Authentication key
 		kdInput[1], kdInput[2] = 0x00, 0x01
-		authKey, err := generateCBCMAC(kb.kbpk, xor(kdInput, k1), 1, 8, DES)
+		authKey, err := GenerateCBCMAC(kb.kbpk, xor(kdInput, k1), 1, 8, DES)
 		if err != nil {
 			return nil, nil, err
 		}
@@ -740,7 +740,7 @@ func (kb *KeyBlock) bGenerateMac(kbak []byte, header string, keyData []byte) ([]
 	}
 
 	// Generate the CBC-MAC
-	mac, err := generateCBCMAC(kbak, macData, 1, 8, DES)
+	mac, err := GenerateCBCMAC(kbak, macData, 1, 8, DES)
 	if err != nil {
 		return nil, err
 	}
@@ -913,7 +913,7 @@ func (kb *KeyBlock) cDerive() ([]byte, []byte, error) {
 func (kb *KeyBlock) cGenerateMAC(kbak []byte, header string, keyData []byte) ([]byte, error) {
 	// Concatenate header and key data
 	data := append([]byte(header), keyData...)
-	encData, _ := generateCBCMAC(kbak, data, 1, 4, DES)
+	encData, _ := GenerateCBCMAC(kbak, data, 1, 4, DES)
 	// Return the last block of the encrypted data as the MAC
 	return encData, nil
 }
@@ -1071,13 +1071,13 @@ func (kb *KeyBlock) dDerive() ([]byte, []byte, error) {
 		// Encryption key
 		kdInput[1] = 0x00
 		kdInput[2] = 0x00
-		encData, _ := generateCBCMAC(kb.kbpk, xor(kdInput, k2), 1, 16, AES)
+		encData, _ := GenerateCBCMAC(kb.kbpk, xor(kdInput, k2), 1, 16, AES)
 		kbek = append(kbek, encData...)
 
 		// Authentication key
 		kdInput[1] = 0x00
 		kdInput[2] = 0x01
-		encData2, _ := generateCBCMAC(kb.kbpk, xor(kdInput, k2), 1, 16, AES)
+		encData2, _ := GenerateCBCMAC(kb.kbpk, xor(kdInput, k2), 1, 16, AES)
 		kbak = append(kbek, encData2...)
 	}
 	cropedKbak := kbak[len(kbak)-len(kb.kbpk):]
@@ -1102,7 +1102,7 @@ func (kb *KeyBlock) dGenerateMAC(kbak []byte, header, keyData []byte) ([]byte, e
 
 	// Combine the sliced macData (without last 16 bytes) with the XORed result
 	macData = append(macData[:len(macData)-16], xored...)
-	return generateCBCMAC(kbak, macData, 1, 16, AES)
+	return GenerateCBCMAC(kbak, macData, 1, 16, AES)
 }
 func dShiftLeft1(inBytes []byte) []byte {
 	// Shift the byte array left by 1 bit
