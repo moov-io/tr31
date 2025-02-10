@@ -184,9 +184,13 @@ func (b *Blocks) parseExtendedLen(blockID string, blocks string, i int) (int, in
 		}
 	}
 	if len(blocks) < i+int(blockLenLen) {
-		return 0, i, &HeaderError{
-			message: fmt.Sprintf("Block %s length of length (%s) is malformed. Expecting 2 hexchars.", blockID, blocks[i+4:]),
+		var msg string
+		if len(blocks) > i {
+			msg = fmt.Sprintf("Block %s length (%s) is malformed. Expecting 2 hexchars.", blockID, blocks[i:])
+		} else {
+			msg = fmt.Sprintf("Block %s length (%s) is malformed. Expecting 2 hexchars.", blockID, "")
 		}
+		return 0, i, &HeaderError{msg}
 	}
 	// Extract actual block length.
 	blockLenS := blocks[i : i+int(blockLenLen)]
@@ -219,13 +223,18 @@ func (b *Blocks) Load(blocksNum int, blocks string) (int, error) {
 			return 0, &HeaderError{message: fmt.Sprintf("Block ID () is malformed.")}
 		}
 		if len(blocks) < 2 || len(blocks[:2]) != 2 {
-			return 0, &HeaderError{message: fmt.Sprintf("Block ID (%v) is malformed.", blocks[:1])}
+			return 0, &HeaderError{message: fmt.Sprintf("Block ID (%v) is malformed.", blocks[i:i+1])}
+		}
+		if len(blocks) < i+2 {
+			return 0, &HeaderError{message: fmt.Sprintf("Block ID (%v) is malformed.", blocks[i:i+1])}
 		}
 		blockID := blocks[i : i+2]
 		i += 2
-
-		if len(blocks) < 4 {
-			return 0, &HeaderError{message: fmt.Sprintf("Block %s length (%s) is malformed. Expecting 2 hexchars.", blockID, blocks[2:])}
+		if !asciiAlphanumeric(blockID) {
+			return 0, &HeaderError{message: fmt.Sprintf("Block ID (%v) is invalid. Expecting 2 alphanumeric characters.", blockID)}
+		}
+		if len(blocks) < i+4 {
+			return 0, &HeaderError{message: fmt.Sprintf("Block %s length (%s) is malformed. Expecting 2 hexchars.", blockID, blocks[i:])}
 		}
 		blockLenS := blocks[i : i+2]
 		i += 2
@@ -248,7 +257,7 @@ func (b *Blocks) Load(blocksNum int, blocks string) (int, error) {
 			return 0, &HeaderError{message: fmt.Sprintf("Block %s length does not include block ID and length.", blockID)}
 		}
 		if len(blocks) < i+blockLen {
-			return 0, &HeaderError{fmt.Sprintf("Block %s data is malformed. Received 1/3. Block data: '%s'", blockID, blocks[i:])}
+			return 0, &HeaderError{fmt.Sprintf("Block %s data is malformed. Received %d/%d. Block data: '%s'", blockID, len(blocks)-i, blockLen, blocks[i:])}
 		}
 		blockData := blocks[i : i+blockLen]
 		if len(blockData) != blockLen {
