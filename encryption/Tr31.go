@@ -452,12 +452,11 @@ func (h *Header) Dump(keyLen int) (string, error) {
 }
 
 func (h *Header) Load(header string) (int, error) {
-	if !asciiAlphanumeric(header[:16]) {
-		return 0, &HeaderError{Message: fmt.Sprintf(HeaderErrEncoding, header[:16])}
-	}
-
 	if len(header) < 16 {
 		return 0, &HeaderError{Message: fmt.Sprintf(HeaderErrLenLimit, len(header), header[:16])}
+	}
+	if !asciiAlphanumeric(header[:16]) {
+		return 0, &HeaderError{Message: fmt.Sprintf(HeaderErrEncoding, header[:16])}
 	}
 	err := h.SetVersionID(string(header[0]))
 	if err != nil {
