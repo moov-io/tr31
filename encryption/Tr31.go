@@ -48,14 +48,14 @@ const (
 	BlockErrorHeaderLenMismatched  string = "Key block length (%d) must be multiple of %d for key block version %s."
 	BlockErrorVersion              string = "Key block version ID (%s) is not supported"
 	BlockErrorMacEncode            string = "Key block MAC must be valid hexchars. MAC: '%s'"
-	BlockErrorEncKeyEncode         string = "Encrypted key must be valid hexchars. Key data: '%s'"
+	BlockErrorEncKeyEncode         string = "Encrypted key must be valid hexchars."
 	BlockErrorMacNotMatched        string = "Key block MAC is not matched."
 	BlockErrorMacNotMalformed      string = "Key block MAC is malformed. Received %d bytes MAC. Expecting %d bytes for key block version %s. MAC: '%s'"
 	BlockErrorMacLenShort          string = "MacData is too short."
 	BlockErrorKBKPLenNotMatched    string = "KBPK length (%d) must be Double or Triple DES for key block version %s."
 	BlockErrorKBKPLenNotMatchedDES string = "KBPK length (%d) must be Single, Double or Triple DES for key block version %s."
 	BlockErrorKBKPLenNotMatchedAES string = "KBPK length (%d) must be AES-128, AES-192 or AES-256 for key block version D."
-	BlockErrorEncKeyMalformed      string = "Encrypted key is malformed. Key data: '%s'"
+	BlockErrorEncKeyMalformed      string = "Encrypted key is malformed"
 	BlockErrorDecKeyInvalid        string = "Decrypted key is invalid."
 	BlockErrorDecKeyMalformed      string = "Decrypted key is malformed."
 	BlockErrorExtraPadNegative     string = "ExtraPad cannot be negative."
@@ -634,7 +634,7 @@ func (kb *KeyBlock) Unwrap(keyBlock string) ([]byte, error) {
 			keyData, err := hex.DecodeString(string(keyDataS))
 			if err != nil {
 				return nil, &KeyBlockError{
-					Message: fmt.Sprintf(BlockErrorEncKeyEncode, keyDataS),
+					Message: fmt.Sprintf(BlockErrorEncKeyEncode),
 				}
 			}
 
@@ -864,7 +864,7 @@ func (kb *KeyBlock) BUnwrap(header string, keyData []byte, receivedMac []byte) (
 	// Ensure the key data is valid
 	if len(keyData) < 8 || len(keyData)%8 != 0 {
 		return nil, &KeyBlockError{
-			Message: fmt.Sprintf(BlockErrorEncKeyMalformed, hex.EncodeToString(keyData)),
+			Message: fmt.Sprintf(BlockErrorEncKeyMalformed),
 		}
 	}
 
@@ -995,7 +995,7 @@ func (kb *KeyBlock) CUnwrap(header string, keyData []byte, receivedMAC []byte) (
 
 	// Validate key data length
 	if len(keyData) < 8 || len(keyData)%8 != 0 {
-		return nil, &KeyBlockError{fmt.Sprintf(BlockErrorEncKeyMalformed, keyData)}
+		return nil, &KeyBlockError{fmt.Sprintf(BlockErrorEncKeyMalformed)}
 	}
 
 	// Derive Key Block Encryption and Authentication Keys
@@ -1233,7 +1233,7 @@ func (kb *KeyBlock) DUnwrap(header string, keyData, receivedMAC []byte) ([]byte,
 
 	// Check if key data length is valid
 	if len(keyData) < 16 || len(keyData)%16 != 0 {
-		return nil, &KeyBlockError{fmt.Sprintf(BlockErrorEncKeyMalformed, keyData)}
+		return nil, &KeyBlockError{fmt.Sprintf(BlockErrorEncKeyMalformed)}
 	}
 
 	// Derive Key Block Encryption and Authentication Keys
