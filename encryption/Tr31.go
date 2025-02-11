@@ -181,7 +181,7 @@ func (b *Blocks) Repr() string {
 }
 
 func (b *Blocks) Dump(algoBlockSize int) (int, string, error) {
-	var blocksList []string
+	blocksList := make([]string, 0, len(b._blocks)*3)
 	for blockID, blockData := range b._blocks {
 		blocksList = append(blocksList, blockID)
 
