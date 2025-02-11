@@ -25,6 +25,23 @@ const (
 	ENC_ALGORITHM_AES        string = "A"
 )
 
+const (
+	ErrKeyNotFound             string = "key not found"
+	ErrVersionID               string = "Version ID (%s) is not supported."
+	ErrKBPKEmpty               string = "Key Block Protection Key (KBPK) cannot be empty."
+	BlockerrorIdMalformed      string = "Block ID (%v) is malformed."
+	BlockerrorIdInvalid        string = "Block ID (%s) is invalid. Expecting 2 alphanumeric characters."
+	BlockerrorDataInvalid      string = "Block %s data is invalid. Expecting ASCII printable characters. Data: '%s'"
+	BlockerrorDataInvalidLen   string = "Block %s data is malformed. Received %d/%d. Block data: '%s'"
+	BlockerrorLengthLong       string = "Block %s length is too long."
+	BlockerrorLenMarlformed    string = "Block %s length (%s) is malformed. Expecting 2 hexchars."
+	BlockerrorLenInvalid       string = "Block %s length (%s) is malformed. Expecting %d hexchars."
+	BlockerrorLenHasNoID       string = "Block %s length does not include block ID and length."
+	BlockerrorLenLenMarlformed string = "Block %s length of length (%s) is malformed. Expecting 2 hexchars."
+	BlockerrorLengthParse      string = "Failed to parse block length length (%s) for block %s: %v"
+	BlockerrorLengthZero       string = "Block %s length of length must not be 0."
+)
+
 // HeaderError is a custom error type that indicates an error in processing TR-31 header data.
 type HeaderError struct {
 	Message string
@@ -91,18 +108,18 @@ func (b *Blocks) Get(key string) (string, error) {
 	if value, exists := b._blocks[key]; exists {
 		return value, nil
 	}
-	return "", errors.New("key not found")
+	return "", errors.New(ErrKeyNotFound)
 }
 
 func (b *Blocks) Set(key string, item string) error {
 	if len(key) != 2 || !asciiAlphanumeric(key) {
 		return &HeaderError{
-			Message: fmt.Sprintf("Block ID (%s) is invalid. Expecting 2 alphanumeric characters.", key),
+			Message: fmt.Sprintf(BlockerrorIdInvalid, key),
 		}
 	}
 	if !asciiPrintable(item) {
 		return &HeaderError{
-			Message: fmt.Sprintf("Block %s data is invalid. Expecting ASCII printable characters. Data: '%s'", key, item),
+			Message: fmt.Sprintf(BlockerrorDataInvalid, key, item),
 		}
 	}
 	b._blocks[key] = item
@@ -147,7 +164,7 @@ func (b *Blocks) Dump(algoBlockSize int) (int, string, error) {
 			blocksList = append(blocksList, "0002")
 			blockLen := len(blockData) + 10
 			if blockLen > 0xFFFF {
-				return 0, "", &HeaderError{Message: fmt.Sprintf("Block %s length is too long.", blockID)}
+				return 0, "", &HeaderError{Message: fmt.Sprintf(BlockerrorLengthLong, blockID)}
 			}
 			blocksList = append(blocksList, fmt.Sprintf("%04X", blockLen))
 		}
@@ -170,13 +187,13 @@ func (b *Blocks) parseExtendedLen(blockID string, blocks string, i int) (int, in
 	// Get 2 character long optional block length of length.
 	if len(blocks) < i+2 {
 		return 0, i, &HeaderError{
-			Message: fmt.Sprintf("Block %s length of length (%s) is malformed. Expecting 2 hexchars.", blockID, blocks[i:]),
+			Message: fmt.Sprintf(BlockerrorLenLenMarlformed, blockID, blocks[i:]),
 		}
 	}
 	blockLenLenS := blocks[i : i+2]
 	if len(blockLenLenS) != 2 || !isAsciiHex(blockLenLenS) {
 		return 0, i, &HeaderError{
-			Message: fmt.Sprintf("Block %s length of length (%s) is malformed. Expecting 2 hexchars.", blockID, blockLenLenS),
+			Message: fmt.Sprintf(BlockerrorLenLenMarlformed, blockID, blockLenLenS),
 		}
 	}
 	i += 2
@@ -185,7 +202,7 @@ func (b *Blocks) parseExtendedLen(blockID string, blocks string, i int) (int, in
 	blockLenLen, err := strconv.ParseInt(blockLenLenS, 16, 0)
 	if err != nil {
 		return 0, i, &HeaderError{
-			Message: fmt.Sprintf("Failed to parse block length length (%s) for block %s: %v", blockLenLenS, blockID, err),
+			Message: fmt.Sprintf(BlockerrorLengthParse, blockLenLenS, blockID, err),
 		}
 	}
 	blockLenLen *= 2
@@ -193,15 +210,15 @@ func (b *Blocks) parseExtendedLen(blockID string, blocks string, i int) (int, in
 	// Ensure blockLenLen is not zero.
 	if blockLenLen == 0 {
 		return 0, i, &HeaderError{
-			Message: fmt.Sprintf("Block %s length of length must not be 0.", blockID),
+			Message: fmt.Sprintf(BlockerrorLengthZero, blockID),
 		}
 	}
 	if len(blocks) < i+int(blockLenLen) {
 		var msg string
 		if len(blocks) > i {
-			msg = fmt.Sprintf("Block %s length (%s) is malformed. Expecting 2 hexchars.", blockID, blocks[i:])
+			msg = fmt.Sprintf(BlockerrorLenMarlformed, blockID, blocks[i:])
 		} else {
-			msg = fmt.Sprintf("Block %s length (%s) is malformed. Expecting 2 hexchars.", blockID, "")
+			msg = fmt.Sprintf(BlockerrorLenMarlformed, blockID, "")
 		}
 		return 0, i, &HeaderError{msg}
 	}
@@ -209,7 +226,7 @@ func (b *Blocks) parseExtendedLen(blockID string, blocks string, i int) (int, in
 	blockLenS := blocks[i : i+int(blockLenLen)]
 	if len(blockLenS) != int(blockLenLen) || !isAsciiHex(blockLenS) {
 		return 0, i, &HeaderError{
-			Message: fmt.Sprintf("Block %s length (%s) is malformed. Expecting %d hexchars.", blockID, blockLenS, blockLenLen),
+			Message: fmt.Sprintf(BlockerrorLenInvalid, blockID, blockLenS, blockLenLen),
 		}
 	}
 
@@ -217,7 +234,7 @@ func (b *Blocks) parseExtendedLen(blockID string, blocks string, i int) (int, in
 	blockLen, err := strconv.ParseInt(blockLenS, 16, 0)
 	if err != nil {
 		return 0, i, &HeaderError{
-			Message: fmt.Sprintf("Failed to parse block length (%s) for block %s: %v", blockLenS, blockID, err),
+			Message: fmt.Sprintf(BlockerrorLengthParse, blockLenS, blockID, err),
 		}
 	}
 
@@ -233,21 +250,21 @@ func (b *Blocks) Load(blocksNum int, blocks string) (int, error) {
 	i := 0
 	for j := 0; j < blocksNum; j++ {
 		if len(blocks) < 1 {
-			return 0, &HeaderError{Message: fmt.Sprintf("Block ID () is malformed.")}
+			return 0, &HeaderError{Message: fmt.Sprintf(BlockerrorIdMalformed, make([]byte, 0))}
 		}
 		if len(blocks) < 2 || len(blocks[:2]) != 2 {
-			return 0, &HeaderError{Message: fmt.Sprintf("Block ID (%v) is malformed.", blocks[i:i+1])}
+			return 0, &HeaderError{Message: fmt.Sprintf(BlockerrorIdMalformed, blocks[i:i+1])}
 		}
 		if len(blocks) < i+2 {
-			return 0, &HeaderError{Message: fmt.Sprintf("Block ID (%v) is malformed.", blocks[i:i+1])}
+			return 0, &HeaderError{Message: fmt.Sprintf(BlockerrorIdMalformed, blocks[i:i+1])}
 		}
 		blockID := blocks[i : i+2]
 		i += 2
 		if !asciiAlphanumeric(blockID) {
-			return 0, &HeaderError{Message: fmt.Sprintf("Block ID (%v) is invalid. Expecting 2 alphanumeric characters.", blockID)}
+			return 0, &HeaderError{Message: fmt.Sprintf(BlockerrorIdInvalid, blockID)}
 		}
 		if len(blocks) < i+4 {
-			return 0, &HeaderError{Message: fmt.Sprintf("Block %s length (%s) is malformed. Expecting 2 hexchars.", blockID, blocks[i:])}
+			return 0, &HeaderError{Message: fmt.Sprintf(BlockerrorLenMarlformed, blockID, blocks[i:])}
 		}
 		blockLenS := blocks[i : i+2]
 		i += 2
@@ -267,14 +284,14 @@ func (b *Blocks) Load(blocksNum int, blocks string) (int, error) {
 		}
 
 		if blockLen < 0 {
-			return 0, &HeaderError{Message: fmt.Sprintf("Block %s length does not include block ID and length.", blockID)}
+			return 0, &HeaderError{Message: fmt.Sprintf(BlockerrorLenHasNoID, blockID)}
 		}
 		if len(blocks) < i+blockLen {
-			return 0, &HeaderError{fmt.Sprintf("Block %s data is malformed. Received %d/%d. Block data: '%s'", blockID, len(blocks)-i, blockLen, blocks[i:])}
+			return 0, &HeaderError{fmt.Sprintf(BlockerrorDataInvalidLen, blockID, len(blocks)-i, blockLen, blocks[i:])}
 		}
 		blockData := blocks[i : i+blockLen]
 		if len(blockData) != blockLen {
-			return 0, &HeaderError{Message: fmt.Sprintf("Block %s data is malformed. Received %d/%d. Block data: '%s'", blockID, len(blockData), blockLen, blockData)}
+			return 0, &HeaderError{Message: fmt.Sprintf(BlockerrorDataInvalidLen, blockID, len(blockData), blockLen, blockData)}
 		}
 		i += blockLen
 
@@ -345,7 +362,7 @@ func (h *Header) String() string {
 }
 func (h *Header) SetVersionID(versionID string) error {
 	if versionID != TR31_VERSION_A && versionID != TR31_VERSION_B && versionID != TR31_VERSION_C && versionID != TR31_VERSION_D {
-		return &HeaderError{Message: fmt.Sprintf("Version ID (%s) is not supported.", versionID)}
+		return &HeaderError{Message: fmt.Sprintf(ErrVersionID, versionID)}
 	}
 	h.VersionID = versionID
 	return nil
@@ -470,7 +487,7 @@ var _algoIDMaxKeyLen = map[string]int{
 func NewKeyBlock(kbpk []byte, header interface{}) (*KeyBlock, error) {
 	// Validate the input for kbpk and header
 	if len(kbpk) == 0 {
-		return nil, errors.New("Key Block Protection Key (KBPK) cannot be empty")
+		return nil, errors.New(ErrKBPKEmpty)
 	}
 
 	kb := &KeyBlock{
