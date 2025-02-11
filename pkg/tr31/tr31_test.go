@@ -9,8 +9,9 @@ import (
 func Test_wrap_unwrap_functions(t *testing.T) {
 	kbpk := []byte{0xAB, 0xAB, 0xAB, 0xAB, 0xAB, 0xAB, 0xAB, 0xAB, 0xAB, 0xAB, 0xAB, 0xAB, 0xAB, 0xAB, 0xAB, 0xAB}
 	key := []byte{0xCD, 0xCD, 0xCD, 0xCD, 0xCD, 0xCD, 0xCD, 0xCD, 0xCD, 0xCD, 0xCD, 0xCD, 0xCD, 0xCD, 0xCD, 0xCD}
-	kb, _ := Wrap(kbpk, "B0096P0TE00N0000", key, nil)
-	hOut, keyOut, _ := Unwrap(kbpk, kb)
+	processor := ANSIXProcessor{}
+	kb, _ := processor.Wrap(kbpk, "B0096P0TE00N0000", key, nil)
+	hOut, keyOut, _ := processor.Unwrap(kbpk, kb)
 
 	assert.Equal(t, key, keyOut)
 	assert.Equal(t, "B", hOut.VersionID)
@@ -25,8 +26,9 @@ func Test_wrap_unwrap_functions(t *testing.T) {
 func Test_wrap_unwrap_header_functions(t *testing.T) {
 	kbpk := []byte{0xEF, 0xEF, 0xEF, 0xEF, 0xAB, 0xAB, 0xAB, 0xAB, 0xAB, 0xEF, 0xEF, 0xEF, 0xEF, 0xEF, 0xEF, 0xEF}
 	key := []byte{0x55, 0x55, 0x55, 0x55, 0xCD, 0xCD, 0xCD, 0xCD, 0xCD, 0xCD, 0xCD, 0x55, 0x55, 0x55, 0x55, 0x55}
-	kb, _ := Wrap(kbpk, "", key, nil)
-	_, keyOut, _ := Unwrap(kbpk, kb)
+	processor := ANSIXProcessor{}
+	kb, _ := processor.Wrap(kbpk, "", key, nil)
+	_, keyOut, _ := processor.Unwrap(kbpk, kb)
 
 	assert.Equal(t, key, keyOut)
 }
@@ -38,25 +40,28 @@ func Test_Unwrap_Apple_Proximity(t *testing.T) {
 	// Expected Key
 	key, _ := hex.DecodeString("B9517FF24FD4C71833478D424C29751D")
 
-	_, keyOut, err := Unwrap(kbpk, kb)
+	processor := ANSIXProcessor{}
+	_, keyOut, err := processor.Unwrap(kbpk, kb)
 	assert.Nil(t, err)
 	assert.Equal(t, key, keyOut)
 }
 func Test_Unexpected_Input_Wrap(t *testing.T) {
 	kbpk := []byte{}
 	key := []byte{0xCD, 0xCD, 0xCD, 0xCD, 0xCD, 0xCD, 0xCD, 0xCD, 0xCD, 0xCD, 0xCD, 0xCD, 0xCD, 0xCD, 0xCD, 0xCD}
-	_, err := Wrap(kbpk, "B0096P0TE00N0000", key, nil)
+	processor := ANSIXProcessor{}
+	_, err := processor.Wrap(kbpk, "B0096P0TE00N0000", key, nil)
 	assert.NotNil(t, err)
-	assert.Equal(t, "Key Block Protection Key (KBPK) cannot be empty", err.Error())
+	assert.Equal(t, "Key Block Protection Key (KBPK) cannot be empty.", err.Error())
 }
 
 func Test_Unexpected_Input_UnWrap(t *testing.T) {
 	kbpk := []byte{0xAB, 0xAB, 0xAB, 0xAB, 0xAB, 0xAB, 0xAB, 0xAB, 0xAB, 0xAB, 0xAB, 0xAB, 0xAB, 0xAB, 0xAB, 0xAB}
 	key := []byte{0xCD, 0xCD, 0xCD, 0xCD, 0xCD, 0xCD, 0xCD, 0xCD, 0xCD, 0xCD, 0xCD, 0xCD, 0xCD, 0xCD, 0xCD, 0xCD}
-	kb, _ := Wrap(kbpk, "B0096P0TE00N0000", key, nil)
+	processor := ANSIXProcessor{}
+	kb, _ := processor.Wrap(kbpk, "B0096P0TE00N0000", key, nil)
 
 	kbpk = []byte{}
-	_, _, err := Unwrap(kbpk, kb)
+	_, _, err := processor.Unwrap(kbpk, kb)
 	assert.NotNil(t, err)
-	assert.Equal(t, "Key Block Protection Key (KBPK) cannot be empty", err.Error())
+	assert.Equal(t, "Key Block Protection Key (KBPK) cannot be empty.", err.Error())
 }
