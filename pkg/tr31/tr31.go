@@ -5,7 +5,16 @@ import (
 	"github.com/moov-io/psec/encryption"
 )
 
-func Wrap(kbpk []byte, header string, key []byte, maskedKeyLen *int) (string, error) {
+type KeyBlockProcessor interface {
+	Wrap(kbpk []byte, header string, key []byte, maskedKeyLen *int) (string, error)
+	Unwrap(kbpk []byte, key_block string) (*encryption.Header, []byte, error)
+}
+
+type ANSIXProcessor struct{}
+
+type ISOProcessor struct{}
+
+func (a *ANSIXProcessor) Wrap(kbpk []byte, header string, key []byte, maskedKeyLen *int) (string, error) {
 	//	Wrap key into a TR-31 key block version A, B, C or D.
 	//
 	//		Parameters
@@ -79,7 +88,7 @@ func Wrap(kbpk []byte, header string, key []byte, maskedKeyLen *int) (string, er
 	return result, nil
 }
 
-func Unwrap(kbpk []byte, key_block string) (*encryption.Header, []byte, error) {
+func (a *ANSIXProcessor) Unwrap(kbpk []byte, key_block string) (*encryption.Header, []byte, error) {
 	//	Unwrap key from a TR-31 key block version A, B, C or D.
 	//
 	//		Parameters
