@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/hex"
 	"fmt"
+	"github.com/moov-io/psec/pkg"
 	"github.com/stretchr/testify/assert"
 	"strings"
 	"testing"
@@ -288,7 +289,7 @@ func Test_header_block_load_exceptions(t *testing.T) {
 			_, err := h.Load(tc.header)
 			assert.IsType(t, &HeaderError{}, err)
 			if headerErr, ok := err.(*HeaderError); ok {
-				assert.Contains(t, tc.exceptError, headerErr.message)
+				assert.Contains(t, tc.exceptError, headerErr.Message)
 			}
 		})
 	}
@@ -341,7 +342,7 @@ func Test_header_attributes_exceptions(t *testing.T) {
 			_, actualError := NewHeader(tc.versionID, tc.keyUsage, tc.algorithm, tc.modeOfUse, tc.versionNum, tc.exportability)
 			assert.IsType(t, &HeaderError{}, actualError)
 			if headerErr, ok := actualError.(*HeaderError); ok {
-				assert.Equal(t, tc.expectedError, headerErr.message)
+				assert.Equal(t, tc.expectedError, headerErr.Message)
 			}
 		})
 	}
@@ -413,7 +414,7 @@ func Test_kb_know_values_with_python(t *testing.T) {
 	kb := "A0088M3TC00E000022BD7EC46BBE2A6A73389D1BA6DB63120B386F912839F4679C0523399E4D8D0F1D9A356E"
 	block, _ := NewKeyBlock(kbpkBytes, nil)
 	resultKB, _ := block.Unwrap(kb)
-	assert.Equal(t, keyBytes, resultKB)
+	assert.Equal(t, true, pkg.CompareByte(keyBytes, resultKB))
 }
 func Test_kb_known_values(t *testing.T) {
 	testCases := []struct {
@@ -454,7 +455,7 @@ func Test_kb_known_values(t *testing.T) {
 			}
 			block, _ := NewKeyBlock(kbpkBytes, nil)
 			resultKB, _ := block.Unwrap(tt.kb)
-			assert.Equal(t, keyBytes, resultKB)
+			assert.Equal(t, true, pkg.CompareByte(keyBytes, resultKB))
 		})
 	}
 }
@@ -599,7 +600,7 @@ func Test_invalid_enctript_key_wrap(t *testing.T) {
 			_, actualError := block.Wrap(keyBytes, nil)
 			assert.IsType(t, &KeyBlockError{}, actualError)
 			if headerErr, ok := actualError.(*KeyBlockError); ok {
-				assert.Equal(t, tt.expectedError, headerErr.message)
+				assert.Equal(t, tt.expectedError, headerErr.Message)
 			}
 		})
 	}
@@ -652,7 +653,7 @@ func Test_invalid_enctript_key_uwrap(t *testing.T) {
 			_, actualError := block.Unwrap(tt.kb)
 			assert.IsType(t, &KeyBlockError{}, actualError)
 			if headerErr, ok := actualError.(*KeyBlockError); ok {
-				assert.Equal(t, tt.error, headerErr.message)
+				assert.Equal(t, tt.error, headerErr.Message)
 			}
 		})
 	}

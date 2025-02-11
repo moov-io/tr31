@@ -3,6 +3,7 @@ package encryption
 import (
 	"encoding/hex"
 	"fmt"
+	"github.com/moov-io/psec/pkg"
 	"github.com/stretchr/testify/assert"
 	"testing"
 )
@@ -24,7 +25,7 @@ func TestTDesCBCWith16Key8Data(t *testing.T) {
 
 	decData, err := DecryptTDESCBC(keyBytes, make([]byte, blockSize), encriptData)
 	println(hex.EncodeToString(decData))
-	assert.Equal(t, dataByte, decData)
+	assert.Equal(t, true, pkg.CompareByte(dataByte, decData))
 	//ef99478d77ba6c9d
 }
 func TestTDesCBCWith16Key16Data(t *testing.T) {
@@ -44,7 +45,7 @@ func TestTDesCBCWith16Key16Data(t *testing.T) {
 
 	decData, err := DecryptTDESCBC(keyBytes, make([]byte, blockSize), encriptData)
 	println(hex.EncodeToString(decData))
-	assert.Equal(t, dataByte, decData)
+	assert.Equal(t, true, pkg.CompareByte(dataByte, decData))
 	//ef99478d77ba6c9d4533ed27dd10c637
 }
 func TestTDesCBCWith16Key24Data(t *testing.T) {
@@ -65,8 +66,8 @@ func TestTDesCBCWith16Key24Data(t *testing.T) {
 
 	decData, err := DecryptTDESCBC(keyBytes, make([]byte, blockSize), encriptData)
 	println(hex.EncodeToString(decData))
-	assert.Equal(t, dataByte, decData)
-	assert.Equal(t, pythonData, encriptData)
+	assert.Equal(t, true, pkg.CompareByte(dataByte, decData))
+	assert.Equal(t, true, pkg.CompareByte(pythonData, encriptData))
 	//79bd62f07f33fd73853180bc015a7d24b48b11fa0e286506
 }
 func TestTDesCBCWith16Key48Data(t *testing.T) {
@@ -87,8 +88,8 @@ func TestTDesCBCWith16Key48Data(t *testing.T) {
 
 	decData, err := DecryptTDESCBC(keyBytes, make([]byte, blockSize), encriptData)
 	println(hex.EncodeToString(decData))
-	assert.Equal(t, dataByte, decData)
-	assert.Equal(t, pythonData, encriptData)
+	assert.Equal(t, true, pkg.CompareByte(dataByte, decData))
+	assert.Equal(t, true, pkg.CompareByte(pythonData, encriptData))
 	//79bd62f07f33fd73853180bc015a7d24b48b11fa0e286506
 }
 func TestTDesCBCWith24Key48Data(t *testing.T) {
@@ -109,8 +110,8 @@ func TestTDesCBCWith24Key48Data(t *testing.T) {
 
 	decData, err := DecryptTDESCBC(keyBytes, make([]byte, blockSize), encriptData)
 	println(hex.EncodeToString(decData))
-	assert.Equal(t, dataByte, decData)
-	assert.Equal(t, pythonData, encriptData)
+	assert.Equal(t, true, pkg.CompareByte(dataByte, decData))
+	assert.Equal(t, true, pkg.CompareByte(pythonData, encriptData))
 	//79bd62f07f33fd73853180bc015a7d24b48b11fa0e286506
 }
 func TestDecTDesCBCWith16Key8Data(t *testing.T) {
@@ -128,7 +129,7 @@ func TestDecTDesCBCWith16Key8Data(t *testing.T) {
 	blockSize := 8
 	result, err := DecryptTDESCBC(keyBytes, make([]byte, blockSize), dataByte)
 	println(hex.EncodeToString(result))
-	assert.Equal(t, planText, result)
+	assert.Equal(t, true, pkg.CompareByte(planText, result))
 	//ef99478d77ba6c9d
 }
 func TestDecTDesCBCWith16Key16Data(t *testing.T) {
@@ -146,7 +147,7 @@ func TestDecTDesCBCWith16Key16Data(t *testing.T) {
 	blockSize := 8
 	result, err := DecryptTDESCBC(keyBytes, make([]byte, blockSize), dataByte)
 	println(hex.EncodeToString(result))
-	assert.Equal(t, planText, result)
+	assert.Equal(t, true, pkg.CompareByte(planText, result))
 	//ef99478d77ba6c9d
 }
 func TestDecTDesCBCWith16Key24Data(t *testing.T) {
@@ -164,6 +165,6 @@ func TestDecTDesCBCWith16Key24Data(t *testing.T) {
 	blockSize := 8
 	result, err := DecryptTDESCBC(keyBytes, make([]byte, blockSize), dataByte)
 	println(hex.EncodeToString(result))
-	assert.Equal(t, planText, result)
+	assert.Equal(t, true, pkg.CompareByte(planText, result))
 	//ef99478d77ba6c9d
 }

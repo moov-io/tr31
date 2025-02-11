@@ -1,25 +1,38 @@
 package encryption
 
 import (
-	"bytes"
 	"crypto/rand"
 	"encoding/binary"
 	"encoding/hex"
 	"errors"
 	"fmt"
+	"github.com/moov-io/psec/pkg"
 	"math/big"
 	"strconv"
 	"strings"
 )
 
+const (
+	TR31_VERSION_A string = "A" // TDES variant. Deprecated and should not be used for new applications.
+	TR31_VERSION_B string = "B" // TDES key derivation. Preferred TDES implementation.
+	TR31_VERSION_C string = "C" // TDES variant. Same as A.
+	TR31_VERSION_D string = "D" // AES key derivation
+)
+
+const (
+	ENC_ALGORITHM_TRIPLE_DES string = "T"
+	ENC_ALGORITHM_DES        string = "D"
+	ENC_ALGORITHM_AES        string = "A"
+)
+
 // HeaderError is a custom error type that indicates an error in processing TR-31 header data.
 type HeaderError struct {
-	message string
+	Message string
 }
 
 // KeyBlockError is a custom error type that indicates an error in processing TR-31 key block data.
 type KeyBlockError struct {
-	message string
+	Message string
 }
 
 type Blocks struct {
@@ -46,22 +59,22 @@ type KeyBlock struct {
 
 // NewHeaderError is a constructor function to create a new HeaderError.
 func NewHeaderError(message string) *HeaderError {
-	return &HeaderError{message: message}
+	return &HeaderError{Message: message}
 }
 
 // Error method to implement the error interface for HeaderError.
 func (e *HeaderError) Error() string {
-	return fmt.Sprintf("HeaderError: %s", e.message)
+	return fmt.Sprintf("HeaderError: %s", e.Message)
 }
 
 // NewKeyBlockError is a constructor function to create a new KeyBlockError.
 func NewKeyBlockError(message string) *KeyBlockError {
-	return &KeyBlockError{message: message}
+	return &KeyBlockError{Message: message}
 }
 
 // Error method to implement the error interface for KeyBlockError.
 func (e *KeyBlockError) Error() string {
-	return fmt.Sprintf("KeyBlockError: %s", e.message)
+	return fmt.Sprintf("KeyBlockError: %s", e.Message)
 }
 
 func NewBlocks() *Blocks {
@@ -84,12 +97,12 @@ func (b *Blocks) Get(key string) (string, error) {
 func (b *Blocks) Set(key string, item string) error {
 	if len(key) != 2 || !asciiAlphanumeric(key) {
 		return &HeaderError{
-			message: fmt.Sprintf("Block ID (%s) is invalid. Expecting 2 alphanumeric characters.", key),
+			Message: fmt.Sprintf("Block ID (%s) is invalid. Expecting 2 alphanumeric characters.", key),
 		}
 	}
 	if !asciiPrintable(item) {
 		return &HeaderError{
-			message: fmt.Sprintf("Block %s data is invalid. Expecting ASCII printable characters. Data: '%s'", key, item),
+			Message: fmt.Sprintf("Block %s data is invalid. Expecting ASCII printable characters. Data: '%s'", key, item),
 		}
 	}
 	b._blocks[key] = item
@@ -134,7 +147,7 @@ func (b *Blocks) Dump(algoBlockSize int) (int, string, error) {
 			blocksList = append(blocksList, "0002")
 			blockLen := len(blockData) + 10
 			if blockLen > 0xFFFF {
-				return 0, "", &HeaderError{message: fmt.Sprintf("Block %s length is too long.", blockID)}
+				return 0, "", &HeaderError{Message: fmt.Sprintf("Block %s length is too long.", blockID)}
 			}
 			blocksList = append(blocksList, fmt.Sprintf("%04X", blockLen))
 		}
@@ -157,13 +170,13 @@ func (b *Blocks) parseExtendedLen(blockID string, blocks string, i int) (int, in
 	// Get 2 character long optional block length of length.
 	if len(blocks) < i+2 {
 		return 0, i, &HeaderError{
-			message: fmt.Sprintf("Block %s length of length (%s) is malformed. Expecting 2 hexchars.", blockID, blocks[i:]),
+			Message: fmt.Sprintf("Block %s length of length (%s) is malformed. Expecting 2 hexchars.", blockID, blocks[i:]),
 		}
 	}
 	blockLenLenS := blocks[i : i+2]
 	if len(blockLenLenS) != 2 || !isAsciiHex(blockLenLenS) {
 		return 0, i, &HeaderError{
-			message: fmt.Sprintf("Block %s length of length (%s) is malformed. Expecting 2 hexchars.", blockID, blockLenLenS),
+			Message: fmt.Sprintf("Block %s length of length (%s) is malformed. Expecting 2 hexchars.", blockID, blockLenLenS),
 		}
 	}
 	i += 2
@@ -172,7 +185,7 @@ func (b *Blocks) parseExtendedLen(blockID string, blocks string, i int) (int, in
 	blockLenLen, err := strconv.ParseInt(blockLenLenS, 16, 0)
 	if err != nil {
 		return 0, i, &HeaderError{
-			message: fmt.Sprintf("Failed to parse block length length (%s) for block %s: %v", blockLenLenS, blockID, err),
+			Message: fmt.Sprintf("Failed to parse block length length (%s) for block %s: %v", blockLenLenS, blockID, err),
 		}
 	}
 	blockLenLen *= 2
@@ -180,7 +193,7 @@ func (b *Blocks) parseExtendedLen(blockID string, blocks string, i int) (int, in
 	// Ensure blockLenLen is not zero.
 	if blockLenLen == 0 {
 		return 0, i, &HeaderError{
-			message: fmt.Sprintf("Block %s length of length must not be 0.", blockID),
+			Message: fmt.Sprintf("Block %s length of length must not be 0.", blockID),
 		}
 	}
 	if len(blocks) < i+int(blockLenLen) {
@@ -196,7 +209,7 @@ func (b *Blocks) parseExtendedLen(blockID string, blocks string, i int) (int, in
 	blockLenS := blocks[i : i+int(blockLenLen)]
 	if len(blockLenS) != int(blockLenLen) || !isAsciiHex(blockLenS) {
 		return 0, i, &HeaderError{
-			message: fmt.Sprintf("Block %s length (%s) is malformed. Expecting %d hexchars.", blockID, blockLenS, blockLenLen),
+			Message: fmt.Sprintf("Block %s length (%s) is malformed. Expecting %d hexchars.", blockID, blockLenS, blockLenLen),
 		}
 	}
 
@@ -204,7 +217,7 @@ func (b *Blocks) parseExtendedLen(blockID string, blocks string, i int) (int, in
 	blockLen, err := strconv.ParseInt(blockLenS, 16, 0)
 	if err != nil {
 		return 0, i, &HeaderError{
-			message: fmt.Sprintf("Failed to parse block length (%s) for block %s: %v", blockLenS, blockID, err),
+			Message: fmt.Sprintf("Failed to parse block length (%s) for block %s: %v", blockLenS, blockID, err),
 		}
 	}
 
@@ -220,21 +233,21 @@ func (b *Blocks) Load(blocksNum int, blocks string) (int, error) {
 	i := 0
 	for j := 0; j < blocksNum; j++ {
 		if len(blocks) < 1 {
-			return 0, &HeaderError{message: fmt.Sprintf("Block ID () is malformed.")}
+			return 0, &HeaderError{Message: fmt.Sprintf("Block ID () is malformed.")}
 		}
 		if len(blocks) < 2 || len(blocks[:2]) != 2 {
-			return 0, &HeaderError{message: fmt.Sprintf("Block ID (%v) is malformed.", blocks[i:i+1])}
+			return 0, &HeaderError{Message: fmt.Sprintf("Block ID (%v) is malformed.", blocks[i:i+1])}
 		}
 		if len(blocks) < i+2 {
-			return 0, &HeaderError{message: fmt.Sprintf("Block ID (%v) is malformed.", blocks[i:i+1])}
+			return 0, &HeaderError{Message: fmt.Sprintf("Block ID (%v) is malformed.", blocks[i:i+1])}
 		}
 		blockID := blocks[i : i+2]
 		i += 2
 		if !asciiAlphanumeric(blockID) {
-			return 0, &HeaderError{message: fmt.Sprintf("Block ID (%v) is invalid. Expecting 2 alphanumeric characters.", blockID)}
+			return 0, &HeaderError{Message: fmt.Sprintf("Block ID (%v) is invalid. Expecting 2 alphanumeric characters.", blockID)}
 		}
 		if len(blocks) < i+4 {
-			return 0, &HeaderError{message: fmt.Sprintf("Block %s length (%s) is malformed. Expecting 2 hexchars.", blockID, blocks[i:])}
+			return 0, &HeaderError{Message: fmt.Sprintf("Block %s length (%s) is malformed. Expecting 2 hexchars.", blockID, blocks[i:])}
 		}
 		blockLenS := blocks[i : i+2]
 		i += 2
@@ -254,14 +267,14 @@ func (b *Blocks) Load(blocksNum int, blocks string) (int, error) {
 		}
 
 		if blockLen < 0 {
-			return 0, &HeaderError{message: fmt.Sprintf("Block %s length does not include block ID and length.", blockID)}
+			return 0, &HeaderError{Message: fmt.Sprintf("Block %s length does not include block ID and length.", blockID)}
 		}
 		if len(blocks) < i+blockLen {
 			return 0, &HeaderError{fmt.Sprintf("Block %s data is malformed. Received %d/%d. Block data: '%s'", blockID, len(blocks)-i, blockLen, blocks[i:])}
 		}
 		blockData := blocks[i : i+blockLen]
 		if len(blockData) != blockLen {
-			return 0, &HeaderError{message: fmt.Sprintf("Block %s data is malformed. Received %d/%d. Block data: '%s'", blockID, len(blockData), blockLen, blockData)}
+			return 0, &HeaderError{Message: fmt.Sprintf("Block %s data is malformed. Received %d/%d. Block data: '%s'", blockID, len(blockData), blockLen, blockData)}
 		}
 		i += blockLen
 
@@ -274,7 +287,7 @@ func (b *Blocks) Load(blocksNum int, blocks string) (int, error) {
 }
 func DefaultHeader() *Header {
 	header := &Header{
-		VersionID:                "B",
+		VersionID:                TR31_VERSION_B,
 		KeyUsage:                 "00",
 		Algorithm:                "0",
 		ModeOfUse:                "0",
@@ -282,8 +295,8 @@ func DefaultHeader() *Header {
 		Exportability:            "N",
 		Reserved:                 "00",
 		Blocks:                   *NewBlocks(),
-		_versionIDAlgoBlockSize:  map[string]int{"A": 8, "B": 8, "C": 8, "D": 16},
-		_versionIDKeyBlockMacLen: map[string]int{"A": 4, "B": 8, "C": 4, "D": 16},
+		_versionIDAlgoBlockSize:  map[string]int{TR31_VERSION_A: 8, TR31_VERSION_B: 8, TR31_VERSION_C: 8, TR31_VERSION_D: 16},
+		_versionIDKeyBlockMacLen: map[string]int{TR31_VERSION_A: 4, TR31_VERSION_B: 8, TR31_VERSION_C: 4, TR31_VERSION_D: 16},
 	}
 	return header
 }
@@ -297,8 +310,8 @@ func NewHeader(versionID, keyUsage, algorithm, modeOfUse, versionNum, exportabil
 		Exportability:            "",
 		Reserved:                 "00",
 		Blocks:                   *NewBlocks(),
-		_versionIDAlgoBlockSize:  map[string]int{"A": 8, "B": 8, "C": 8, "D": 16},
-		_versionIDKeyBlockMacLen: map[string]int{"A": 4, "B": 8, "C": 4, "D": 16},
+		_versionIDAlgoBlockSize:  map[string]int{TR31_VERSION_A: 8, TR31_VERSION_B: 8, TR31_VERSION_C: 8, TR31_VERSION_D: 16},
+		_versionIDKeyBlockMacLen: map[string]int{TR31_VERSION_A: 4, TR31_VERSION_B: 8, TR31_VERSION_C: 4, TR31_VERSION_D: 16},
 	}
 	err := header.SetVersionID(versionID)
 	if err != nil {
@@ -331,36 +344,36 @@ func (h *Header) String() string {
 	return fmt.Sprintf("%s%04d%s%s%s%s%s%02d%s%s", h.VersionID, 16+len(blocks), h.KeyUsage, h.Algorithm, h.ModeOfUse, h.VersionNum, h.Exportability, blocksNum, h.Reserved, blocks)
 }
 func (h *Header) SetVersionID(versionID string) error {
-	if versionID != "A" && versionID != "B" && versionID != "C" && versionID != "D" {
-		return &HeaderError{message: fmt.Sprintf("Version ID (%s) is not supported.", versionID)}
+	if versionID != TR31_VERSION_A && versionID != TR31_VERSION_B && versionID != TR31_VERSION_C && versionID != TR31_VERSION_D {
+		return &HeaderError{Message: fmt.Sprintf("Version ID (%s) is not supported.", versionID)}
 	}
 	h.VersionID = versionID
 	return nil
 }
 func (h *Header) SetKeyUsage(keyUsage string) error {
 	if len(keyUsage) != 2 || !asciiAlphanumeric(keyUsage) {
-		return &HeaderError{message: fmt.Sprintf("Key usage (%s) is invalid.", keyUsage)}
+		return &HeaderError{Message: fmt.Sprintf("Key usage (%s) is invalid.", keyUsage)}
 	}
 	h.KeyUsage = keyUsage
 	return nil
 }
 func (h *Header) SetAlgorithm(algorithm string) error {
 	if len(algorithm) != 1 || !asciiAlphanumeric(algorithm) {
-		return &HeaderError{message: fmt.Sprintf("Algorithm (%s) is invalid.", algorithm)}
+		return &HeaderError{Message: fmt.Sprintf("Algorithm (%s) is invalid.", algorithm)}
 	}
 	h.Algorithm = algorithm
 	return nil
 }
 func (h *Header) SetModeOfUse(modeOfUse string) error {
 	if len(modeOfUse) != 1 || !asciiAlphanumeric(modeOfUse) {
-		return &HeaderError{message: fmt.Sprintf("Mode of use (%s) is invalid.", modeOfUse)}
+		return &HeaderError{Message: fmt.Sprintf("Mode of use (%s) is invalid.", modeOfUse)}
 	}
 	h.ModeOfUse = modeOfUse
 	return nil
 }
 func (h *Header) SetVersionNum(versionNum string) error {
 	if len(versionNum) != 2 || !asciiAlphanumeric(versionNum) {
-		return &HeaderError{message: fmt.Sprintf("Version number (%s) is invalid.", versionNum)}
+		return &HeaderError{Message: fmt.Sprintf("Version number (%s) is invalid.", versionNum)}
 	}
 	h.VersionNum = versionNum
 	return nil
@@ -368,7 +381,7 @@ func (h *Header) SetVersionNum(versionNum string) error {
 
 func (h *Header) SetExportability(exportability string) error {
 	if len(exportability) != 1 || !asciiAlphanumeric(exportability) {
-		return &HeaderError{message: fmt.Sprintf("Exportability (%s) is invalid.", exportability)}
+		return &HeaderError{Message: fmt.Sprintf("Exportability (%s) is invalid.", exportability)}
 	}
 	h.Exportability = exportability
 	return nil
@@ -385,7 +398,7 @@ func (h *Header) Dump(keyLen int) (string, error) {
 	kbLen := 16 + 4 + (keyLen * 2) + (padLen * 2) + (h._versionIDKeyBlockMacLen[h.VersionID] * 2) + len(blocks)
 
 	if kbLen > 9999 {
-		return "", &HeaderError{message: fmt.Sprintf("Total key block length (%d) exceeds limit of 9999.", kbLen)}
+		return "", &HeaderError{Message: fmt.Sprintf("Total key block length (%d) exceeds limit of 9999.", kbLen)}
 	}
 
 	return fmt.Sprintf("%s%04d%s%s%s%s%s%02d%s%s", h.VersionID, kbLen, h.KeyUsage, h.Algorithm, h.ModeOfUse, h.VersionNum, h.Exportability, blocksNum, h.Reserved, blocks), nil
@@ -393,11 +406,11 @@ func (h *Header) Dump(keyLen int) (string, error) {
 
 func (h *Header) Load(header string) (int, error) {
 	if !asciiAlphanumeric(header[:16]) {
-		return 0, &HeaderError{message: fmt.Sprintf("Header must be ASCII alphanumeric. Header: '%s'", header[:16])}
+		return 0, &HeaderError{Message: fmt.Sprintf("Header must be ASCII alphanumeric. Header: '%s'", header[:16])}
 	}
 
 	if len(header) < 16 {
-		return 0, &HeaderError{message: fmt.Sprintf("Header length (%d) must be >=16. Header: '%s'", len(header), header[:16])}
+		return 0, &HeaderError{Message: fmt.Sprintf("Header length (%d) must be >=16. Header: '%s'", len(header), header[:16])}
 	}
 	err := h.SetVersionID(string(header[0]))
 	if err != nil {
@@ -426,7 +439,7 @@ func (h *Header) Load(header string) (int, error) {
 	h.Reserved = header[14:16]
 
 	if !asciiNumeric(header[12:14]) {
-		return 0, &HeaderError{message: fmt.Sprintf("Number of blocks (%s) is invalid. Expecting 2 digits.", header[12:14])}
+		return 0, &HeaderError{Message: fmt.Sprintf("Number of blocks (%s) is invalid. Expecting 2 digits.", header[12:14])}
 	}
 
 	blocksNum := int(header[12]-'0')*10 + int(header[13]-'0')
@@ -435,23 +448,23 @@ func (h *Header) Load(header string) (int, error) {
 }
 
 var _versionIDKeyBlockMacLen = map[string]int{
-	"A": 4,
-	"B": 8,
-	"C": 4,
-	"D": 16,
+	TR31_VERSION_A: 4,
+	TR31_VERSION_B: 8,
+	TR31_VERSION_C: 4,
+	TR31_VERSION_D: 16,
 }
 
 var _versionIDAlgoBlockSize = map[string]int{
-	"A": 8,
-	"B": 8,
-	"C": 8,
-	"D": 16,
+	TR31_VERSION_A: 8,
+	TR31_VERSION_B: 8,
+	TR31_VERSION_C: 8,
+	TR31_VERSION_D: 16,
 }
 
 var _algoIDMaxKeyLen = map[string]int{
-	"T": 24,
-	"D": 24,
-	"A": 32,
+	ENC_ALGORITHM_TRIPLE_DES: 24,
+	ENC_ALGORITHM_DES:        24,
+	ENC_ALGORITHM_AES:        32,
 }
 
 func NewKeyBlock(kbpk []byte, header interface{}) (*KeyBlock, error) {
@@ -516,7 +529,7 @@ func (kb *KeyBlock) Unwrap(keyBlock string) ([]byte, error) {
 	// Extract header from the key block
 	if len(keyBlock) < 5 {
 		return nil, &KeyBlockError{
-			message: fmt.Sprintf("Key block header length is malformed. Expecting 4 digits."),
+			Message: fmt.Sprintf("Key block header length is malformed. Expecting 4 digits."),
 		}
 	}
 	headerLen, _ := kb.header.Load(keyBlock)
@@ -524,14 +537,14 @@ func (kb *KeyBlock) Unwrap(keyBlock string) ([]byte, error) {
 	// Verify block length
 	if !asciiNumeric(keyBlock[1:5]) {
 		return nil, &KeyBlockError{
-			message: fmt.Sprintf("Key block header length (%s) is malformed. Expecting 4 digits.", keyBlock[1:5]),
+			Message: fmt.Sprintf("Key block header length (%s) is malformed. Expecting 4 digits.", keyBlock[1:5]),
 		}
 	}
 
 	keyBlockLen := stringToInt(keyBlock[1:5])
 	if keyBlockLen != len(keyBlock) {
 		return nil, &KeyBlockError{
-			message: fmt.Sprintf("Key block header length (%d) doesn't match input data length (%d).", keyBlockLen, len(keyBlock)),
+			Message: fmt.Sprintf("Key block header length (%d) doesn't match input data length (%d).", keyBlockLen, len(keyBlock)),
 		}
 	}
 
@@ -539,7 +552,7 @@ func (kb *KeyBlock) Unwrap(keyBlock string) ([]byte, error) {
 	blockSize := _versionIDAlgoBlockSize[kb.header.VersionID]
 	if len(keyBlock)%blockSize != 0 {
 		return nil, &KeyBlockError{
-			message: fmt.Sprintf("Key block length (%d) must be multiple of %d for key block version %s.", len(keyBlock), blockSize, kb.header.VersionID),
+			Message: fmt.Sprintf("Key block length (%d) must be multiple of %d for key block version %s.", len(keyBlock), blockSize, kb.header.VersionID),
 		}
 	}
 
@@ -555,13 +568,13 @@ func (kb *KeyBlock) Unwrap(keyBlock string) ([]byte, error) {
 			receivedMac, err := hex.DecodeString(string(receivedMacS))
 			if err != nil {
 				return nil, &KeyBlockError{
-					message: fmt.Sprintf("Key block MAC must be valid hexchars. MAC: '%s'", receivedMacS),
+					Message: fmt.Sprintf("Key block MAC must be valid hexchars. MAC: '%s'", receivedMacS),
 				}
 			}
 
 			if len(receivedMac) != algoMacLen {
 				return nil, &KeyBlockError{
-					message: fmt.Sprintf("Key block MAC is malformed. Received %d bytes MAC. Expecting %d bytes for key block version %s. MAC: '%s'", len(receivedMacS), algoMacLen*2, kb.header.VersionID, receivedMacS),
+					Message: fmt.Sprintf("Key block MAC is malformed. Received %d bytes MAC. Expecting %d bytes for key block version %s. MAC: '%s'", len(receivedMacS), algoMacLen*2, kb.header.VersionID, receivedMacS),
 				}
 			}
 
@@ -575,7 +588,7 @@ func (kb *KeyBlock) Unwrap(keyBlock string) ([]byte, error) {
 			keyData, err := hex.DecodeString(string(keyDataS))
 			if err != nil {
 				return nil, &KeyBlockError{
-					message: fmt.Sprintf("Encrypted key must be valid hexchars. Key data: '%s'", keyDataS),
+					Message: fmt.Sprintf("Encrypted key must be valid hexchars. Key data: '%s'", keyDataS),
 				}
 			}
 
@@ -583,7 +596,7 @@ func (kb *KeyBlock) Unwrap(keyBlock string) ([]byte, error) {
 			unwrapFunc, exists := _unwrapDispatch[kb.header.VersionID]
 			if !exists {
 				return nil, &KeyBlockError{
-					message: fmt.Sprintf("Key block version ID (%s) is not supported.", kb.header.VersionID),
+					Message: fmt.Sprintf("Key block version ID (%s) is not supported.", kb.header.VersionID),
 				}
 			}
 
@@ -592,12 +605,12 @@ func (kb *KeyBlock) Unwrap(keyBlock string) ([]byte, error) {
 		} else {
 			// Handle case where the slice is too short
 			return nil, &KeyBlockError{
-				message: fmt.Sprintf("Key block MAC must be valid hexchars. MAC: '%s'", receivedMacS),
+				Message: fmt.Sprintf("Key block MAC must be valid hexchars. MAC: '%s'", receivedMacS),
 			}
 		}
 	} else {
 		return nil, &KeyBlockError{
-			message: fmt.Sprintf("headerLen is out of bounds"),
+			Message: fmt.Sprintf("headerLen is out of bounds"),
 		}
 	}
 }
@@ -607,17 +620,17 @@ type UnwrapFunc func(keyBlock *KeyBlock, str string, data []byte, mac []byte) ([
 
 // Define the dispatch maps for wrap and unwrap functions
 var _wrapDispatch = map[string]WrapFunc{
-	"A": (*KeyBlock).CWrap,
-	"B": (*KeyBlock).BWrap,
-	"C": (*KeyBlock).CWrap,
-	"D": (*KeyBlock).DWrap,
+	TR31_VERSION_A: (*KeyBlock).CWrap,
+	TR31_VERSION_B: (*KeyBlock).BWrap,
+	TR31_VERSION_C: (*KeyBlock).CWrap,
+	TR31_VERSION_D: (*KeyBlock).DWrap,
 }
 
 var _unwrapDispatch = map[string]UnwrapFunc{
-	"A": (*KeyBlock).CUnwrap,
-	"B": (*KeyBlock).BUnwrap,
-	"C": (*KeyBlock).CUnwrap,
-	"D": (*KeyBlock).DUnwrap,
+	TR31_VERSION_A: (*KeyBlock).CUnwrap,
+	TR31_VERSION_B: (*KeyBlock).BUnwrap,
+	TR31_VERSION_C: (*KeyBlock).CUnwrap,
+	TR31_VERSION_D: (*KeyBlock).DUnwrap,
 }
 
 // Version B
@@ -625,7 +638,7 @@ func (kb *KeyBlock) BWrap(header string, key []byte, extraPad int) (string, erro
 	// Ensure KBPK length is valid
 	if len(kb.kbpk) != 16 && len(kb.kbpk) != 24 {
 		return "", &KeyBlockError{
-			message: fmt.Sprintf("KBPK length (%d) must be Double or Triple DES for key block version %s.", len(kb.kbpk), kb.header.VersionID),
+			Message: fmt.Sprintf("KBPK length (%d) must be Double or Triple DES for key block version %s.", len(kb.kbpk), kb.header.VersionID),
 		}
 	}
 
@@ -637,7 +650,9 @@ func (kb *KeyBlock) BWrap(header string, key []byte, extraPad int) (string, erro
 	pad := make([]byte, padLen+extraPad)
 	_, err := rand.Read(pad)
 	if err != nil {
-		return "", err
+		return "", &KeyBlockError{
+			Message: err.Error(),
+		}
 	}
 
 	// Clear key data
@@ -736,7 +751,7 @@ func (kb *KeyBlock) bGenerateMac(kbak []byte, header string, keyData []byte) ([]
 	if len(macData) >= 8 {
 		macData = append(macData[:len(macData)-8], xor(macData[len(macData)-8:], km1)...)
 	} else {
-		return nil, &KeyBlockError{message: fmt.Sprintf("macData is too short for the XOR operation")}
+		return nil, &KeyBlockError{Message: fmt.Sprintf("macData is too short for the XOR operation")}
 	}
 
 	// Generate the CBC-MAC
@@ -791,14 +806,14 @@ func (kb *KeyBlock) BUnwrap(header string, keyData []byte, receivedMac []byte) (
 	// Ensure KBPK length is valid
 	if len(kb.kbpk) != 16 && len(kb.kbpk) != 24 {
 		return nil, &KeyBlockError{
-			message: fmt.Sprintf("KBPK length (%d) must be Double or Triple DES for key block version %s.", len(kb.kbpk), kb.header.VersionID),
+			Message: fmt.Sprintf("KBPK length (%d) must be Double or Triple DES for key block version %s.", len(kb.kbpk), kb.header.VersionID),
 		}
 	}
 
 	// Ensure the key data is valid
 	if len(keyData) < 8 || len(keyData)%8 != 0 {
 		return nil, &KeyBlockError{
-			message: fmt.Sprintf("Encrypted key is malformed. Key data: '%s'", hex.EncodeToString(keyData)),
+			Message: fmt.Sprintf("Encrypted key is malformed. Key data: '%s'", hex.EncodeToString(keyData)),
 		}
 	}
 
@@ -819,9 +834,9 @@ func (kb *KeyBlock) BUnwrap(header string, keyData []byte, receivedMac []byte) (
 	if err != nil {
 		return nil, err
 	}
-	if !bytes.Equal(mac, receivedMac) {
+	if !pkg.CompareByte(mac, receivedMac) {
 		return nil, &KeyBlockError{
-			message: "Key block MAC doesn't match generated MAC.",
+			Message: "Key block MAC doesn't match generated MAC.",
 		}
 	}
 
@@ -831,7 +846,7 @@ func (kb *KeyBlock) BUnwrap(header string, keyData []byte, receivedMac []byte) (
 	// Check if key length is a multiple of 8
 	if keyLength%8 != 0 {
 		return nil, &KeyBlockError{
-			message: "Decrypted key is invalid.",
+			Message: "Decrypted key is invalid.",
 		}
 	}
 
@@ -843,7 +858,7 @@ func (kb *KeyBlock) BUnwrap(header string, keyData []byte, receivedMac []byte) (
 	key := clearKeyData[2 : keyLength+2]
 	if len(key) != int(keyLength) {
 		return nil, &KeyBlockError{
-			message: "Decrypted key is malformed.",
+			Message: "Decrypted key is malformed.",
 		}
 	}
 
@@ -855,7 +870,7 @@ func (kb *KeyBlock) CWrap(header string, key []byte, extraPad int) (string, erro
 	// Ensure KBPK length is valid
 	if len(kb.kbpk) != 8 && len(kb.kbpk) != 16 && len(kb.kbpk) != 24 {
 		return "", &KeyBlockError{
-			message: fmt.Sprintf("KBPK length (%d) must be Single, Double or Triple DES for key block version %s.", len(kb.kbpk), kb.header.VersionID),
+			Message: fmt.Sprintf("KBPK length (%d) must be Single, Double or Triple DES for key block version %s.", len(kb.kbpk), kb.header.VersionID),
 		}
 	}
 
@@ -870,7 +885,9 @@ func (kb *KeyBlock) CWrap(header string, key []byte, extraPad int) (string, erro
 	pad := make([]byte, padLen+extraPad)
 	_, err = rand.Read(pad)
 	if err != nil {
-		return "", err
+		return "", &KeyBlockError{
+			Message: err.Error(),
+		}
 	}
 
 	// Clear key data
@@ -970,7 +987,7 @@ func (kb *KeyBlock) DWrap(header string, key []byte, extraPad int) (string, erro
 	// Ensure KBPK length is valid
 	if len(kb.kbpk) != 16 && len(kb.kbpk) != 24 && len(kb.kbpk) != 32 {
 		return "", &KeyBlockError{
-			message: fmt.Sprintf("KBPK length (%d) must be AES-128, AES-192 or AES-256 for key block version D.", len(kb.kbpk)),
+			Message: fmt.Sprintf("KBPK length (%d) must be AES-128, AES-192 or AES-256 for key block version D.", len(kb.kbpk)),
 		}
 	}
 
@@ -984,7 +1001,9 @@ func (kb *KeyBlock) DWrap(header string, key []byte, extraPad int) (string, erro
 	pad := make([]byte, padLen+extraPad)
 	_, err = rand.Read(pad)
 	if err != nil {
-		return "", err
+		return "", &KeyBlockError{
+			Message: err.Error(),
+		}
 	}
 
 	clearKeyData := make([]byte, 2+len(key)+len(pad))
@@ -1176,7 +1195,7 @@ func (kb *KeyBlock) DUnwrap(header string, keyData, receivedMAC []byte) ([]byte,
 
 	// Validate MAC
 	mac, _ := kb.dGenerateMAC(kbak, []byte(header), clearKeyData)
-	if !bytes.Equal(mac, receivedMAC) {
+	if !pkg.CompareByte(mac, receivedMAC) {
 		return nil, &KeyBlockError{fmt.Sprintf("Key block MAC doesn't match generated MAC.")}
 	}
 

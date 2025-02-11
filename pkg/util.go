@@ -1,6 +1,7 @@
 package pkg
 
 import (
+	"crypto/subtle"
 	"encoding/binary"
 	"encoding/hex"
 	"errors"
@@ -13,6 +14,9 @@ const (
 	MaxTypeHmac  = "hmac"
 )
 
+func CompareByte(src []byte, dst []byte) bool {
+	return subtle.ConstantTimeCompare(src, dst) == 1
+}
 func HexDecode(data string) []byte {
 	if len(data) == 0 {
 		return nil

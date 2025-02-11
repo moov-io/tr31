@@ -1,6 +1,7 @@
 package tr31
 
 import (
+	"fmt"
 	"github.com/moov-io/psec/encryption"
 )
 
@@ -54,9 +55,28 @@ func Wrap(kbpk []byte, header string, key []byte, maskedKeyLen *int) (string, er
 	//	...     key=b"\xCD" * 16)  # doctest: +SKIP
 	//	'B0096P0TE00N0000471D4FBE35E5865BDE20DBF4C15503161F55D681170BF8DD14D01B6822EF8550CB67C569DE8AC048'
 	// Create a new KeyBlock instance
-	kb, _ := encryption.NewKeyBlock(kbpk, header)
+	kb, err := encryption.NewKeyBlock(kbpk, header)
+	if err != nil {
+		if headerErr, ok := err.(*encryption.HeaderError); ok {
+			return "", fmt.Errorf(headerErr.Message)
+		} else if blockErr, ok := err.(*encryption.KeyBlockError); ok {
+			return "", fmt.Errorf(blockErr.Message)
+		} else {
+			return "", err
+		}
+	}
 	// Call the Wrap method on the KeyBlock instance
-	return kb.Wrap(key, maskedKeyLen)
+	result, err := kb.Wrap(key, maskedKeyLen)
+	if err != nil {
+		if headerErr, ok := err.(*encryption.HeaderError); ok {
+			return "", fmt.Errorf(headerErr.Message)
+		} else if blockErr, ok := err.(*encryption.KeyBlockError); ok {
+			return "", fmt.Errorf(blockErr.Message)
+		} else {
+			return "", err
+		}
+	}
+	return result, nil
 }
 
 func Unwrap(kbpk []byte, key_block string) (*encryption.Header, []byte, error) {
@@ -113,7 +133,25 @@ func Unwrap(kbpk []byte, key_block string) (*encryption.Header, []byte, error) {
 	//	>>> header.exportability
 	//	'N'
 
-	kb, _ := encryption.NewKeyBlock(kbpk, nil)
+	kb, err := encryption.NewKeyBlock(kbpk, nil)
+	if err != nil {
+		if headerErr, ok := err.(*encryption.HeaderError); ok {
+			return nil, nil, fmt.Errorf(headerErr.Message)
+		} else if blockErr, ok := err.(*encryption.KeyBlockError); ok {
+			return nil, nil, fmt.Errorf(blockErr.Message)
+		} else {
+			return nil, nil, err
+		}
+	}
 	unwrappedData, err := kb.Unwrap(key_block)
-	return kb.GetHeader(), unwrappedData, err
+	if err != nil {
+		if headerErr, ok := err.(*encryption.HeaderError); ok {
+			return nil, nil, fmt.Errorf(headerErr.Message)
+		} else if blockErr, ok := err.(*encryption.KeyBlockError); ok {
+			return nil, nil, fmt.Errorf(blockErr.Message)
+		} else {
+			return nil, nil, err
+		}
+	}
+	return kb.GetHeader(), unwrappedData, nil
 }
