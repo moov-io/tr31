@@ -1,3 +1,6 @@
+// Package encryption implements the TR-31 (ANSI X9.143) key block standard for secure cryptographic key exchange.
+// TR-31 provides a method for secure exchange of cryptographic keys by wrapping them in a secure key block
+// that includes metadata about the key's usage, algorithm, and other attributes.
 package encryption
 
 import (
@@ -6,25 +9,36 @@ import (
 	"encoding/hex"
 	"errors"
 	"fmt"
-	"github.com/moov-io/psec/pkg"
 	"math/big"
 	"strconv"
 	"strings"
+
+	"github.com/moov-io/psec/pkg"
 )
 
+// TR-31 version identifiers
 const (
-	TR31_VERSION_A string = "A" // TDES variant. Deprecated and should not be used for new applications.
-	TR31_VERSION_B string = "B" // TDES key derivation. Preferred TDES implementation.
-	TR31_VERSION_C string = "C" // TDES variant. Same as A.
-	TR31_VERSION_D string = "D" // AES key derivation
+	// TR31_VERSION_A is a TDES variant, deprecated and not recommended for new applications
+	TR31_VERSION_A string = "A"
+	// TR31_VERSION_B is a TDES key derivation, preferred TDES implementation
+	TR31_VERSION_B string = "B"
+	// TR31_VERSION_C is a TDES variant, same as version A
+	TR31_VERSION_C string = "C"
+	// TR31_VERSION_D is an AES key derivation
+	TR31_VERSION_D string = "D"
 )
 
+// Supported encryption algorithms
 const (
+	// ENC_ALGORITHM_TRIPLE_DES is Triple DES encryption
 	ENC_ALGORITHM_TRIPLE_DES string = "T"
-	ENC_ALGORITHM_DES        string = "D"
-	ENC_ALGORITHM_AES        string = "A"
+	// ENC_ALGORITHM_DES is Single DES encryption (legacy)
+	ENC_ALGORITHM_DES string = "D"
+	// ENC_ALGORITHM_AES is AES encryption
+	ENC_ALGORITHM_AES string = "A"
 )
 
+// Error message constants for various validation and processing errors
 const (
 	ErrKeyNotFound                 string = "Key not found"
 	ErrVersionID                   string = "Version ID (%s) is not supported."
@@ -82,29 +96,40 @@ type KeyBlockError struct {
 	Message string
 }
 
+// Blocks represents a collection of optional blocks in a TR-31 key block
 type Blocks struct {
 	_blocks map[string]string
 }
 
+// Header represents the TR-31 key block header which contains metadata about the wrapped key
 type Header struct {
-	VersionID                string
-	KeyUsage                 string
-	Algorithm                string
-	ModeOfUse                string
-	VersionNum               string
-	Exportability            string
-	Reserved                 string
+	// VersionID is the key block version identifier (A, B, C, or D)
+	VersionID string
+	// KeyUsage is a two-character code defining the key's cryptographic purpose
+	KeyUsage string
+	// Algorithm is a single character indicating the key's algorithm
+	Algorithm string
+	// ModeOfUse is a single character indicating how the key may be used
+	ModeOfUse string
+	// VersionNum is a two-character version or export counter
+	VersionNum string
+	// Exportability is a single character indicating key export restrictions
+	Exportability string
+	// Reserved is two characters reserved for future use
+	Reserved string
+	// Blocks is a collection of optional blocks containing additional metadata
 	Blocks                   Blocks
-	_versionIDAlgoBlockSize  map[string]int
-	_versionIDKeyBlockMacLen map[string]int
+	_versionIDAlgoBlockSize  map[string]int // Maps version ID to algorithm block size
+	_versionIDKeyBlockMacLen map[string]int // Maps version ID to MAC length
 }
 
+// KeyBlock represents a complete TR-31 key block containing a wrapped key and its metadata
 type KeyBlock struct {
-	kbpk   []byte
-	header *Header
+	kbpk   []byte  // Key Block Protection Key used for wrapping/unwrapping
+	header *Header // Key block header containing metadata
 }
 
-// NewHeaderError is a constructor function to create a new HeaderError.
+// NewHeaderError creates a new HeaderError with the specified message
 func NewHeaderError(message string) *HeaderError {
 	return &HeaderError{Message: message}
 }
@@ -114,7 +139,7 @@ func (e *HeaderError) Error() string {
 	return fmt.Sprintf("HeaderError: %s", e.Message)
 }
 
-// NewKeyBlockError is a constructor function to create a new KeyBlockError.
+// NewKeyBlockError creates a new KeyBlockError with the specified message
 func NewKeyBlockError(message string) *KeyBlockError {
 	return &KeyBlockError{Message: message}
 }
@@ -124,16 +149,19 @@ func (e *KeyBlockError) Error() string {
 	return fmt.Sprintf("KeyBlockError: %s", e.Message)
 }
 
+// NewBlocks creates a new empty Blocks container
 func NewBlocks() *Blocks {
 	return &Blocks{
 		_blocks: make(map[string]string),
 	}
 }
 
+// Len returns the number of blocks in the container
 func (b *Blocks) Len() int {
 	return len(b._blocks)
 }
 
+// Get retrieves a block's data by its ID
 func (b *Blocks) Get(key string) (string, error) {
 	if value, exists := b._blocks[key]; exists {
 		return value, nil
@@ -141,6 +169,9 @@ func (b *Blocks) Get(key string) (string, error) {
 	return "", errors.New(ErrKeyNotFound)
 }
 
+// Set adds or updates a block with the given ID and data
+// Validates that the block ID is two alphanumeric characters
+// and the data contains only printable ASCII characters
 func (b *Blocks) Set(key string, item string) error {
 	if len(key) != 2 || !asciiAlphanumeric(key) {
 		return &HeaderError{
@@ -156,10 +187,12 @@ func (b *Blocks) Set(key string, item string) error {
 	return nil
 }
 
+// Delete removes a block from the container by its ID
 func (b *Blocks) Delete(key string) {
 	delete(b._blocks, key)
 }
 
+// Iter returns a channel that iterates over the block IDs in the container
 func (b *Blocks) Iter() chan string {
 	ch := make(chan string)
 	go func() {
@@ -171,15 +204,18 @@ func (b *Blocks) Iter() chan string {
 	return ch
 }
 
+// Contains checks if a block with the given ID exists in the container
 func (b *Blocks) Contains(key string) bool {
 	_, exists := b._blocks[key]
 	return exists
 }
 
+// Repr returns a string representation of the Blocks container
 func (b *Blocks) Repr() string {
 	return fmt.Sprintf("%v", b._blocks)
 }
 
+// Dump returns a string representation of the Blocks container
 func (b *Blocks) Dump(algoBlockSize int) (int, string, error) {
 	blocksList := make([]string, 0, len(b._blocks)*3)
 	for blockID, blockData := range b._blocks {
@@ -274,6 +310,7 @@ func (b *Blocks) parseExtendedLen(blockID string, blocks string, i int) (int, in
 	return blockDataLen, i + int(blockLenLen), nil
 }
 
+// Load parses a string of blocks and loads them into the container
 func (b *Blocks) Load(blocksNum int, blocks string) (int, error) {
 	b._blocks = make(map[string]string)
 
@@ -332,6 +369,8 @@ func (b *Blocks) Load(blocksNum int, blocks string) (int, error) {
 
 	return i, nil
 }
+
+// DefaultHeader creates a new Header with default values
 func DefaultHeader() *Header {
 	header := &Header{
 		VersionID:                TR31_VERSION_B,
@@ -347,6 +386,8 @@ func DefaultHeader() *Header {
 	}
 	return header
 }
+
+// NewHeader creates a new Header with the specified version ID, key usage, algorithm, mode of use, version number, and exportability
 func NewHeader(versionID, keyUsage, algorithm, modeOfUse, versionNum, exportability string) (*Header, error) {
 	header := &Header{
 		VersionID:                "",
@@ -386,10 +427,14 @@ func NewHeader(versionID, keyUsage, algorithm, modeOfUse, versionNum, exportabil
 	}
 	return header, nil
 }
+
+// String returns a string representation of the Header
 func (h *Header) String() string {
 	blocksNum, blocks, _ := h.Blocks.Dump(h._versionIDAlgoBlockSize[h.VersionID])
 	return fmt.Sprintf("%s%04d%s%s%s%s%s%02d%s%s", h.VersionID, 16+len(blocks), h.KeyUsage, h.Algorithm, h.ModeOfUse, h.VersionNum, h.Exportability, blocksNum, h.Reserved, blocks)
 }
+
+// SetVersionID sets the version ID of the header
 func (h *Header) SetVersionID(versionID string) error {
 	if versionID != TR31_VERSION_A && versionID != TR31_VERSION_B && versionID != TR31_VERSION_C && versionID != TR31_VERSION_D {
 		return &HeaderError{Message: fmt.Sprintf(ErrVersionID, versionID)}
@@ -397,6 +442,8 @@ func (h *Header) SetVersionID(versionID string) error {
 	h.VersionID = versionID
 	return nil
 }
+
+// SetKeyUsage sets the key usage of the header
 func (h *Header) SetKeyUsage(keyUsage string) error {
 	if len(keyUsage) != 2 || !asciiAlphanumeric(keyUsage) {
 		return &HeaderError{Message: fmt.Sprintf(HeaderErrKeyUsage, keyUsage)}
@@ -404,6 +451,8 @@ func (h *Header) SetKeyUsage(keyUsage string) error {
 	h.KeyUsage = keyUsage
 	return nil
 }
+
+// SetAlgorithm sets the algorithm of the header
 func (h *Header) SetAlgorithm(algorithm string) error {
 	if len(algorithm) != 1 || !asciiAlphanumeric(algorithm) {
 		return &HeaderError{Message: fmt.Sprintf(HeaderErrAlgorithm, algorithm)}
@@ -411,6 +460,8 @@ func (h *Header) SetAlgorithm(algorithm string) error {
 	h.Algorithm = algorithm
 	return nil
 }
+
+// SetModeOfUse sets the mode of use of the header
 func (h *Header) SetModeOfUse(modeOfUse string) error {
 	if len(modeOfUse) != 1 || !asciiAlphanumeric(modeOfUse) {
 		return &HeaderError{Message: fmt.Sprintf(HeaderErrModeOfUse, modeOfUse)}
@@ -418,6 +469,8 @@ func (h *Header) SetModeOfUse(modeOfUse string) error {
 	h.ModeOfUse = modeOfUse
 	return nil
 }
+
+// SetVersionNum sets the version number of the header
 func (h *Header) SetVersionNum(versionNum string) error {
 	if len(versionNum) != 2 || !asciiAlphanumeric(versionNum) {
 		return &HeaderError{Message: fmt.Sprintf(HeaderErrVersionNumber, versionNum)}
@@ -426,6 +479,7 @@ func (h *Header) SetVersionNum(versionNum string) error {
 	return nil
 }
 
+// SetExportability sets the exportability of the header
 func (h *Header) SetExportability(exportability string) error {
 	if len(exportability) != 1 || !asciiAlphanumeric(exportability) {
 		return &HeaderError{Message: fmt.Sprintf(HeaderErrExportability, exportability)}
@@ -433,10 +487,13 @@ func (h *Header) SetExportability(exportability string) error {
 	h.Exportability = exportability
 	return nil
 }
+
+// GetBlocks returns the blocks in the header
 func (h *Header) GetBlocks() map[string]string {
 	return h.Blocks._blocks
 }
 
+// Dump returns a string representation of the Header
 func (h *Header) Dump(keyLen int) (string, error) {
 	algoBlockSize := h._versionIDAlgoBlockSize[h.VersionID]
 	padLen := algoBlockSize - ((2 + keyLen) % algoBlockSize)
@@ -451,6 +508,7 @@ func (h *Header) Dump(keyLen int) (string, error) {
 	return fmt.Sprintf("%s%04d%s%s%s%s%s%02d%s%s", h.VersionID, kbLen, h.KeyUsage, h.Algorithm, h.ModeOfUse, h.VersionNum, h.Exportability, blocksNum, h.Reserved, blocks), nil
 }
 
+// Load parses a string of header data and loads it into the Header
 func (h *Header) Load(header string) (int, error) {
 	if len(header) < 16 {
 		return 0, &HeaderError{Message: fmt.Sprintf(HeaderErrLenLimit, len(header), header[:16])}
@@ -513,6 +571,7 @@ var _algoIDMaxKeyLen = map[string]int{
 	ENC_ALGORITHM_AES:        32,
 }
 
+// NewKeyBlock creates a new KeyBlock with the specified Key Block Protection Key (KBPK) and header
 func NewKeyBlock(kbpk []byte, header interface{}) (*KeyBlock, error) {
 	// Validate the input for kbpk and header
 	if len(kbpk) == 0 {
@@ -537,12 +596,17 @@ func NewKeyBlock(kbpk []byte, header interface{}) (*KeyBlock, error) {
 	return kb, nil
 }
 
+// String returns a string representation of the KeyBlock
 func (kb *KeyBlock) String() string {
 	return fmt.Sprintf("%v", kb.header)
 }
+
+// GetHeader returns the header of the KeyBlock
 func (kb *KeyBlock) GetHeader() *Header {
 	return kb.header
 }
+
+// Wrap encrypts a key using the KeyBlock Protection Key (KBPK) and returns the wrapped key block
 func (kb *KeyBlock) Wrap(key []byte, maskedKeyLen *int) (string, error) {
 	// Check if header version is supported
 	if kb == nil {
@@ -571,6 +635,8 @@ func (kb *KeyBlock) Wrap(key []byte, maskedKeyLen *int) (string, error) {
 	wrapData, err := wrapFunc(kb, headerDump, key, *maskedKeyLen-len(key))
 	return wrapData, err
 }
+
+// Unwrap decrypts a key from a wrapped key block using the KeyBlock Protection Key (KBPK)
 func (kb *KeyBlock) Unwrap(keyBlock string) ([]byte, error) {
 	// Extract header from the key block
 	if len(keyBlock) < 5 {
@@ -661,7 +727,10 @@ func (kb *KeyBlock) Unwrap(keyBlock string) ([]byte, error) {
 	}
 }
 
+// WrapFunc is a function type that wraps a key using the KeyBlock Protection Key (KBPK)
 type WrapFunc func(keyBlock *KeyBlock, header string, key []byte, extraPad int) (string, error)
+
+// UnwrapFunc is a function type that unwraps a key from a wrapped key block using the KeyBlock Protection Key (KBPK)
 type UnwrapFunc func(keyBlock *KeyBlock, str string, data []byte, mac []byte) ([]byte, error)
 
 // Define the dispatch maps for wrap and unwrap functions
@@ -679,7 +748,7 @@ var _unwrapDispatch = map[string]UnwrapFunc{
 	TR31_VERSION_D: (*KeyBlock).DUnwrap,
 }
 
-// Version B
+// BWrap wraps a key using the KeyBlock Protection Key (KBPK) and returns the wrapped key block
 func (kb *KeyBlock) BWrap(header string, key []byte, extraPad int) (string, error) {
 	// Ensure KBPK length is valid
 	if extraPad < 0 {
@@ -725,7 +794,7 @@ func (kb *KeyBlock) BWrap(header string, key []byte, extraPad int) (string, erro
 	return header + hex.EncodeToString(encKey) + hex.EncodeToString(mac), nil
 }
 
-// Derive Key Block Encryption and Authentication Keys
+// BDerive derives the Key Block Encryption and Authentication Keys (KBEK, KBAK) using the Key Block Protection Key (KBPK)
 func (kb *KeyBlock) BDerive() ([]byte, []byte, error) {
 	// Key Derivation data
 	// byte 0 = a counter increment for each block of kbpk, start at 1
@@ -852,7 +921,7 @@ func (kb *KeyBlock) deriveDesCmacSubkey(key []byte) ([]byte, []byte, error) {
 	return k1, k2, nil
 }
 
-// _b_unwrap unwraps a key from TR-31 key block version B
+// BWUnwrap unwraps a key from a wrapped key block using the KeyBlock Protection Key (KBPK) version B
 func (kb *KeyBlock) BUnwrap(header string, keyData []byte, receivedMac []byte) ([]byte, error) {
 	// Ensure KBPK length is valid
 	if len(kb.kbpk) != 16 && len(kb.kbpk) != 24 {
@@ -916,7 +985,7 @@ func (kb *KeyBlock) BUnwrap(header string, keyData []byte, receivedMac []byte) (
 	return key, nil
 }
 
-// _cWrap wraps the key into a TR-31 key block version A or C.
+// CWrap wraps a key using the KeyBlock Protection Key (KBPK) and returns the wrapped key block version A or C.
 func (kb *KeyBlock) CWrap(header string, key []byte, extraPad int) (string, error) {
 	// Ensure KBPK length is valid
 	if len(kb.kbpk) != 8 && len(kb.kbpk) != 16 && len(kb.kbpk) != 24 {
@@ -1222,6 +1291,8 @@ func (kb *KeyBlock) deriveAESCMACSubkeys(key []byte) ([]byte, []byte, error) {
 	}
 	return k1, k2, nil
 }
+
+// DUnwrap unwraps the key from a TR-31 key block version D
 func (kb *KeyBlock) DUnwrap(header string, keyData, receivedMAC []byte) ([]byte, error) {
 	// Check for valid KBPK length (AES-128, AES-192, AES-256)
 	if len(kb.kbpk) != 16 && len(kb.kbpk) != 24 && len(kb.kbpk) != 32 {
