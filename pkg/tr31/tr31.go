@@ -57,8 +57,6 @@ func (a *ANSIXProcessor) Wrap(kbpk []byte, header string, key []byte, maskedKeyL
 	//
 	//		Examples
 	//	--------
-	//	>>> import psec
-	//	>>> psec.tr31.wrap(
 	//	...     kbpk=b"\xAB" * 16,
 	//	...     header="B0096P0TE00N0000",
 	//	...     key=b"\xCD" * 16)  # doctest: +SKIP
@@ -123,8 +121,7 @@ func (a *ANSIXProcessor) Unwrap(kbpk []byte, key_block string) (*encryption.Head
 	//
 	//		Examples
 	//	--------
-	//	>>> import psec
-	//	>>> header, key = psec.tr31.unwrap(
+	//	>>> header, key = tr31.unwrap(
 	//	...     kbpk=b"\xAB" * 16,
 	//	...     key_block="B0096P0TE00N0000471D4FBE35E5865BDE20DBF4C15503161F55D681170BF8DD14D01B6822EF8550CB67C569DE8AC048")
 	//	>>> key

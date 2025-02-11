@@ -45,7 +45,7 @@ func main() {
 	}
 
 	logger := log.NewLogger(kitlogger)
-	logger.Logf("Starting dukpt server version %s", psec.Version)
+	logger.Logf("Starting dukpt server version %s", tr31.Version)
 
 	// Setup underlying dukpt service
 	r := server.NewRepositoryInMemory(logger)
@@ -97,7 +97,7 @@ func main() {
 
 	// Admin server (metrics and debugging)
 	adminServer, _ := admin.New(admin.Opts{Addr: *adminAddr})
-	adminServer.AddVersionHandler(psec.Version) // Setup 'GET /version'
+	adminServer.AddVersionHandler(tr31.Version) // Setup 'GET /version'
 	go func() {
 		logger.Logf("admin listening on %s", adminServer.BindAddr())
 		if err := adminServer.Listen(); err != nil {

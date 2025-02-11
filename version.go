@@ -15,7 +15,7 @@
 // specific language governing permissions and limitations
 // under the License.
 
-package psec
+package tr31
 
 // Version Number
 const Version = "v1.0.0"
