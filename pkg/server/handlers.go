@@ -88,7 +88,7 @@ func findMachineEndpoint(s Service) endpoint.Endpoint {
 }
 
 type createMachineRequest struct {
-	BaseKey   BaseKey
+	vaultAuth Vault
 	requestID string
 }
 
@@ -103,7 +103,7 @@ func decodeCreateMachineRequest(_ context.Context, request *http.Request) (inter
 		requestID: moovhttp.GetRequestID(request),
 	}
 
-	if err := bindJSON(request, &req.BaseKey); err != nil {
+	if err := bindJSON(request, &req.vaultAuth); err != nil {
 		return nil, err
 	}
 
@@ -119,7 +119,7 @@ func createMachineEndpoint(s Service) endpoint.Endpoint {
 
 		resp := createMachineResponse{}
 
-		m := NewMachine(req.BaseKey)
+		m := NewMachine(req.vaultAuth)
 		err := s.CreateMachine(m)
 		if err != nil {
 			resp.Err = err
@@ -133,278 +133,11 @@ func createMachineEndpoint(s Service) endpoint.Endpoint {
 	}
 }
 
-type generateKSNRequest struct {
-	requestID string
-	ik        string
-}
-
-type generateKSNResponse struct {
-	KSN string `json:"ksn"`
-	Err error  `json:"error"`
-}
-
-func decodeGenerateKSNRequest(_ context.Context, request *http.Request) (interface{}, error) {
-	req := generateKSNRequest{
-		requestID: moovhttp.GetRequestID(request),
-	}
-
-	req.ik = mux.Vars(request)["ik"]
-	return req, nil
-}
-
-func generateKSNEndpoint(s Service) endpoint.Endpoint {
-	return func(_ context.Context, request interface{}) (interface{}, error) {
-		req, ok := request.(generateKSNRequest)
-		if !ok {
-			return generateKSNResponse{Err: ErrFoundABug}, ErrFoundABug
-		}
-
-		resp := generateKSNResponse{}
-		m, err := s.MakeNextKSN(req.ik)
-		if err != nil {
-			resp.Err = err
-			return resp, nil
-		}
-
-		resp.KSN = m.CurrentKSN
-		return resp, nil
-	}
-}
-
-type encryptPinRequest struct {
-	requestID string
-	ik        string
-	pin       string
-	pan       string
-	format    string
-}
-
-type encryptPinResponse struct {
-	Encrypted string `json:"encrypted"`
-	Err       error  `json:"error"`
-}
-
-func decodeEncryptPinRequest(_ context.Context, request *http.Request) (interface{}, error) {
-	req := encryptPinRequest{
-		requestID: moovhttp.GetRequestID(request),
-	}
-
-	req.ik = mux.Vars(request)["ik"]
-
-	type requestParam struct {
-		Pin    string
-		Pan    string
-		Format string
-	}
-
-	reqParams := requestParam{}
-	if err := bindJSON(request, &reqParams); err != nil {
-		return nil, err
-	}
-
-	req.pin = reqParams.Pin
-	req.pan = reqParams.Pan
-	req.format = reqParams.Format
-
-	return req, nil
-}
-
-func encryptPinEndpoint(s Service) endpoint.Endpoint {
-	return func(_ context.Context, request interface{}) (interface{}, error) {
-		req, ok := request.(encryptPinRequest)
-		if !ok {
-			return encryptPinResponse{Err: ErrFoundABug}, ErrFoundABug
-		}
-
-		resp := encryptPinResponse{}
-		encrypted, err := s.EncryptPin(req.ik, req.pin, req.pan, req.format)
-		if err != nil {
-			resp.Err = err
-			return resp, nil
-		}
-
-		resp.Encrypted = encrypted
-		return resp, nil
-	}
-}
-
-type decryptPinRequest struct {
-	requestID string
-	ik        string
-	encrypted string
-	pan       string
-	format    string
-}
-
-type decryptPinResponse struct {
-	Decrypted string `json:"decrypted"`
-	Err       error  `json:"error"`
-}
-
-func decodeDecryptPinRequest(_ context.Context, request *http.Request) (interface{}, error) {
-	req := decryptPinRequest{
-		requestID: moovhttp.GetRequestID(request),
-	}
-
-	req.ik = mux.Vars(request)["ik"]
-
-	type requestParam struct {
-		Encrypted string
-		Pan       string
-		Format    string
-	}
-
-	reqParams := requestParam{}
-	if err := bindJSON(request, &reqParams); err != nil {
-		return nil, err
-	}
-
-	req.encrypted = reqParams.Encrypted
-	req.pan = reqParams.Pan
-	req.format = reqParams.Format
-
-	return req, nil
-}
-
-func decryptPinEndpoint(s Service) endpoint.Endpoint {
-	return func(_ context.Context, request interface{}) (interface{}, error) {
-		req, ok := request.(decryptPinRequest)
-		if !ok {
-			return decryptPinResponse{Err: ErrFoundABug}, ErrFoundABug
-		}
-
-		resp := decryptPinResponse{}
-		decrypted, err := s.EncryptPin(req.ik, req.encrypted, req.pan, req.format)
-		if err != nil {
-			resp.Err = err
-			return resp, nil
-		}
-
-		resp.Decrypted = decrypted
-		return resp, nil
-	}
-}
-
-type generateMacRequest struct {
-	requestID string
-	ik        string
-	action    string
-	data      string
-	macType   string
-}
-
-type generateMacResponse struct {
-	Generated string `json:"generated"`
-	Err       error  `json:"error"`
-}
-
-func decodeGenerateMacRequest(_ context.Context, request *http.Request) (interface{}, error) {
-	req := generateMacRequest{
-		requestID: moovhttp.GetRequestID(request),
-	}
-
-	req.ik = mux.Vars(request)["ik"]
-
-	type requestParam struct {
-		Action  string
-		Data    string
-		MacType string
-	}
-
-	reqParams := requestParam{}
-	if err := bindJSON(request, &reqParams); err != nil {
-		return nil, err
-	}
-
-	req.action = reqParams.Action
-	req.data = reqParams.Data
-	req.macType = reqParams.MacType
-
-	return req, nil
-}
-
-func generateMacEndpoint(s Service) endpoint.Endpoint {
-	return func(_ context.Context, request interface{}) (interface{}, error) {
-		req, ok := request.(generateMacRequest)
-		if !ok {
-			return generateMacResponse{Err: ErrFoundABug}, ErrFoundABug
-		}
-
-		resp := generateMacResponse{}
-		encrypted, err := s.GenerateMac(req.ik, req.data, req.action, req.macType)
-		if err != nil {
-			resp.Err = err
-			return resp, nil
-		}
-
-		resp.Generated = encrypted
-		return resp, nil
-	}
-}
-
-type encryptDataRequest struct {
-	requestID string
-	ik        string
-	action    string
-	data      string
-	iv        string
-}
-
-type encryptDataResponse struct {
-	Encrypted string `json:"encrypted"`
-	Err       error  `json:"error"`
-}
-
-func decodeEncryptDataRequest(_ context.Context, request *http.Request) (interface{}, error) {
-	req := encryptDataRequest{
-		requestID: moovhttp.GetRequestID(request),
-	}
-
-	req.ik = mux.Vars(request)["ik"]
-
-	type requestParam struct {
-		Action string
-		Data   string
-		Iv     string
-	}
-
-	reqParams := requestParam{}
-	if err := bindJSON(request, &reqParams); err != nil {
-		return nil, err
-	}
-
-	req.action = reqParams.Action
-	req.data = reqParams.Data
-	req.iv = reqParams.Iv
-
-	return req, nil
-}
-
-func encryptDataEndpoint(s Service) endpoint.Endpoint {
-	return func(_ context.Context, request interface{}) (interface{}, error) {
-		req, ok := request.(encryptDataRequest)
-		if !ok {
-			return encryptDataResponse{Err: ErrFoundABug}, ErrFoundABug
-		}
-
-		resp := encryptDataResponse{}
-		encrypted, err := s.EncryptData(req.ik, req.data, req.action, req.iv)
-		if err != nil {
-			resp.Err = err
-			return resp, nil
-		}
-
-		resp.Encrypted = encrypted
-		return resp, nil
-	}
-}
-
 type decryptDataRequest struct {
 	requestID string
 	ik        string
-	action    string
-	data      string
-	iv        string
+	kekId     string
+	keyBlock  string
 }
 
 type decryptDataResponse struct {
@@ -420,9 +153,8 @@ func decodeDecryptDataRequest(_ context.Context, request *http.Request) (interfa
 	req.ik = mux.Vars(request)["ik"]
 
 	type requestParam struct {
-		Action string
-		Data   string
-		Iv     string
+		kekId    string
+		keyBlock string
 	}
 
 	reqParams := requestParam{}
@@ -430,10 +162,8 @@ func decodeDecryptDataRequest(_ context.Context, request *http.Request) (interfa
 		return nil, err
 	}
 
-	req.action = reqParams.Action
-	req.data = reqParams.Data
-	req.iv = reqParams.Iv
-
+	req.kekId = reqParams.kekId
+	req.keyBlock = reqParams.keyBlock
 	return req, nil
 }
 
@@ -445,7 +175,7 @@ func decryptDataEndpoint(s Service) endpoint.Endpoint {
 		}
 
 		resp := decryptDataResponse{}
-		decrypted, err := s.EncryptData(req.ik, req.data, req.action, req.iv)
+		decrypted, err := s.DecryptData(req.ik, req.kekId, req.keyBlock)
 		if err != nil {
 			resp.Err = err
 			return resp, nil

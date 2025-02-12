@@ -4,24 +4,16 @@ import (
 	"time"
 )
 
-type BaseKey struct {
-	Algorithm         string
-	AlgorithmKey      string
-	BaseDerivativeKey string
-	KeySerialNumber   string
+type Vault struct {
+	VaultAddress string
+	VaultToken   string
 }
-
 type Machine struct {
-	BaseKey
-	InitialKey     string
-	CurrentKSN     string
-	TransactionKey string
-	CreatedAt      time.Time
+	vaultAuth  Vault
+	InitialKey string
+	CreatedAt  time.Time
 }
 
-func NewMachine(b BaseKey) *Machine {
-	return &Machine{
-		BaseKey:    b,
-		CurrentKSN: b.KeySerialNumber,
-	}
+func NewMachine(vaultAuth Vault) *Machine {
+	return &Machine{}
 }

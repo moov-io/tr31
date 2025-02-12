@@ -38,7 +38,9 @@ func GenerateCBCMAC(key []byte, data []byte, padding int, length int, algorithm 
 		blockSize = 16
 		implementation = EncryptAESCBC
 	}
-
+	if padding > 3 {
+		return nil, fmt.Errorf("Specify valid padding method: 1, 2 or 3.")
+	}
 	paddedData, err := _padDispatch[padding](data, blockSize)
 	if err != nil {
 		return nil, fmt.Errorf("invalid padding method: %v", err)
@@ -74,6 +76,9 @@ func generateRetailMAC(key1 []byte, key2 []byte, data []byte, padding int, lengt
 }
 
 func padISO1(data []byte, blockSize int) ([]byte, error) {
+	if blockSize <= 0 {
+		blockSize = 8 // Default block size
+	}
 	remainder := len(data) % blockSize
 	if remainder > 0 {
 		data = append(data, make([]byte, blockSize-remainder)...)
@@ -87,13 +92,23 @@ func padISO1(data []byte, blockSize int) ([]byte, error) {
 }
 
 func padISO2(data []byte, blockSize int) ([]byte, error) {
+	if blockSize <= 0 {
+		blockSize = 8 // Default block size
+	}
 	data = append(data, 0x80)
 	return padISO1(data, blockSize)
 }
 
 func padISO3(data []byte, blockSize int) ([]byte, error) {
+	if blockSize <= 0 {
+		blockSize = 8 // Default block size
+	}
 	lengthBytes := make([]byte, blockSize)
-	binary.BigEndian.PutUint64(lengthBytes, uint64(len(data)*8))
+	if blockSize < 8 {
+		binary.BigEndian.PutUint32(lengthBytes, uint32(len(data)*8))
+	} else {
+		binary.BigEndian.PutUint64(lengthBytes, uint64(len(data)*8))
+	}
 	paddedData, err := padISO1(data, blockSize)
 	if err != nil {
 		return nil, err
