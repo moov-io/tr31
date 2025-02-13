@@ -13,13 +13,13 @@ func mockServiceInMemory() Service {
 func mockVaultAuthOne() Vault {
 	return Vault{
 		VaultAddress: "http://localhost:8200",
-		VaultToken:   "/encript/secret_key_local",
+		VaultToken:   "hvs.EqkXJUliZk0KUNII5lsydvGB",
 	}
 }
 func mockVaultAuthTwo() Vault {
 	return Vault{
 		VaultAddress: "https://https://portal.cloud.hashicorp.com:8200",
-		VaultToken:   "/encript/secret_key",
+		VaultToken:   "hvs.EqkXJUliZk0KUNII5lsydvGBC",
 	}
 }
 
