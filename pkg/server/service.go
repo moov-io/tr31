@@ -47,6 +47,11 @@ func (s *service) CreateMachine(m *Machine) error {
 		return err
 	}
 	m.InitialKey = ik
+	tk, err := TransactionKey(params)
+	if err != nil {
+		return err
+	}
+	m.TransactionKey = tk
 	if err = s.store.StoreMachine(m); err != nil {
 		return err
 	}

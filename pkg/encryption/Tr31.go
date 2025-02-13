@@ -12,8 +12,6 @@ import (
 	"math/big"
 	"strconv"
 	"strings"
-
-	"github.com/moov-io/psec/pkg"
 )
 
 // TR-31 version identifiers
@@ -638,6 +636,9 @@ func (kb *KeyBlock) Wrap(key []byte, maskedKeyLen *int) (string, error) {
 
 // Unwrap decrypts a key from a wrapped key block using the KeyBlock Protection Key (KBPK)
 func (kb *KeyBlock) Unwrap(keyBlock string) ([]byte, error) {
+	if kb == nil {
+		return nil, fmt.Errorf(ErrNoKBPK)
+	}
 	// Extract header from the key block
 	if len(keyBlock) < 5 {
 		return nil, &KeyBlockError{
@@ -954,7 +955,7 @@ func (kb *KeyBlock) BUnwrap(header string, keyData []byte, receivedMac []byte) (
 	if err != nil {
 		return nil, err
 	}
-	if !pkg.CompareByte(mac, receivedMac) {
+	if !CompareByte(mac, receivedMac) {
 		return nil, &KeyBlockError{
 			Message: BlockErrorMacNotMatched,
 		}
@@ -1317,7 +1318,7 @@ func (kb *KeyBlock) DUnwrap(header string, keyData, receivedMAC []byte) ([]byte,
 
 	// Validate MAC
 	mac, _ := kb.dGenerateMAC(kbak, []byte(header), clearKeyData)
-	if !pkg.CompareByte(mac, receivedMAC) {
+	if !CompareByte(mac, receivedMAC) {
 		return nil, &KeyBlockError{fmt.Sprintf(BlockErrorMacNotMatched)}
 	}
 

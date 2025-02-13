@@ -9,11 +9,14 @@ type Vault struct {
 	VaultToken   string
 }
 type Machine struct {
-	vaultAuth  Vault
-	InitialKey string
-	CreatedAt  time.Time
+	vaultAuth      Vault
+	InitialKey     string
+	TransactionKey string
+	CreatedAt      time.Time
 }
 
 func NewMachine(vaultAuth Vault) *Machine {
-	return &Machine{}
+	return &Machine{
+		vaultAuth: vaultAuth,
+	}
 }

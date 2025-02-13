@@ -67,12 +67,11 @@ func decodeFindMachineRequest(_ context.Context, request *http.Request) (interfa
 	req.ik = mux.Vars(request)["ik"]
 	return req, nil
 }
-
 func findMachineEndpoint(s Service) endpoint.Endpoint {
 	return func(_ context.Context, request interface{}) (interface{}, error) {
 		req, ok := request.(findMachineRequest)
 		if !ok {
-			return generateKSNResponse{Err: ErrFoundABug}, ErrFoundABug
+			return findMachineResponse{Err: ErrFoundABug}, ErrFoundABug
 		}
 
 		resp := findMachineResponse{}

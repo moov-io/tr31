@@ -1,4 +1,4 @@
-package pkg
+package encryption
 
 import (
 	"crypto/subtle"

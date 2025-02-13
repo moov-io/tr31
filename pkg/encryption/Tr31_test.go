@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"encoding/hex"
 	"fmt"
-	"github.com/moov-io/psec/pkg"
 	"github.com/stretchr/testify/assert"
 	"strings"
 	"testing"
@@ -414,7 +413,7 @@ func Test_kb_know_values_with_python(t *testing.T) {
 	kb := "A0088M3TC00E000022BD7EC46BBE2A6A73389D1BA6DB63120B386F912839F4679C0523399E4D8D0F1D9A356E"
 	block, _ := NewKeyBlock(kbpkBytes, nil)
 	resultKB, _ := block.Unwrap(kb)
-	assert.Equal(t, true, pkg.CompareByte(keyBytes, resultKB))
+	assert.Equal(t, true, CompareByte(keyBytes, resultKB))
 }
 func Test_kb_known_values(t *testing.T) {
 	testCases := []struct {
@@ -455,7 +454,7 @@ func Test_kb_known_values(t *testing.T) {
 			}
 			block, _ := NewKeyBlock(kbpkBytes, nil)
 			resultKB, _ := block.Unwrap(tt.kb)
-			assert.Equal(t, true, pkg.CompareByte(keyBytes, resultKB))
+			assert.Equal(t, true, CompareByte(keyBytes, resultKB))
 		})
 	}
 }
@@ -657,4 +656,49 @@ func Test_invalid_enctript_key_uwrap(t *testing.T) {
 			}
 		})
 	}
+}
+func Test_wrap_unwrap_functions(t *testing.T) {
+	kbpk := []byte{0xAB, 0xAB, 0xAB, 0xAB, 0xAB, 0xAB, 0xAB, 0xAB, 0xAB, 0xAB, 0xAB, 0xAB, 0xAB, 0xAB, 0xAB, 0xAB}
+	key := []byte{0xCD, 0xCD, 0xCD, 0xCD, 0xCD, 0xCD, 0xCD, 0xCD, 0xCD, 0xCD, 0xCD, 0xCD, 0xCD, 0xCD, 0xCD, 0xCD}
+	kblock, _ := NewKeyBlock(kbpk, nil)
+	wrapData, _ := kblock.Wrap(key, nil)
+	keyOut, _ := kblock.Unwrap(wrapData)
+	assert.Equal(t, key, keyOut)
+}
+func Test_wrap_unwrap_header_functions(t *testing.T) {
+	kbpk := []byte{0xEF, 0xEF, 0xEF, 0xEF, 0xAB, 0xAB, 0xAB, 0xAB, 0xAB, 0xEF, 0xEF, 0xEF, 0xEF, 0xEF, 0xEF, 0xEF}
+	key := []byte{0x55, 0x55, 0x55, 0x55, 0xCD, 0xCD, 0xCD, 0xCD, 0xCD, 0xCD, 0xCD, 0x55, 0x55, 0x55, 0x55, 0x55}
+	kblock, _ := NewKeyBlock(kbpk, nil)
+	wrapData, _ := kblock.Wrap(key, nil)
+	keyOut, _ := kblock.Unwrap(wrapData)
+
+	assert.Equal(t, key, keyOut)
+}
+func Test_Unwrap_Apple_Proximity(t *testing.T) {
+	// Key Block Protection Key
+	kbpk, _ := hex.DecodeString("000102030405060708090A0B0C0D0E0F")
+	// Key Block
+	kb := "D0112D0AD00E00009ef4ff063d9757987d1768a1e317a6530de7d8ac81972c19a3659afb28e8d35f48aaa5b0f124e73893163e9a020ae5f3"
+	// Expected Key
+	key, _ := hex.DecodeString("B9517FF24FD4C71833478D424C29751D")
+	kblock, _ := NewKeyBlock(kbpk, nil)
+	keyOut, err := kblock.Unwrap(kb)
+	assert.Nil(t, err)
+	assert.Equal(t, key, keyOut)
+}
+func Test_Unexpected_Input_Wrap(t *testing.T) {
+	kbpk := []byte{}
+	key := []byte{0xCD, 0xCD, 0xCD, 0xCD, 0xCD, 0xCD, 0xCD, 0xCD, 0xCD, 0xCD, 0xCD, 0xCD, 0xCD, 0xCD, 0xCD, 0xCD}
+	kblock, _ := NewKeyBlock(kbpk, nil)
+	_, err := kblock.Wrap(key, nil)
+	assert.NotNil(t, err)
+	assert.Equal(t, "KB is not supported", err.Error())
+}
+
+func Test_Unexpected_Input_UnWrap(t *testing.T) {
+	kbpk := []byte{}
+	kblock, _ := NewKeyBlock(kbpk, nil)
+	_, err := kblock.Unwrap("D0112D0AD00E00009ef4ff063d9757987d1768a1e317a6530de7d8ac81972c19a3659afb28e8d35f48aaa5b0f124e73893163e9a020ae5f3")
+	assert.NotNil(t, err)
+	assert.Equal(t, "KB is not supported", err.Error())
 }

@@ -114,41 +114,6 @@ func MakeHTTPHandler(s Service) http.Handler {
 		options...,
 	))
 
-	r.Methods("POST").Path("/generate_ksn/{ik}").Handler(httptransport.NewServer(
-		generateKSNEndpoint(s),
-		decodeGenerateKSNRequest,
-		encodeResponse,
-		options...,
-	))
-
-	r.Methods("POST").Path("/encrypt_pin/{ik}").Handler(httptransport.NewServer(
-		encryptPinEndpoint(s),
-		decodeEncryptPinRequest,
-		encodeResponse,
-		options...,
-	))
-
-	r.Methods("POST").Path("/decrypt_pin/{ik}").Handler(httptransport.NewServer(
-		decryptPinEndpoint(s),
-		decodeDecryptPinRequest,
-		encodeResponse,
-		options...,
-	))
-
-	r.Methods("POST").Path("/generate_mac/{ik}").Handler(httptransport.NewServer(
-		generateMacEndpoint(s),
-		decodeGenerateMacRequest,
-		encodeResponse,
-		options...,
-	))
-
-	r.Methods("POST").Path("/encrypt_data/{ik}").Handler(httptransport.NewServer(
-		encryptDataEndpoint(s),
-		decodeEncryptDataRequest,
-		encodeResponse,
-		options...,
-	))
-
 	r.Methods("POST").Path("/decrypt_data/{ik}").Handler(httptransport.NewServer(
 		decryptDataEndpoint(s),
 		decodeDecryptDataRequest,
