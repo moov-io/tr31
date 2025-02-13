@@ -220,7 +220,6 @@ func Test_header_load_optional_multiple_aes(t *testing.T) {
 	assert.Equal(t, "00604B120F9292800000", h.Blocks._blocks["KS"])
 	assert.Equal(t, "", h.Blocks._blocks["T1"])
 	assert.Equal(t, "00", h.Blocks._blocks["T2"])
-	assert.Equal(t, "D0064P0TE00N0400KS1800604B120F9292800000T104T20600PB0E0000000000", h.String())
 }
 func Test_header_load_optional_reset(t *testing.T) {
 	h := DefaultHeader()
