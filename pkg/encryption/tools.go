@@ -1,7 +1,7 @@
 package encryption
 
 import (
-	"bytes"
+	"crypto/subtle"
 	"encoding/binary"
 	"fmt"
 	"math/rand"
@@ -23,6 +23,9 @@ https://stackoverflow.com/a/29409299
 	A byte slice that is the result of XOR'ing data with the key.
 */
 func xor(data, key []byte) []byte {
+	if key == nil || len(key) == 0 {
+		return nil
+	}
 	result := make([]byte, len(data))
 
 	for i := range data {
@@ -105,22 +108,9 @@ Returns:
 True if the string is ASCII printable. False otherwise.
 */
 func asciiPrintable(s string) bool {
-	asciiPA := "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789 \"#$%&'()*+,-./:;<=>?@[\\]^_`{|}~"
+	asciiPA := "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789 " +
+		"\"#$%&'()*+,-./:;<=>?@[\\]^_`{|}~!"
 	return isSubset(s, asciiPA)
-}
-
-/*
-Check if a string is an ASCII hex character (A-F, a-f, 0-9).
-
-Parameters:
-s - string to check
-
-Returns:
-True if the string is an ASCII hex character. False otherwise.
-*/
-func asciiHexChar(s string) bool {
-	asciiH := "abcdefABCDEF0123456789"
-	return isSubset(s, asciiH)
 }
 
 // Check if the string contains only valid hex characters.
@@ -188,5 +178,14 @@ func compareMAC(mac1, mac2 []byte) bool {
 }
 
 func isSubset(s, subset string) bool {
-	return bytes.IndexAny([]byte(s), subset) == len(s)
+	for _, char := range s {
+		if !contains(subset, char) {
+			return false
+		}
+	}
+	return true
+}
+
+func CompareByte(src []byte, dst []byte) bool {
+	return subtle.ConstantTimeCompare(src, dst) == 1
 }
