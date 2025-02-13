@@ -47,7 +47,7 @@ func TestService__GetMachine(t *testing.T) {
 
 	machine, err := s.GetMachine(machines[0].InitialKey)
 	require.NoError(t, err)
-	require.Equal(t, "b99d86495b7f4c65", machine.TransactionKey)
+	require.Equal(t, "4f689f50a13ec256", machine.TransactionKey)
 }
 
 func TestService__DeleteMachine(t *testing.T) {
