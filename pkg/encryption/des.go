@@ -1,7 +1,6 @@
 package encryption
 
 import (
-	"bytes"
 	"crypto/cipher"
 	"crypto/des"
 	"fmt"
@@ -59,78 +58,17 @@ func bitsOn(b byte) int {
 	return count
 }
 
-// pad applies PKCS5 padding to the plaintext to ensure it's a multiple of the block size.
-func pad(src []byte, blockSize int) []byte {
-	padding := blockSize - len(src)%blockSize
-	padText := bytes.Repeat([]byte{byte(padding)}, padding)
-	return append(src, padText...)
-}
-
-// unpad removes PKCS5 padding from the decrypted plaintext.
-func unpad(src []byte) ([]byte, error) {
-	length := len(src)
-	if length == 0 {
-		return nil, fmt.Errorf("unpad error: input is empty")
-	}
-	padding := int(src[length-1])
-	if padding > length {
-		return nil, fmt.Errorf("unpad error: invalid padding size")
-	}
-	return src[:length-padding], nil
-}
-
-// GenerateKCV generates the DES key checksum value (KCV).
-func GenerateKCV(key []byte, length int) ([]byte, error) {
-	if len(key) != 8 && len(key) != 16 && len(key) != 24 {
-		return nil, fmt.Errorf("Key must be a single, double or triple DES key")
-	}
-
-	// Initialize the cipher block
-	block, err := des.NewTripleDESCipher(key)
-	if err != nil {
-		return nil, err
-	}
-
-	// Create an initialization vector (IV) with all zeroes
-	iv := make([]byte, des.BlockSize)
-
-	// Encrypt the data with the key
-	cbc := cipher.NewCBCEncrypter(block, iv)
-	kcv := make([]byte, length)
-	cbc.CryptBlocks(kcv, make([]byte, des.BlockSize))
-
-	return kcv, nil
-}
-
-// EncryptTDESCBC encrypts data using Triple DES CBC algorithm.
-//func EncryptTDESCBC(key, iv, data []byte) ([]byte, error) {
-//	if len(data)%8 != 0 {
-//		return nil, fmt.Errorf("Data length must be multiple of DES block size 8")
-//	}
-//
-//	formattedKey := key
-//	if len(formattedKey) == 16 {
-//		formattedKey = append(formattedKey, key[:8]...)
-//	}
-//
-//	block, err := des.NewTripleDESCipher(formattedKey)
-//	if err != nil {
-//		return nil, err
-//	}
-//
-//	cbc := cipher.NewCBCEncrypter(block, iv)
-//	encryptedData := make([]byte, len(data))
-//	cbc.CryptBlocks(encryptedData, data)
-//
-//	return encryptedData, nil
-//}
-
 // Encrypt3DESCBC encrypts plaintext using 3DES in CBC mode with the provided 16-byte key.
 func EncryptTDESCBC(key, iv, data []byte) ([]byte, error) {
 	if len(key) != 8 && len(key) != 16 && len(key) != 24 {
-		return nil, fmt.Errorf("key length must be 16, 24 bytes")
+		return nil, fmt.Errorf("key length must be 8, 16, 24 bytes")
 	}
-
+	if len(iv) != 8 {
+		return nil, fmt.Errorf("iv length must be 8 bytes")
+	}
+	if len(data)%8 != 0 {
+		return nil, fmt.Errorf("data length must be a multiple of 8")
+	}
 	// Create a 24-byte key for 3DES by appending the first 8 bytes of the key to itself.
 	desKey := append(key, key[:8]...)
 	if len(key) == 24 {
@@ -154,7 +92,13 @@ func EncryptTDESCBC(key, iv, data []byte) ([]byte, error) {
 // Decrypt3DESCBC decrypts ciphertext using 3DES in CBC mode with the provided 16-byte key and IV.
 func DecryptTDESCBC(key, iv, data []byte) ([]byte, error) {
 	if len(key) != 8 && len(key) != 16 && len(key) != 24 {
-		return nil, fmt.Errorf("key length must be 16 bytes")
+		return nil, fmt.Errorf("key length must be 8, 16, 24 bytes")
+	}
+	if len(iv) != 8 {
+		return nil, fmt.Errorf("iv length must be 8 bytes")
+	}
+	if len(data)%8 != 0 {
+		return nil, fmt.Errorf("data length must be a multiple of 8")
 	}
 
 	// Create a 24-byte key for 3DES by appending the first 8 bytes of the key to itself.
@@ -188,14 +132,20 @@ func DecryptTDESCBC(key, iv, data []byte) ([]byte, error) {
 
 // EncryptTDSECB encrypts data using Triple DES ECB algorithm.
 func EncryptTDSECB(key, data []byte) ([]byte, error) {
+	if len(key) != 8 && len(key) != 16 && len(key) != 24 {
+		return nil, fmt.Errorf("key length must be 16 bytes")
+	}
 	if len(data)%8 != 0 {
 		return nil, fmt.Errorf("Data length must be multiple of DES block size 8")
 	}
-	formattedKey := key
-	if len(formattedKey) == 16 {
-		formattedKey = append(formattedKey, key[:8]...)
+	// Create a 24-byte key for 3DES by appending the first 8 bytes of the key to itself.
+	desKey := append(key, key[:8]...)
+	if len(key) == 24 {
+		desKey = key
+	} else if len(key) == 8 {
+		desKey = append(desKey, key...)
 	}
-	block, err := des.NewTripleDESCipher(formattedKey)
+	block, err := des.NewTripleDESCipher(desKey)
 	if err != nil {
 		return nil, err
 	}
@@ -211,11 +161,19 @@ func EncryptTDSECB(key, data []byte) ([]byte, error) {
 
 // DecryptTDSECB decrypts data using Triple DES ECB algorithm.
 func DecryptTDSECB(key, data []byte) ([]byte, error) {
+	if len(key) != 8 && len(key) != 16 && len(key) != 24 {
+		return nil, fmt.Errorf("key length must be 16 bytes")
+	}
 	if len(data)%8 != 0 {
 		return nil, fmt.Errorf("Data length must be multiple of DES block size 8")
 	}
-
-	block, err := des.NewTripleDESCipher(key)
+	desKey := append(key, key[:8]...)
+	if len(key) == 24 {
+		desKey = key
+	} else if len(key) == 8 {
+		desKey = append(desKey, key...)
+	}
+	block, err := des.NewTripleDESCipher(desKey)
 	if err != nil {
 		return nil, err
 	}
