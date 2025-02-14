@@ -783,6 +783,146 @@ func TestKeyBlock_DeriveKeys_InvalidInputs(t *testing.T) {
 	}
 }
 
+func Test_dDerive(t *testing.T) {
+	tests := []struct {
+		name        string
+		kbpk        []byte
+		wantKBEKLen int
+		wantKBAKLen int
+		wantErr     bool
+	}{
+		{
+			name:        "AES-128",
+			kbpk:        bytes.Repeat([]byte{0x01}, 16),
+			wantKBEKLen: 16,
+			wantKBAKLen: 16,
+			wantErr:     false,
+		},
+		{
+			name:        "AES-192",
+			kbpk:        bytes.Repeat([]byte{0x02}, 24),
+			wantKBEKLen: 24,
+			wantKBAKLen: 24,
+			wantErr:     false,
+		},
+		{
+			name:        "AES-256",
+			kbpk:        bytes.Repeat([]byte{0x03}, 32),
+			wantKBEKLen: 32,
+			wantKBAKLen: 32,
+			wantErr:     false,
+		},
+		{
+			name:        "Invalid key length",
+			kbpk:        bytes.Repeat([]byte{0x04}, 20),
+			wantKBEKLen: 0,
+			wantKBAKLen: 0,
+			wantErr:     true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			kb, err := NewKeyBlock(tt.kbpk, nil)
+			if err != nil && !tt.wantErr {
+				t.Errorf("NewKeyBlock() unexpected error = %v", err)
+				return
+			}
+
+			if kb != nil {
+				kb.header = DefaultHeader()
+				kb.header.VersionID = "D" // Set to version D for dDerive
+
+				kbek, kbak, err := kb.dDerive()
+
+				// Check error
+				if (err != nil) != tt.wantErr {
+					t.Errorf("dDerive() error = %v, wantErr %v", err, tt.wantErr)
+					return
+				}
+
+				// If we expected an error, don't check the rest
+				if tt.wantErr {
+					return
+				}
+
+				// Check KBEK length
+				if len(kbek) != tt.wantKBEKLen {
+					t.Errorf("dDerive() KBEK length = %v, want %v", len(kbek), tt.wantKBEKLen)
+				}
+
+				// Check KBAK length
+				if len(kbak) != tt.wantKBAKLen {
+					t.Errorf("dDerive() KBAK length = %v, want %v", len(kbak), tt.wantKBAKLen)
+				}
+
+				// Verify KBEK and KBAK are different
+				if bytes.Equal(kbek, kbak) {
+					t.Error("dDerive() KBEK and KBAK are identical")
+				}
+
+				// Test key wrapping and unwrapping with derived keys
+				testKey := bytes.Repeat([]byte{0x55}, 16)
+				header, err := kb.header.Dump(len(testKey))
+				if err != nil {
+					t.Errorf("header.Dump() error = %v", err)
+					return
+				}
+
+				// Generate MAC
+				mac, err := kb.dGenerateMAC(kbak, []byte(header), testKey)
+				if err != nil {
+					t.Errorf("dGenerateMAC() error = %v", err)
+					return
+				}
+
+				// Encrypt with KBEK
+				encrypted, err := EncryptAESCBC(kbek, mac, testKey)
+				if err != nil {
+					t.Errorf("EncryptAESCBC() error = %v", err)
+					return
+				}
+
+				// Decrypt with KBEK
+				decrypted, err := DecryptAESCBC(kbek, mac, encrypted)
+				if err != nil {
+					t.Errorf("DecryptAESCBC() error = %v", err)
+					return
+				}
+
+				// Verify decrypted matches original
+				if !bytes.Equal(testKey, decrypted) {
+					t.Error("Key wrapping/unwrapping failed with derived keys")
+				}
+			}
+		})
+	}
+}
+
+func Test_dDerive_KeyAppendBehavior(t *testing.T) {
+	kbpk := bytes.Repeat([]byte{0xAB}, 24) // Using 24-byte key to ensure multiple iterations
+	kb, _ := NewKeyBlock(kbpk, nil)
+	kb.header = DefaultHeader()
+	kb.header.VersionID = "D"
+
+	kbek, kbak, err := kb.dDerive()
+	if err != nil {
+		t.Fatalf("dDerive() error = %v", err)
+	}
+
+	// With bug: kbak slice would be empty before final cropping because we're appending to kbek
+	// After fix: kbak slice should have same length as kbek before cropping
+	if len(kbek) != len(kbak) {
+		t.Errorf("Before cropping: KBEK length (%d) != KBAK length (%d) - authentication key material was appended to wrong slice",
+			len(kbek), len(kbak))
+	}
+
+	// Additionally verify key contents are different
+	if bytes.Equal(kbek, kbak) {
+		t.Error("KBEK and KBAK are identical - authentication key material was appended to wrong slice")
+	}
+}
+
 func TestKeyBlock_ConcurrentAccess(t *testing.T) {
 	kbpk := make([]byte, 16)
 	kb, _ := NewKeyBlock(kbpk, nil)
