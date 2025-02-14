@@ -57,7 +57,7 @@ func BenchmarkUnwrap_D_32_WithSetup(b *testing.B) {
 }
 
 // BenchmarkUnwrap_D_32_Parallel benchmarks the Unwrap function with parallel execution
-/* func BenchmarkUnwrap_D_32_Parallel(b *testing.B) {
+func BenchmarkUnwrap_D_32_Parallel(b *testing.B) {
 	kbpkopts := KBPKOptions{
 		Version:   "D",
 		KeyLength: 32,
@@ -68,42 +68,56 @@ func BenchmarkUnwrap_D_32_WithSetup(b *testing.B) {
 		b.Fatalf("failed to create header: %v", err)
 	}
 
-	// Create a slice of different KBPKs for testing
-	kbpks := make([][]byte, b.N)
-	expectedKeys := make([][]byte, b.N)
-	kblocks := make([]*KeyBlock, b.N)
+	// Create initial test data - we'll use a fixed size that's large enough
+	const testDataSize = 500 // Adjust this number based on your needs
+	kbpks := make([][]byte, testDataSize)
+	keyBlocks := make([]*KeyBlock, testDataSize)
+	rawKeyBlocks := make([]string, testDataSize)
+	expectedKeys := make([][]byte, testDataSize)
 
-	for i := 0; i < b.N; i++ {
+	// Setup phase - generate test data
+	for i := 0; i < testDataSize; i++ {
 		// Generate a different KBPK for each iteration
 		key, _ := GenerateKBPK(kbpkopts)
 		kbpks[i] = key
+
 		// Create a key block for each KBPK
 		kblock, err := NewKeyBlock(kbpks[i], header)
 		if err != nil {
 			b.Fatalf("failed to create key block: %v", err)
 		}
-		kblocks[i] = kblock
-		// Unwrap the key to get the expected key
-		keyOut, err := kblocks[i].Unwrap(hex.EncodeToString(kbpks[i]))
+		keyBlocks[i] = kblock
+
+		expectedKeys[i] = urandom(16)
+		rawKeyBlocks[i], err = kblock.Wrap(expectedKeys[i], nil)
 		if err != nil {
-			b.Fatalf("failed to unwrap key block: %v", err)
+			b.Fatalf("failed to wrap key block: %v", err)
 		}
-		expectedKeys[i] = keyOut
 	}
 
+	// Set the number of iterations for the benchmark
+	b.SetBytes(int64(32)) // Set bytes/op metric
 	b.ResetTimer()
+
+	// Run the benchmark in parallel
 	b.RunParallel(func(pb *testing.PB) {
-		counter := 0
+		// Each goroutine gets its own counter
+		localCounter := 0
 		for pb.Next() {
-			counter++
-			keyOut, err := kblocks[counter].Unwrap(hex.EncodeToString(kbpks[counter]))
+			// Use the local counter modulo the test data size
+			i := localCounter % testDataSize
+			localCounter++
+
+			keyOut, err := keyBlocks[i].Unwrap(rawKeyBlocks[i])
 			if err != nil {
-				b.Fatalf("failed to unwrap key %s: %v", hex.EncodeToString(kbpks[counter]), err)
+				b.Fatalf("failed to unwrap key %s: %v", hex.EncodeToString(kbpks[i]), err)
 			}
-			// check that the value of keyout matches the expectedKeys
-			if string(keyOut) != string(expectedKeys[counter]) {
-				b.Fatalf("invalid key length: got %s, want %s", keyOut, expectedKeys[counter])
+
+			// Check that the value of keyout matches the expectedKeys
+			if string(keyOut) != string(expectedKeys[i]) {
+				b.Fatalf("key mismatch at index %d: got %x, want %x",
+					i, keyOut, expectedKeys[i])
 			}
 		}
 	})
-} */
+}
