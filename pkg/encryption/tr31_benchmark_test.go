@@ -45,7 +45,7 @@ func BenchmarkUnwrap_D_32_WithSetup(b *testing.B) {
 	// Reset timer after setup
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		keyOut, err := keyBlocks[i].Unwrap(hex.EncodeToString(kbpks[i]))
+		keyOut, err := keyBlocks[i].Unwrap(rawKeyBlocks[i])
 		if err != nil {
 			b.Fatalf("failed to unwrap key %s: %v", hex.EncodeToString(kbpks[i]), err)
 		}
