@@ -13,8 +13,8 @@ import (
 
 	"github.com/moov-io/base/admin"
 	"github.com/moov-io/base/log"
-	tr31 "github.com/moov-io/psec"
-	"github.com/moov-io/psec/pkg/server"
+	tr31 "github.com/moov-io/tr31"
+	"github.com/moov-io/tr31/pkg/server"
 
 	kitlog "github.com/go-kit/log"
 )
