@@ -770,12 +770,15 @@ func (kb *KeyBlock) BWrap(header string, key []byte, extraPad int) (string, erro
 	}
 
 	// Derive Key Block Encryption and Authentication Keys
-	kbek, kbak, _ := kb.BDerive()
+	kbek, kbak, err := kb.BDerive()
+	if err != nil {
+		return "", fmt.Errorf("BDerive: %w", err)
+	}
 
 	// Format key data: 2-byte key length measured in bits + key + pad
 	padLen := 8 - ((2 + len(key) + extraPad) % 8)
 	pad := make([]byte, padLen+extraPad)
-	_, err := rand.Read(pad)
+	_, err = rand.Read(pad)
 	if err != nil {
 		return "", &KeyBlockError{
 			Message: err.Error(),
@@ -789,12 +792,15 @@ func (kb *KeyBlock) BWrap(header string, key []byte, extraPad int) (string, erro
 	copy(clearKeyData[2+len(key):], pad)
 
 	// Generate MAC
-	mac, _ := kb.bGenerateMac(kbak, header, clearKeyData)
+	mac, err := kb.bGenerateMac(kbak, header, clearKeyData)
+	if err != nil {
+		return "", fmt.Errorf("bGenerateMac: %w", err)
+	}
 
 	// Encrypt key data using TDES CBC
 	encKey, err := EncryptTDESCBC(kbek, mac, clearKeyData)
 	if err != nil {
-		return "", err
+		return "", fmt.Errorf("encrypt TDESCBC: %w", err)
 	}
 
 	// Return the concatenated result
@@ -1057,7 +1063,13 @@ func (kb *KeyBlock) CWrap(header string, key []byte, extraPad int) (string, erro
 	// Return the concatenated result
 	return header + strings.ToUpper(hex.EncodeToString(encKey)) + strings.ToUpper(hex.EncodeToString(mac)), nil
 }
+
 func (kb *KeyBlock) cDerive() ([]byte, []byte, error) {
+	// Validate KBPK exists and has valid length
+	if kb == nil || kb.kbpk == nil {
+		return nil, nil, fmt.Errorf("invalid KBPK")
+	}
+
 	// Create byte slices filled with 0x45 and 0x4D respectively
 	encryptionKeyMask := make([]byte, len(kb.kbpk))
 	authenticationKeyMask := make([]byte, len(kb.kbpk))
@@ -1068,7 +1080,20 @@ func (kb *KeyBlock) cDerive() ([]byte, []byte, error) {
 
 	// Perform XOR operation
 	encryptionKey := xor(kb.kbpk, encryptionKeyMask)
+	if encryptionKey == nil {
+		return nil, nil, fmt.Errorf("failed to derive encryption key")
+	}
+
 	authenticationKey := xor(kb.kbpk, authenticationKeyMask)
+	if authenticationKey == nil {
+		return nil, nil, fmt.Errorf("failed to derive authentication key")
+	}
+
+	// Validate the derived keys have correct length
+	if len(encryptionKey) != len(kb.kbpk) || len(authenticationKey) != len(kb.kbpk) {
+		return nil, nil, fmt.Errorf("derived key lengths do not match KBPK length")
+	}
+
 	return encryptionKey, authenticationKey, nil
 }
 
@@ -1094,7 +1119,10 @@ func (kb *KeyBlock) CUnwrap(header string, keyData []byte, receivedMAC []byte) (
 	}
 
 	// Derive Key Block Encryption and Authentication Keys
-	kbek, kbak, _ := kb.cDerive()
+	kbek, kbak, err := kb.cDerive()
+	if err != nil {
+		return nil, fmt.Errorf("cDerive: %w", err)
+	}
 
 	// Validate MAC
 	mac, _ := kb.cGenerateMAC(kbak, header, keyData)
@@ -1172,6 +1200,7 @@ func (kb *KeyBlock) DWrap(header string, key []byte, extraPad int) (string, erro
 	// Return the concatenated result
 	return header + hex.EncodeToString(encKey) + hex.EncodeToString(mac), nil
 }
+
 func (kb *KeyBlock) dDerive() ([]byte, []byte, error) {
 	// Key Derivation data
 	// byte 0 = a counter increment for each block of kbpk, start at 1
@@ -1269,6 +1298,7 @@ func (kb *KeyBlock) dGenerateMAC(kbak []byte, header, keyData []byte) ([]byte, e
 	macData = append(macData[:len(macData)-16], xored...)
 	return GenerateCBCMAC(kbak, macData, 1, 16, AES)
 }
+
 func dShiftLeft1(inBytes []byte) []byte {
 	// Shift the byte array left by 1 bit
 	// Ensure the most significant bit of the first byte is cleared
@@ -1334,11 +1364,14 @@ func (kb *KeyBlock) DUnwrap(header string, keyData, receivedMAC []byte) ([]byte,
 	}
 
 	// Derive Key Block Encryption and Authentication Keys
-	kbek, kbak, _ := kb.dDerive()
+	kbek, kbak, err := kb.dDerive()
+	if err != nil {
+		return nil, fmt.Errorf("dDerive: %w", err)
+	}
 	// Decrypt key data
 	clearKeyData, err := DecryptAESCBC(kbek, receivedMAC, keyData)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("decrypt AESCBC: %w", err)
 	}
 
 	// Validate MAC
