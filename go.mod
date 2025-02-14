@@ -2,13 +2,13 @@ module github.com/moov-io/psec
 
 go 1.23.3
 
-toolchain go1.23.5
+toolchain go1.24.0
 
 require (
 	github.com/go-kit/kit v0.13.0
 	github.com/go-kit/log v0.2.1
 	github.com/gorilla/mux v1.8.1
-	github.com/hashicorp/vault/api v1.15.0
+	github.com/hashicorp/vault/api v1.16.0
 	github.com/moov-io/base v0.53.0
 	github.com/stretchr/testify v1.10.0
 )
