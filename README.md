@@ -159,6 +159,20 @@ The library provides detailed error messages through two custom error types:
 - `HeaderError`: For issues related to TR-31 header processing
 - `KeyBlockError`: For issues related to key block processing
 
+## Benchmarks 
+
+Unwraps a TR-31 formatted key block to retrieve the original key. 
+
+```bash
+Running tool: /opt/homebrew/bin/go test -benchmem -run=^$ -bench ^BenchmarkUnwrap_D_32_WithSetup$ github.com/moov-io/tr31/pkg/encryption
+
+goos: darwin
+goarch: arm64
+pkg: github.com/moov-io/psec/pkg/encryption
+cpu: Apple M1 Pro
+BenchmarkUnwrap_D_32_WithSetup-10    	  301116	      3619 ns/op	    8608 B/op	      64 allocs/op
+```
+
 ## Contributing
 
 Contributions are welcome! Please feel free to submit a Pull Request.
