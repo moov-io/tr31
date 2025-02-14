@@ -56,7 +56,7 @@ type findMachineRequest struct {
 
 type findMachineResponse struct {
 	Machine *Machine `json:"machine"`
-	Err     error    `json:"error"`
+	Err     string   `json:"error"`
 }
 
 func decodeFindMachineRequest(_ context.Context, request *http.Request) (interface{}, error) {
@@ -71,13 +71,13 @@ func findMachineEndpoint(s Service) endpoint.Endpoint {
 	return func(_ context.Context, request interface{}) (interface{}, error) {
 		req, ok := request.(findMachineRequest)
 		if !ok {
-			return findMachineResponse{Err: ErrFoundABug}, ErrFoundABug
+			return findMachineResponse{Err: ErrFoundABug.Error()}, ErrFoundABug
 		}
 
 		resp := findMachineResponse{}
 		m, err := s.GetMachine(req.ik)
 		if err != nil {
-			resp.Err = err
+			resp.Err = err.Error()
 			return resp, nil
 		}
 
