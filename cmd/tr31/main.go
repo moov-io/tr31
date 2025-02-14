@@ -12,17 +12,16 @@ import (
 	"time"
 
 	"github.com/moov-io/base/admin"
-	"github.com/moov-io/base/http/bind"
 	"github.com/moov-io/base/log"
-	"github.com/moov-io/psec"
+	tr31 "github.com/moov-io/psec"
 	"github.com/moov-io/psec/pkg/server"
 
 	kitlog "github.com/go-kit/log"
 )
 
 var (
-	httpAddr  = flag.String("http.addr", bind.HTTP("dukpt"), "HTTP listen address")
-	adminAddr = flag.String("admin.addr", bind.Admin("dukpt"), "Admin HTTP listen address")
+	httpAddr  = flag.String("http.addr", ":8031", "HTTP listen address")
+	adminAddr = flag.String("admin.addr", ":9031", "Admin HTTP listen address")
 
 	flagLogFormat = flag.String("log.format", "", "Format for log lines (Options: json, plain")
 
