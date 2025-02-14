@@ -28,7 +28,7 @@ func GenerateKBPK(opts KBPKOptions) ([]byte, error) {
 	}
 
 	// For TDES versions (A and B), ensure odd parity and no weak keys
-	if opts.Version == "A" || opts.Version == "B" {
+	if opts.Version == TR31_VERSION_A || opts.Version == TR31_VERSION_B {
 		adjustParityTDES(key)
 		if isWeakTDESKey(key) {
 			// Recursively try again if we got a weak key
@@ -37,7 +37,7 @@ func GenerateKBPK(opts KBPKOptions) ([]byte, error) {
 	}
 
 	// For AES versions (C and D), just validate key length
-	if opts.Version == "C" || opts.Version == "D" {
+	if opts.Version == TR31_VERSION_C || opts.Version == TR31_VERSION_D {
 		if opts.KeyLength != 16 && opts.KeyLength != 24 && opts.KeyLength != 32 {
 			return nil, errors.New("AES key length must be 16, 24, or 32 bytes")
 		}
@@ -49,7 +49,7 @@ func GenerateKBPK(opts KBPKOptions) ([]byte, error) {
 // ValidateKBPK validates an existing KBPK
 func ValidateKBPK(key []byte, version string) error {
 	switch version {
-	case "A", "B":
+	case TR31_VERSION_A, TR31_VERSION_B:
 		if len(key) != 24 {
 			return errors.New("TDES KBPK must be 24 bytes")
 		}
@@ -59,7 +59,7 @@ func ValidateKBPK(key []byte, version string) error {
 		if isWeakTDESKey(key) {
 			return errors.New("TDES KBPK must not be a weak key")
 		}
-	case "C", "D":
+	case TR31_VERSION_C, TR31_VERSION_D:
 		if len(key) != 16 && len(key) != 24 && len(key) != 32 {
 			return errors.New("AES KBPK must be 16, 24, or 32 bytes")
 		}
@@ -73,11 +73,11 @@ func ValidateKBPK(key []byte, version string) error {
 
 func validateKBPKOptions(opts KBPKOptions) error {
 	switch opts.Version {
-	case "A", "B":
+	case TR31_VERSION_A, TR31_VERSION_B:
 		if opts.KeyLength != 24 {
 			return errors.New("TDES KBPK must be 24 bytes")
 		}
-	case "C", "D":
+	case TR31_VERSION_C, TR31_VERSION_D:
 		if opts.KeyLength != 16 && opts.KeyLength != 24 && opts.KeyLength != 32 {
 			return errors.New("AES KBPK must be 16, 24, or 32 bytes")
 		}
