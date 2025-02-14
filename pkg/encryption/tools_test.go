@@ -334,7 +334,7 @@ func TestUrandom(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got := urandom(tt.length)
+			got := urandom(t, tt.length)
 			if len(got) != tt.length {
 				t.Errorf("urandom(%d) = len(%d), want len(%d)", tt.length, len(got), tt.length)
 			}

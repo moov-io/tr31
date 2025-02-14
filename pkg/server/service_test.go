@@ -10,12 +10,14 @@ func mockServiceInMemory() Service {
 	repository := NewRepositoryInMemory(nil)
 	return NewService(repository)
 }
+
 func mockVaultAuthOne() Vault {
 	return Vault{
 		VaultAddress: "http://localhost:8200",
 		VaultToken:   "hvs.EqkXJUliZk0KUNII5lsydvGB",
 	}
 }
+
 func mockVaultAuthTwo() Vault {
 	return Vault{
 		VaultAddress: "https://https://portal.cloud.hashicorp.com:8200",
