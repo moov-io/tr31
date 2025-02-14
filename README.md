@@ -1,9 +1,9 @@
 [![Moov Banner Logo](https://user-images.githubusercontent.com/20115216/104214617-885b3c80-53ec-11eb-8ce0-9fc745fb5bfc.png)](https://github.com/moov-io)
 
 <p align="center">
-  <a href="https://moov-io.github.io/psec/">Project Documentation</a>
+  <a href="https://moov-io.github.io/tr31/">Project Documentation</a>
   ·
-  <a href="https://moov-io.github.io/psec/api/#overview">API Endpoints</a>
+  <a href="https://moov-io.github.io/tr31/api/#overview">API Endpoints</a>
   ·
   <a href="https://slack.moov.io/">Community</a>
   ·
@@ -50,7 +50,7 @@ package main
 
 import (
     "fmt"
-    "github.com/yourusername/tr31/encryption"
+    "github.com/moov-io/tr31/encryption"
 )
 
 func main() {
@@ -168,7 +168,7 @@ Running tool: /opt/homebrew/bin/go test -benchmem -run=^$ -bench ^BenchmarkUnwra
 
 goos: darwin
 goarch: arm64
-pkg: github.com/moov-io/psec/pkg/encryption
+pkg: github.com/moov-io/tr31/pkg/encryption
 cpu: Apple M1 Pro
 BenchmarkUnwrap_D_32_WithSetup-10    	  301116	      3619 ns/op	    8608 B/op	      64 allocs/op
 ```
