@@ -4,9 +4,7 @@ import (
 	"crypto/subtle"
 	"encoding/binary"
 	"fmt"
-	"math/rand"
 	"regexp"
-	"time"
 	"unicode"
 )
 
@@ -153,15 +151,6 @@ func stringToInt(s string) int {
 		result = result*10 + int(s[i]-'0')
 	}
 	return result
-}
-
-func urandom(length int) []byte {
-	rand.Seed(time.Now().UnixNano())
-	pad := make([]byte, length)
-	for i := range pad {
-		pad[i] = byte(rand.Intn(256))
-	}
-	return pad
 }
 
 // compareMAC compares two MACs
