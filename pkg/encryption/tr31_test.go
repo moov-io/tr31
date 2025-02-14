@@ -5,6 +5,7 @@ import (
 	"encoding/hex"
 	"fmt"
 	"strings"
+	"sync"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -108,6 +109,7 @@ func TestHeaderLoadOptionalPaddedDES(t *testing.T) {
 	assert.Equal(t, "00604B120F9292", h.Blocks._blocks["KS"])
 	assert.Equal(t, "B0040P0TE00N0200KS1200604B120F9292PB0600", h.String())
 }
+
 func TestHeaderLoadOptionalPaddedAES(t *testing.T) {
 	h := DefaultHeader()
 	tr31Str := "D0000P0TE00N0200KS1200604B120F9292PB0600"
@@ -124,6 +126,7 @@ func TestHeaderLoadOptionalPaddedAES(t *testing.T) {
 	assert.Equal(t, "00604B120F9292", h.Blocks._blocks["KS"])
 	assert.Equal(t, "D0048P0TE00N0200KS1200604B120F9292PB0E0000000000", h.String())
 }
+
 func Test_header_load_optional_256_des(t *testing.T) {
 	h := DefaultHeader()
 	tr31Str := "B0000P0TE00N0200KS0002010A" + strings.Repeat("P", 256) + "PB0600"
@@ -156,6 +159,7 @@ func Test_header_load_optional_256_aes(t *testing.T) {
 	assert.Equal(t, strings.Repeat("P", 256), h.Blocks._blocks["KS"])
 	assert.Equal(t, "D0288P0TE00N0200KS0002010A"+strings.Repeat("P", 256)+"PB0600", h.String())
 }
+
 func Test_header_load_optional_extended_length_des(t *testing.T) {
 	h := DefaultHeader()
 	tr31Str := "B0000P0TE00N0200KS00011600604B120F9292PB0A000000"
@@ -172,6 +176,7 @@ func Test_header_load_optional_extended_length_des(t *testing.T) {
 	assert.Equal(t, "00604B120F9292", h.Blocks._blocks["KS"])
 	assert.Equal(t, "B0040P0TE00N0200KS1200604B120F9292PB0600", h.String())
 }
+
 func Test_header_load_optional_extended_length_aes(t *testing.T) {
 	h := DefaultHeader()
 	tr31Str := "D0000P0TE00N0200KS00011600604B120F9292PB0A000000"
@@ -188,6 +193,7 @@ func Test_header_load_optional_extended_length_aes(t *testing.T) {
 	assert.Equal(t, "00604B120F9292", h.Blocks._blocks["KS"])
 	assert.Equal(t, "D0048P0TE00N0200KS1200604B120F9292PB0E0000000000", h.String())
 }
+
 func Test_header_load_optional_multiple_des(t *testing.T) {
 	h := DefaultHeader()
 	tr31Str := "B0000P0TE00N0400KS1800604B120F9292800000T104T20600PB0600"
@@ -205,6 +211,7 @@ func Test_header_load_optional_multiple_des(t *testing.T) {
 	assert.Equal(t, "", h.Blocks._blocks["T1"])
 	assert.Equal(t, "00", h.Blocks._blocks["T2"])
 }
+
 func Test_header_load_optional_multiple_aes(t *testing.T) {
 	h := DefaultHeader()
 	tr31Str := "D0000P0TE00N0400KS1800604B120F9292800000T104T20600PB0600"
@@ -222,6 +229,7 @@ func Test_header_load_optional_multiple_aes(t *testing.T) {
 	assert.Equal(t, "", h.Blocks._blocks["T1"])
 	assert.Equal(t, "00", h.Blocks._blocks["T2"])
 }
+
 func Test_header_load_optional_reset(t *testing.T) {
 	h := DefaultHeader()
 	tr31Str := "B0000P0TE00N0400KS1800604B120F9292800000T104T20600PB0600"
@@ -293,14 +301,43 @@ func Test_header_block_load_exceptions(t *testing.T) {
 		})
 	}
 }
+
 func Test_header_block_dump_exception_block_too_large(t *testing.T) {
 	//h := NewHeader("", "", "", "", "", "")
 	//tr31Str := "B0000P0TE00N0400KS1800604B120F9292800000T104T20600PB0600"
 	//_, err := h.Load(item.header)
 	assert.Equal(t, 1, 1)
 }
+
 func Test_header_block_dump_exception_too_many_blocks(t *testing.T) {
 	assert.Equal(t, 1, 1)
+}
+
+func TestHeader_OptionalBlocks_Overflow(t *testing.T) {
+	h := DefaultHeader()
+	longData := strings.Repeat("A", 65536) // Data that would exceed block length
+
+	err := h.Blocks.Set("KS", longData)
+	if err == nil {
+		t.Error("expected error for block data too long")
+	}
+}
+
+func TestHeader_Reserved_Field(t *testing.T) {
+	h := DefaultHeader()
+	if h.Reserved != "00" {
+		t.Errorf("default Reserved value = %s, want 00", h.Reserved)
+	}
+
+	// Test that Reserved field remains "00" after loading header
+	tr31Str := "B0000P0TE11N0000"
+	_, err := h.Load(tr31Str)
+	if err != nil {
+		t.Fatalf("Load() error = %v", err)
+	}
+	if h.Reserved != "00" {
+		t.Errorf("Reserved after Load = %s, want 00", h.Reserved)
+	}
 }
 
 type TestCaseHeaderParam struct {
@@ -484,6 +521,7 @@ func Test_kb_init_with_raw_header_blocks(t *testing.T) {
 	assert.Equal(t, 1, len(block.header.Blocks._blocks))
 	assert.Equal(t, "00604B120F9292800000", block.header.Blocks._blocks["KS"])
 }
+
 func intPtr(i int) *int {
 	return &i
 }
@@ -657,6 +695,7 @@ func Test_invalid_enctript_key_uwrap(t *testing.T) {
 		})
 	}
 }
+
 func Test_wrap_unwrap_functions(t *testing.T) {
 	kbpk := []byte{0xAB, 0xAB, 0xAB, 0xAB, 0xAB, 0xAB, 0xAB, 0xAB, 0xAB, 0xAB, 0xAB, 0xAB, 0xAB, 0xAB, 0xAB, 0xAB}
 	key := []byte{0xCD, 0xCD, 0xCD, 0xCD, 0xCD, 0xCD, 0xCD, 0xCD, 0xCD, 0xCD, 0xCD, 0xCD, 0xCD, 0xCD, 0xCD, 0xCD}
@@ -665,6 +704,7 @@ func Test_wrap_unwrap_functions(t *testing.T) {
 	keyOut, _ := kblock.Unwrap(wrapData)
 	assert.Equal(t, key, keyOut)
 }
+
 func Test_wrap_unwrap_header_functions(t *testing.T) {
 	kbpk := []byte{0xEF, 0xEF, 0xEF, 0xEF, 0xAB, 0xAB, 0xAB, 0xAB, 0xAB, 0xEF, 0xEF, 0xEF, 0xEF, 0xEF, 0xEF, 0xEF}
 	key := []byte{0x55, 0x55, 0x55, 0x55, 0xCD, 0xCD, 0xCD, 0xCD, 0xCD, 0xCD, 0xCD, 0x55, 0x55, 0x55, 0x55, 0x55}
@@ -674,6 +714,7 @@ func Test_wrap_unwrap_header_functions(t *testing.T) {
 
 	assert.Equal(t, key, keyOut)
 }
+
 func Test_Unwrap_Apple_Proximity(t *testing.T) {
 	// Key Block Protection Key
 	kbpk, _ := hex.DecodeString("000102030405060708090A0B0C0D0E0F")
@@ -686,6 +727,7 @@ func Test_Unwrap_Apple_Proximity(t *testing.T) {
 	assert.Nil(t, err)
 	assert.Equal(t, key, keyOut)
 }
+
 func Test_Unexpected_Input_Wrap(t *testing.T) {
 	kbpk := []byte{}
 	key := []byte{0xCD, 0xCD, 0xCD, 0xCD, 0xCD, 0xCD, 0xCD, 0xCD, 0xCD, 0xCD, 0xCD, 0xCD, 0xCD, 0xCD, 0xCD, 0xCD}
@@ -701,4 +743,64 @@ func Test_Unexpected_Input_UnWrap(t *testing.T) {
 	_, err := kblock.Unwrap("D0112D0AD00E00009ef4ff063d9757987d1768a1e317a6530de7d8ac81972c19a3659afb28e8d35f48aaa5b0f124e73893163e9a020ae5f3")
 	assert.NotNil(t, err)
 	assert.Equal(t, "KB is not supported", err.Error())
+}
+
+func TestKeyBlock_DeriveKeys_InvalidInputs(t *testing.T) {
+	tests := []struct {
+		name    string
+		kbpk    []byte
+		version string
+		wantErr bool
+	}{
+		{"Empty KBPK", []byte{}, "B", true},
+		{"Invalid version", make([]byte, 16), "X", true},
+		{"Wrong key size for version", make([]byte, 8), "D", true},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			// Create a custom header with the test version
+			header, _ := NewHeader(tt.version, "P0", "T", "E", "00", "N")
+
+			kb, err := NewKeyBlock(tt.kbpk, header)
+			if err != nil {
+				if !tt.wantErr {
+					t.Errorf("NewKeyBlock() unexpected error = %v", err)
+				}
+				return
+			}
+
+			kbek, kbak, err := kb.BDerive()
+			if (err != nil) != tt.wantErr {
+				t.Errorf("BDerive() error = %v, wantErr %v", err, tt.wantErr)
+			}
+			if err == nil {
+				if len(kbek) == 0 || len(kbak) == 0 {
+					t.Error("BDerive() returned empty keys")
+				}
+			}
+		})
+	}
+}
+
+func TestKeyBlock_ConcurrentAccess(t *testing.T) {
+	kbpk := make([]byte, 16)
+	kb, _ := NewKeyBlock(kbpk, nil)
+
+	const goroutines = 10
+	var wg sync.WaitGroup
+	wg.Add(goroutines)
+
+	for i := 0; i < goroutines; i++ {
+		go func() {
+			defer wg.Done()
+			key := make([]byte, 16)
+			_, err := kb.Wrap(key, nil)
+			if err != nil {
+				t.Errorf("concurrent Wrap() error = %v", err)
+			}
+		}()
+	}
+
+	wg.Wait()
 }

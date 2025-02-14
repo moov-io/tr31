@@ -5,6 +5,32 @@ import (
 	"testing"
 )
 
+func TestEncryptAESCBC_KeySizes(t *testing.T) {
+	tests := []struct {
+		name    string
+		keySize int
+		wantErr bool
+	}{
+		{"AES-128", 16, false},
+		{"AES-192", 24, false},
+		{"AES-256", 32, false},
+		{"Invalid size", 20, true},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			key := make([]byte, tt.keySize)
+			iv := make([]byte, aes.BlockSize)
+			data := make([]byte, aes.BlockSize)
+
+			_, err := EncryptAESCBC(key, iv, data)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("EncryptAESCBC() error = %v, wantErr %v", err, tt.wantErr)
+			}
+		})
+	}
+}
+
 func TestEncryptAESCBC(t *testing.T) {
 	tests := []struct {
 		name    string

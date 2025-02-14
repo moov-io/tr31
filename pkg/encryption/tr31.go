@@ -181,6 +181,12 @@ func (b *Blocks) Set(key string, item string) error {
 			Message: fmt.Sprintf(BlockErrorDataInvalid, key, item),
 		}
 	}
+	// Add length validation
+	if len(item) > 0xFFFF { // 65535 bytes max
+		return &HeaderError{
+			Message: fmt.Sprintf(BlockErrorLengthLong, key),
+		}
+	}
 	b._blocks[key] = item
 	return nil
 }
@@ -797,6 +803,23 @@ func (kb *KeyBlock) BWrap(header string, key []byte, extraPad int) (string, erro
 
 // BDerive derives the Key Block Encryption and Authentication Keys (KBEK, KBAK) using the Key Block Protection Key (KBPK)
 func (kb *KeyBlock) BDerive() ([]byte, []byte, error) {
+	if kb == nil || kb.header == nil || kb.header.VersionID != TR31_VERSION_B {
+		version := "nil keyblock"
+		if kb != nil && kb.header != nil {
+			version = kb.header.VersionID
+		}
+		return nil, nil, &KeyBlockError{
+			Message: fmt.Sprintf(BlockErrorVersion, version),
+		}
+	}
+
+	// Strengthen key length validation
+	if len(kb.kbpk) != 16 && len(kb.kbpk) != 24 {
+		return nil, nil, &KeyBlockError{
+			Message: fmt.Sprintf(BlockErrorKBKPLenNotMatched, len(kb.kbpk), kb.header.VersionID),
+		}
+	}
+
 	// Key Derivation data
 	// byte 0 = a counter increment for each block of kbpk, start at 1
 	// byte 1-2 = key usage indicator
@@ -857,6 +880,7 @@ func (kb *KeyBlock) BDerive() ([]byte, []byte, error) {
 
 	return kbek, kbak, nil
 }
+
 func (kb *KeyBlock) bGenerateMac(kbak []byte, header string, keyData []byte) ([]byte, error) {
 	// Derive the CMAC subkey using KBAK
 	km1, _, err := kb.deriveDesCmacSubkey(kbak)
@@ -883,6 +907,7 @@ func (kb *KeyBlock) bGenerateMac(kbak []byte, header string, keyData []byte) ([]
 
 	return mac, nil
 }
+
 func shiftLeft1(inBytes []byte) []byte {
 	// Shift the byte array left by 1 bit
 	result := make([]byte, len(inBytes))

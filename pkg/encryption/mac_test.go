@@ -4,9 +4,10 @@ import (
 	"bytes"
 	"encoding/binary"
 	"encoding/hex"
-	"github.com/stretchr/testify/assert"
 	"strings"
 	"testing"
+
+	"github.com/stretchr/testify/assert"
 )
 
 func Test_generate_cbc_mac_with_well_known(t *testing.T) {
@@ -81,6 +82,55 @@ func TestGenerateCBCMAC(t *testing.T) {
 			}
 			if !tt.wantErr && tt.length != 0 && len(got) != tt.length {
 				t.Errorf("GenerateCBCMAC() got length = %d, want %d", len(got), tt.length)
+			}
+		})
+	}
+}
+
+func TestGenerateCBCMAC_EdgeCases(t *testing.T) {
+	tests := []struct {
+		name    string
+		key     []byte
+		data    []byte
+		padding int
+		length  int
+		alg     Algorithm
+		wantErr bool
+	}{
+		{
+			name:    "Nil key",
+			key:     nil,
+			data:    []byte{1, 2, 3, 4},
+			padding: 1,
+			length:  8,
+			alg:     DES,
+			wantErr: true,
+		},
+		{
+			name:    "Zero length",
+			key:     make([]byte, 16),
+			data:    []byte{},
+			padding: 1,
+			length:  8,
+			alg:     AES,
+			wantErr: true,
+		},
+		{
+			name:    "Invalid padding method",
+			key:     make([]byte, 16),
+			data:    []byte{1, 2, 3, 4},
+			padding: 4, // Invalid padding value
+			length:  8,
+			alg:     AES,
+			wantErr: true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			_, err := GenerateCBCMAC(tt.key, tt.data, tt.padding, tt.length, tt.alg)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("GenerateCBCMAC() error = %v, wantErr %v", err, tt.wantErr)
 			}
 		})
 	}
