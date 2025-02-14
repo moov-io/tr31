@@ -8,8 +8,14 @@ import (
 
 // EncryptAESCBC encrypts data using AES CBC algorithm
 func EncryptAESCBC(key []byte, iv []byte, data []byte) ([]byte, error) {
+	if len(data) == 0 {
+		return nil, fmt.Errorf("Data is empty")
+	}
 	if len(data)%aes.BlockSize != 0 {
 		return nil, fmt.Errorf("data length (%d) must be a multiple of AES block size %d", len(data), aes.BlockSize)
+	}
+	if len(iv) != aes.BlockSize {
+		return nil, fmt.Errorf("IV length (%d) must be a equal of AES block size %d", len(data), aes.BlockSize)
 	}
 
 	block, err := aes.NewCipher(key)
@@ -25,6 +31,9 @@ func EncryptAESCBC(key []byte, iv []byte, data []byte) ([]byte, error) {
 
 // EncryptAESECB encrypts data using AES ECB algorithm
 func EncryptAESECB(key []byte, data []byte) ([]byte, error) {
+	if len(data) == 0 {
+		return nil, fmt.Errorf("Data is empty")
+	}
 	if len(data)%aes.BlockSize != 0 {
 		return nil, fmt.Errorf("data length (%d) must be a multiple of AES block size %d", len(data), aes.BlockSize)
 	}
@@ -44,8 +53,14 @@ func EncryptAESECB(key []byte, data []byte) ([]byte, error) {
 
 // DecryptAESCBC decrypts data using AES CBC algorithm
 func DecryptAESCBC(key []byte, iv []byte, data []byte) ([]byte, error) {
+	if len(data) == 0 {
+		return nil, fmt.Errorf("Data is empty")
+	}
 	if len(data)%aes.BlockSize != 0 {
 		return nil, fmt.Errorf("data length (%d) must be a multiple of AES block size %d", len(data), aes.BlockSize)
+	}
+	if len(iv) != aes.BlockSize {
+		return nil, fmt.Errorf("IV length (%d) must be a equal of AES block size %d", len(data), aes.BlockSize)
 	}
 
 	block, err := aes.NewCipher(key)
@@ -62,6 +77,9 @@ func DecryptAESCBC(key []byte, iv []byte, data []byte) ([]byte, error) {
 
 // DecryptAESECB decrypts data using AES ECB algorithm
 func DecryptAESECB(key []byte, data []byte) ([]byte, error) {
+	if len(data) == 0 {
+		return nil, fmt.Errorf("Data is empty")
+	}
 	if len(data)%aes.BlockSize != 0 {
 		return nil, fmt.Errorf("data length (%d) must be a multiple of AES block size %d", len(data), aes.BlockSize)
 	}
