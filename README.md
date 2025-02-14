@@ -56,19 +56,25 @@ import (
 func main() {
     // Create a new header with TR-31 version B
     header, err := encryption.NewHeader(
-        encryption.TR31_VERSION_B, // Version ID
-        "P0",                      // Key Usage (PIN Encryption Key)
-        "T",                       // Algorithm (Triple DES)
-        "E",                       // Mode of Use (Encrypt)
-        "00",                      // Version Number
-        "N",                       // Exportability (Non-exportable)
+      encryption.TR31_VERSION_D, // Version ID
+      "B0",                      // Key Usage (Data Encryption Key)
+      "A",                       // Algorithm (AES)
+      "E",                       // Mode of Use (Encrypt)
+      "01",                      // Version Number
+      "X",                       // Exportability (Exportable with restrictions)
     )
+
     if err != nil {
         panic(err)
     }
 
     // Create a key block with your Key Block Protection Key (KBPK)
-    kbpk := []byte{...} // Your 16 or 24-byte KBPK
+    kbpkopts := KBPKOptions{
+		  Version:   "D",
+		  KeyLength: 32,
+	  }
+    kbpk, _ := GenerateKBPK(kbpkopts)
+    // Create a new KeyBlock 
     keyBlock, err := encryption.NewKeyBlock(kbpk, header)
     if err != nil {
         panic(err)
