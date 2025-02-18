@@ -7,10 +7,10 @@ import (
 
 func TestFetchKBPKLocal(t *testing.T) {
 	startLocalVault("my-fixed-token")
-	saveKey("http://127.0.0.1:8200", "my-fixed-token", "myapp/config", "kbkp", "AAAAAAAAAAAAAAAABBBBBBBBBBBBBBBBCCCCCCCCCCCCCCCC")
-	kbkp, _ := readKey("http://127.0.0.1:8200", "my-fixed-token", "myapp/config", "kbkp")
+	saveKey("http://127.0.0.1:8200", "my-fixed-token", "myapp/config", "kbkp", "AAAAAAAAAAAAAAAABBBBBBBBBBBBBBBBCCCCCCCCCCCCCCCC", 10)
+	kbkp, _ := readKey("http://127.0.0.1:8200", "my-fixed-token", "myapp/config", "kbkp", 10)
 	require.Equal(t, "AAAAAAAAAAAAAAAABBBBBBBBBBBBBBBBCCCCCCCCCCCCCCCC", kbkp)
-	removeKey("http://127.0.0.1:8200", "my-fixed-token", "myapp/config", "kbkp")
+	removeKey("http://127.0.0.1:8200", "my-fixed-token", "myapp/config", "kbkp", 10)
 	closeVault()
 }
 
@@ -23,10 +23,10 @@ func TestDecriptDataWithLocalVault(t *testing.T) {
 		KeyBlock:   "A0088M3TC00E000022BD7EC46BBE2A6A73389D1BA6DB63120B386F912839F4679C0523399E4D8D0F1D9A356E",
 	}
 	startLocalVault(param.VaultToken)
-	saveKey(param.VaultAddr, param.VaultToken, "myapp/config", "kbkp", "AAAAAAAAAAAAAAAABBBBBBBBBBBBBBBBCCCCCCCCCCCCCCCC")
+	saveKey(param.VaultAddr, param.VaultToken, "myapp/config", "kbkp", "AAAAAAAAAAAAAAAABBBBBBBBBBBBBBBBCCCCCCCCCCCCCCCC", 10)
 
 	keyStr, _ := DecryptData(param)
-	removeKey(param.VaultAddr, param.VaultToken, "myapp/config", "kbkp")
+	removeKey(param.VaultAddr, param.VaultToken, "myapp/config", "kbkp", 10)
 	closeVault()
 	require.Equal(t, "ccccccccccccccccdddddddddddddddd", keyStr)
 }
