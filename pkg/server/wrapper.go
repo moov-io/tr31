@@ -3,13 +3,14 @@ package server
 import (
 	"bytes"
 	"encoding/hex"
-	"github.com/moov-io/psec/pkg/encryption"
+	"github.com/moov-io/tr31/pkg/encryption"
 )
 
 type UnifiedParams struct {
 	VaultAddr  string
 	VaultToken string
-	KekId      string
+	KeyPath    string
+	KeyName    string
 	KeyBlock   string
 }
 
@@ -35,6 +36,12 @@ func TransactionKey(params UnifiedParams) (string, error) {
 	identify := hex.EncodeToString(encData)
 	return identify, nil
 }
+
 func DecryptData(params UnifiedParams) (string, error) {
-	return "aaaaaaaaa", nil
+	kbpkStr, _ := readKey(params.VaultAddr, params.VaultToken, params.KeyPath, params.KeyName)
+	kbpk, _ := hex.DecodeString(kbpkStr)
+	block, _ := encryption.NewKeyBlock(kbpk, nil)
+	resultKB, _ := block.Unwrap(params.KeyBlock)
+	encodedStr := hex.EncodeToString(resultKB)
+	return encodedStr, nil
 }

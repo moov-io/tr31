@@ -91,7 +91,7 @@ func TestService_DecryptData(t *testing.T) {
 		return
 	}
 
-	data, err := s.DecryptData(m.InitialKey, "AAAAAAAAAAAAAAAA", "AAAAAAAAAAAAAAAA")
+	data, err := s.DecryptData(m.InitialKey, "/auth/keys", "secretKey", "A0088M3TC00E000022BD7EC46BBE2A6A73389D1BA6DB63120B386F912839F4679C0523399E4D8D0F1D9A356E")
 	require.NoError(t, err)
-	require.Equal(t, data, "aaaaaaaaa")
+	require.Equal(t, data, "ccccccccccccccccdddddddddddddddd")
 }

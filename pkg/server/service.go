@@ -16,7 +16,7 @@ type Service interface {
 	GetMachine(ik string) (*Machine, error)
 	GetMachines() []*Machine
 	DeleteMachine(ik string) error
-	DecryptData(ik, kekId, keyBlock string) (string, error)
+	DecryptData(ik, keyPath, keyName, keyBlock string) (string, error)
 }
 
 // service a concrete implementation of the service.
@@ -72,7 +72,7 @@ func (s *service) GetMachines() []*Machine {
 	return s.store.FindAllMachines()
 }
 
-func (s *service) DecryptData(ik, kekId, keyBlock string) (string, error) {
+func (s *service) DecryptData(ik, keyPath, keyName, keyBlock string) (string, error) {
 	m, err := s.GetMachine(ik)
 	if err != nil {
 		return "", fmt.Errorf("make next ksn: %v(%s)", err, ik)
@@ -81,7 +81,8 @@ func (s *service) DecryptData(ik, kekId, keyBlock string) (string, error) {
 	params := UnifiedParams{
 		VaultAddr:  m.vaultAuth.VaultAddress,
 		VaultToken: m.vaultAuth.VaultToken,
-		KekId:      kekId,
+		KeyPath:    keyPath,
+		KeyName:    keyName,
 		KeyBlock:   keyBlock,
 	}
 

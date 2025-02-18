@@ -1,4 +1,4 @@
-module github.com/moov-io/psec
+module github.com/moov-io/tr31
 
 go 1.23.3
 

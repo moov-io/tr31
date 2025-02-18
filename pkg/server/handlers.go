@@ -135,7 +135,8 @@ func createMachineEndpoint(s Service) endpoint.Endpoint {
 type decryptDataRequest struct {
 	requestID string
 	ik        string
-	kekId     string
+	keyPath   string
+	keyName   string
 	keyBlock  string
 }
 
@@ -152,7 +153,8 @@ func decodeDecryptDataRequest(_ context.Context, request *http.Request) (interfa
 	req.ik = mux.Vars(request)["ik"]
 
 	type requestParam struct {
-		kekId    string
+		keyPath  string
+		keyName  string
 		keyBlock string
 	}
 
@@ -161,7 +163,8 @@ func decodeDecryptDataRequest(_ context.Context, request *http.Request) (interfa
 		return nil, err
 	}
 
-	req.kekId = reqParams.kekId
+	req.keyPath = reqParams.keyPath
+	req.keyName = reqParams.keyName
 	req.keyBlock = reqParams.keyBlock
 	return req, nil
 }
@@ -174,7 +177,7 @@ func decryptDataEndpoint(s Service) endpoint.Endpoint {
 		}
 
 		resp := decryptDataResponse{}
-		decrypted, err := s.DecryptData(req.ik, req.kekId, req.keyBlock)
+		decrypted, err := s.DecryptData(req.ik, req.keyPath, req.keyName, req.keyBlock)
 		if err != nil {
 			resp.Err = err
 			return resp, nil
