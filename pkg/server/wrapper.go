@@ -3,6 +3,7 @@ package server
 import (
 	"bytes"
 	"encoding/hex"
+	"errors"
 	"github.com/moov-io/tr31/pkg/encryption"
 )
 
@@ -38,10 +39,22 @@ func TransactionKey(params UnifiedParams) (string, error) {
 }
 
 func DecryptData(params UnifiedParams) (string, error) {
-	kbpkStr, _ := readKey(params.VaultAddr, params.VaultToken, params.KeyPath, params.KeyName)
-	kbpk, _ := hex.DecodeString(kbpkStr)
-	block, _ := encryption.NewKeyBlock(kbpk, nil)
-	resultKB, _ := block.Unwrap(params.KeyBlock)
+	kbpkStr, err := readKey(params.VaultAddr, params.VaultToken, params.KeyPath, params.KeyName)
+	if err != nil {
+		return "", errors.New(err.Message)
+	}
+	kbpk, decErr := hex.DecodeString(kbpkStr)
+	if decErr != nil {
+		return "", decErr
+	}
+	block, bErr := encryption.NewKeyBlock(kbpk, nil)
+	if bErr != nil {
+		return "", bErr
+	}
+	resultKB, wErr := block.Unwrap(params.KeyBlock)
+	if wErr != nil {
+		return "", wErr
+	}
 	encodedStr := hex.EncodeToString(resultKB)
 	return encodedStr, nil
 }
