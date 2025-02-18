@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"time"
 
 	"github.com/go-kit/kit/endpoint"
 	"github.com/gorilla/mux"
@@ -138,6 +139,7 @@ type decryptDataRequest struct {
 	keyPath   string
 	keyName   string
 	keyBlock  string
+	timeout   time.Duration
 }
 
 type decryptDataResponse struct {
@@ -156,6 +158,7 @@ func decodeDecryptDataRequest(_ context.Context, request *http.Request) (interfa
 		keyPath  string
 		keyName  string
 		keyBlock string
+		timeout  time.Duration
 	}
 
 	reqParams := requestParam{}
@@ -166,6 +169,7 @@ func decodeDecryptDataRequest(_ context.Context, request *http.Request) (interfa
 	req.keyPath = reqParams.keyPath
 	req.keyName = reqParams.keyName
 	req.keyBlock = reqParams.keyBlock
+	req.timeout = reqParams.timeout
 	return req, nil
 }
 

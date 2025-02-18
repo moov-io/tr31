@@ -5,6 +5,7 @@ import (
 	"encoding/hex"
 	"errors"
 	"github.com/moov-io/tr31/pkg/encryption"
+	"time"
 )
 
 type UnifiedParams struct {
@@ -13,6 +14,7 @@ type UnifiedParams struct {
 	KeyPath    string
 	KeyName    string
 	KeyBlock   string
+	timeout    time.Duration
 }
 
 type WrapperCall func(params UnifiedParams) (string, error)
@@ -39,7 +41,7 @@ func TransactionKey(params UnifiedParams) (string, error) {
 }
 
 func DecryptData(params UnifiedParams) (string, error) {
-	kbpkStr, err := readKey(params.VaultAddr, params.VaultToken, params.KeyPath, params.KeyName)
+	kbpkStr, err := readKey(params.VaultAddr, params.VaultToken, params.KeyPath, params.KeyName, params.timeout)
 	if err != nil {
 		return "", errors.New(err.Message)
 	}

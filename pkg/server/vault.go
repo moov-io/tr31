@@ -49,8 +49,22 @@ func startLocalVault(vaultToken string) *VaultError {
 	return nil
 }
 
+func createVaultClient(vaultAddr, vaultToken string, timeout time.Duration) (*api.Client, *VaultError) {
+	config := api.DefaultConfig()
+	config.Address = vaultAddr
+	config.HttpClient.Timeout = timeout
+	client, err := api.NewClient(config)
+	if err != nil {
+		return nil, &VaultError{
+			Message: fmt.Sprintf(VaultErrorCreatClient, err),
+		}
+	}
+	client.SetToken(vaultToken)
+	return client, nil
+}
+
 // 2️⃣ Save a key-value pair in Vault
-func saveKey(vaultAddr, vaultToken, path, key, value string) *VaultError {
+func saveKey(vaultAddr, vaultToken, path, key, value string, timeout time.Duration) *VaultError {
 	if err := func() *VaultError {
 		switch {
 		case len(vaultAddr) == 0:
@@ -70,13 +84,10 @@ func saveKey(vaultAddr, vaultToken, path, key, value string) *VaultError {
 		return err
 	}
 
-	client, err := api.NewClient(&api.Config{Address: vaultAddr})
+	client, err := createVaultClient(vaultAddr, vaultToken, timeout)
 	if err != nil {
-		return &VaultError{
-			Message: fmt.Sprintf(VaultErrorCreatClient, err),
-		}
+		return err
 	}
-	client.SetToken(vaultToken)
 
 	// Store key-value
 	secretData := map[string]interface{}{
@@ -85,15 +96,15 @@ func saveKey(vaultAddr, vaultToken, path, key, value string) *VaultError {
 		},
 	}
 
-	_, err = client.Logical().Write("secret/data/"+path, secretData)
-	if err != nil {
-		return &VaultError{Message: fmt.Sprintf(VaultErrorWriting, err)}
+	_, vErr := client.Logical().Write("secret/data/"+path, secretData)
+	if vErr != nil {
+		return &VaultError{Message: fmt.Sprintf(VaultErrorWriting, vErr)}
 	}
 	return nil
 }
 
 // 3️⃣ Read a key from Vault
-func readKey(vaultAddr, vaultToken, path, key string) (string, *VaultError) {
+func readKey(vaultAddr, vaultToken, path, key string, timeout time.Duration) (string, *VaultError) {
 	if err := func() *VaultError {
 		switch {
 		case len(vaultAddr) == 0:
@@ -110,15 +121,15 @@ func readKey(vaultAddr, vaultToken, path, key string) (string, *VaultError) {
 	}(); err != nil {
 		return "", err
 	}
-	client, err := api.NewClient(&api.Config{Address: vaultAddr})
-	if err != nil {
-		return "", &VaultError{Message: fmt.Sprintf(VaultErrorCreatClient, err)}
-	}
-	client.SetToken(vaultToken)
 
-	secret, err := client.Logical().Read("secret/data/" + path)
-	if err != nil || secret == nil {
-		return "", &VaultError{Message: fmt.Sprintf(VaultErrorReadResult, err)}
+	client, err := createVaultClient(vaultAddr, vaultToken, timeout)
+	if err != nil {
+		return "", err
+	}
+
+	secret, vErr := client.Logical().Read("secret/data/" + path)
+	if vErr != nil || secret == nil {
+		return "", &VaultError{Message: fmt.Sprintf(VaultErrorReadResult, vErr)}
 	}
 
 	// Extract the value
@@ -135,7 +146,7 @@ func readKey(vaultAddr, vaultToken, path, key string) (string, *VaultError) {
 }
 
 // 4️⃣ Remove a key from Vault
-func removeKey(vaultAddr, vaultToken, path, key string) *VaultError {
+func removeKey(vaultAddr, vaultToken, path, key string, timeout time.Duration) *VaultError {
 	if err := func() *VaultError {
 		switch {
 		case len(vaultAddr) == 0:
@@ -152,16 +163,15 @@ func removeKey(vaultAddr, vaultToken, path, key string) *VaultError {
 	}(); err != nil {
 		return err
 	}
-	client, err := api.NewClient(&api.Config{Address: vaultAddr})
+	client, err := createVaultClient(vaultAddr, vaultToken, timeout)
 	if err != nil {
-		return &VaultError{Message: fmt.Sprintf(VaultErrorCreatClient, err)}
+		return err
 	}
-	client.SetToken(vaultToken)
 
 	// Read existing data
-	secret, err := client.Logical().Read("secret/data/" + path)
-	if err != nil || secret == nil {
-		return &VaultError{Message: fmt.Sprintf(VaultErrorReadResult, err)}
+	secret, vErr := client.Logical().Read("secret/data/" + path)
+	if vErr != nil || secret == nil {
+		return &VaultError{Message: fmt.Sprintf(VaultErrorReadResult, vErr)}
 	}
 
 	// Remove key from data
@@ -177,8 +187,8 @@ func removeKey(vaultAddr, vaultToken, path, key string) *VaultError {
 		"data": data,
 	}
 
-	_, err = client.Logical().Write("secret/data/"+path, updatedSecret)
-	if err != nil {
+	_, vErr = client.Logical().Write("secret/data/"+path, updatedSecret)
+	if vErr != nil {
 		return &VaultError{Message: fmt.Sprintf(VaultErrorUpdate, key)}
 	}
 	return nil

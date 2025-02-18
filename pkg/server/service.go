@@ -3,6 +3,7 @@ package server
 import (
 	"errors"
 	"fmt"
+	"time"
 )
 
 var (
@@ -16,7 +17,7 @@ type Service interface {
 	GetMachine(ik string) (*Machine, error)
 	GetMachines() []*Machine
 	DeleteMachine(ik string) error
-	DecryptData(ik, keyPath, keyName, keyBlock string) (string, error)
+	DecryptData(ik, keyPath, keyName, keyBlock string, timeout time.Duration) (string, error)
 }
 
 // service a concrete implementation of the service.
@@ -72,7 +73,7 @@ func (s *service) GetMachines() []*Machine {
 	return s.store.FindAllMachines()
 }
 
-func (s *service) DecryptData(ik, keyPath, keyName, keyBlock string) (string, error) {
+func (s *service) DecryptData(ik, keyPath, keyName, keyBlock string, timeout time.Duration) (string, error) {
 	m, err := s.GetMachine(ik)
 	if err != nil {
 		return "", fmt.Errorf("make next ksn: %v(%s)", err, ik)
@@ -84,6 +85,7 @@ func (s *service) DecryptData(ik, keyPath, keyName, keyBlock string) (string, er
 		KeyPath:    keyPath,
 		KeyName:    keyName,
 		KeyBlock:   keyBlock,
+		timeout:    timeout,
 	}
 
 	return DecryptData(params)
