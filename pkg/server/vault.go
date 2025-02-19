@@ -1,10 +1,13 @@
 package server
 
 import (
+	"bytes"
+	"encoding/json"
 	"fmt"
 	"github.com/hashicorp/vault/api"
 	"os"
 	"os/exec"
+	"runtime"
 	"time"
 )
 
@@ -21,6 +24,7 @@ const (
 	VaultErrorNoKeyPath       string = "Key path is not supported."
 	VaultErrorNoKeyName       string = "Key name is not supported."
 	VaultErrorNoKeyData       string = "Key data is not supported."
+	VaultErrorPermisson       string = "Error give permission to Vault with error: %v:"
 	VaultErrorWriting         string = "Error writing to Vault with error: %v:"
 	VaultErrorReadResult      string = "Error reading from Vault or no data found:%v"
 	VaultErrorResultNotString string = "Value is not a string: %v"
@@ -46,7 +50,7 @@ var vaultCmd *exec.Cmd
 func createVaultClient(vaultAddr, vaultToken string, timeout time.Duration) (*api.Client, *VaultError) {
 	config := api.DefaultConfig()
 	config.Address = vaultAddr
-	config.HttpClient.Timeout = timeout
+	config.HttpClient.Timeout = timeout * time.Second
 	client, err := api.NewClient(config)
 	if err != nil {
 		return nil, &VaultError{
@@ -55,6 +59,39 @@ func createVaultClient(vaultAddr, vaultToken string, timeout time.Duration) (*ap
 	}
 	client.SetToken(vaultToken)
 	return client, nil
+}
+func enableKVSecretsEngine(client *api.Client, path string) error {
+	// Prepare the request body for enabling kv-v2 secrets engine
+	mountRequest := map[string]interface{}{
+		"type":        "kv",
+		"options":     map[string]interface{}{"version": "2"}, // specify kv-v2 version
+		"description": "KV secrets engine version 2",
+	}
+
+	// Marshal the request body into JSON
+	mountRequestBody, err := json.Marshal(mountRequest)
+	if err != nil {
+		return fmt.Errorf("failed to marshal mount request: %v", err)
+	}
+
+	// Use the Vault client to send an HTTP request to the sys/mounts endpoint
+	req := client.NewRequest("POST", fmt.Sprintf("/v1/sys/mounts/%s", path))
+
+	// Set the request body
+	req.Body = bytes.NewBuffer(mountRequestBody)
+
+	// Send the request to enable the KV engine at the given path
+	resp, err := client.RawRequest(req)
+	if err != nil {
+		return fmt.Errorf("failed to enable KV engine at path %s: %v", path, err)
+	}
+
+	if resp.StatusCode != 204 {
+		return fmt.Errorf("failed to enable KV engine, unexpected status code: %v", resp.StatusCode)
+	}
+
+	fmt.Printf("Successfully enabled KV version 2 at path: %s\n", path)
+	return nil
 }
 
 // 1️⃣ Start Vault (First close existing Vault if running)
@@ -66,11 +103,31 @@ func (v *VaultClient) startVault() *VaultError {
 	vaultCmd.Stdout = os.Stdout
 	vaultCmd.Stderr = os.Stderr
 
+	// Set environment variable based on OS
+	if runtime.GOOS == "windows" {
+		// For Windows (cmd.exe and PowerShell)
+		err := os.Setenv("VAULT_ADDR", "http://127.0.0.1:8200")
+		if err != nil {
+			return &VaultError{
+				Message: fmt.Sprintf("failed to set VAULT_ADDR: %v", err),
+			}
+		}
+	} else {
+		// For Linux/macOS
+		os.Setenv("VAULT_ADDR", "http://127.0.0.1:8200")
+	}
+
 	if err := vaultCmd.Start(); err != nil {
 		return &VaultError{
 			Message: fmt.Sprintf(VaultErrorRunning, err),
 		}
 	}
+	time.Sleep(1 * time.Second)
+
+	_ = enableKVSecretsEngine(v.client, "secret")
+	//if sErr != nil {
+	//	return &VaultError{Message: fmt.Sprintf("%v", sErr)}
+	//}
 	return nil
 }
 
@@ -100,7 +157,7 @@ func (v *VaultClient) saveKey(path, key, value string) *VaultError {
 			key: value,
 		},
 	}
-
+	fmt.Println("Saving secret at path:", path, "with key:", key, "and value:", value)
 	_, vErr := client.Logical().Write("secret/data/"+path, secretData)
 	if vErr != nil {
 		return &VaultError{Message: fmt.Sprintf(VaultErrorWriting, vErr)}
@@ -190,13 +247,19 @@ func (v *VaultClient) removeKey(path, key string) *VaultError {
 }
 
 // 5️⃣ Stop Vault Process
-func (*VaultClient) closeVault() {
-	// Kill Vault process (Linux/Mac)
-	exec.Command("pkill", "vault").Run()
-
-	// If Vault was started in this process, terminate it
-	if vaultCmd != nil && vaultCmd.Process != nil {
-		if err := vaultCmd.Process.Kill(); err != nil {
+func (v *VaultClient) closeVault() {
+	if runtime.GOOS == "windows" {
+		// Run PowerShell command to force kill Vault
+		cmd := exec.Command("powershell", "-Command", "Get-Process vault | Stop-Process -Force")
+		err := cmd.Run()
+		if err != nil {
+			fmt.Println("Error killing Vault process:", err)
+		} else {
+			fmt.Println("Vault process terminated successfully (Windows)")
 		}
+	} else {
+		// Linux/macOS: Use pkill
+		cmd := exec.Command("pkill", "vault")
+		cmd.Run()
 	}
 }

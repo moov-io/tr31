@@ -6,13 +6,14 @@ import (
 )
 
 func TestFetchKBPKLocal(t *testing.T) {
-	vaultClient, err := createVaultClient("http://127.0.0.1:8200", "my-fixed-token", 10000)
+	vaultClient, err := createVaultClient("http://127.0.0.1:8200", "my-fixed-token", 1)
 	require.Nil(t, err)
 	vault := VaultClient{vaultClient}
-	vault.startVault()
+	vErr := vault.startVault()
+	require.Nil(t, vErr)
 
-	//vErr := vault.saveKey("myapp/config", "kbkp", "AAAAAAAAAAAAAAAABBBBBBBBBBBBBBBBCCCCCCCCCCCCCCCC")
-	//require.Nil(t, vErr)
+	vErr = vault.saveKey("myapp/config", "kbkp", "AAAAAAAAAAAAAAAABBBBBBBBBBBBBBBBCCCCCCCCCCCCCCCC")
+	require.Nil(t, vErr)
 
 	kbkp, vErr := vault.readKey("myapp/config", "kbkp")
 	require.Nil(t, vErr)
