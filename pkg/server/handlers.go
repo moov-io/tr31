@@ -181,7 +181,7 @@ func decryptDataEndpoint(s Service) endpoint.Endpoint {
 		}
 
 		resp := decryptDataResponse{}
-		decrypted, err := s.DecryptData(req.ik, req.keyPath, req.keyName, req.keyBlock)
+		decrypted, err := s.DecryptData(req.ik, req.keyPath, req.keyName, req.keyBlock, req.timeout)
 		if err != nil {
 			resp.Err = err
 			return resp, nil
