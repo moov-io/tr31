@@ -15,6 +15,7 @@ type VaultError struct {
 const (
 	VaultErrorRunning         string = "Vault failed to start with error: %v"
 	VaultErrorCreatClient     string = "Error creating Vault client: %v"
+	VaultErrorClient          string = "Error Vault client."
 	VaultErrorNoServerAddress string = "Server address is not supported."
 	VaultErrorNoServerToken   string = "Vault token is not supported."
 	VaultErrorNoKeyPath       string = "Key path is not supported."
@@ -27,27 +28,20 @@ const (
 	VaultErrorUpdate          string = "Error updating Vault: %v"
 )
 
+type VaultClientInterface interface {
+	startVault() *VaultError
+	saveKey(path, key, value string) *VaultError
+	readKey(path, key string) (string, *VaultError)
+	removeKey(path, key string) *VaultError
+	closeVault()
+}
+
+type VaultClient struct {
+	client *api.Client
+}
+
 // Vault Process Reference
 var vaultCmd *exec.Cmd
-
-// 1️⃣ Start Vault (First close existing Vault if running)
-func startLocalVault(vaultToken string) *VaultError {
-	// Kill existing Vault process
-	closeVault()
-	time.Sleep(100 * time.Millisecond)
-
-	// Start Vault in dev mode
-	vaultCmd = exec.Command("vault", "server", "-dev", "-dev-root-token-id="+vaultToken)
-	vaultCmd.Stdout = os.Stdout
-	vaultCmd.Stderr = os.Stderr
-
-	if err := vaultCmd.Start(); err != nil {
-		return &VaultError{
-			Message: fmt.Sprintf(VaultErrorRunning, err),
-		}
-	}
-	return nil
-}
 
 func createVaultClient(vaultAddr, vaultToken string, timeout time.Duration) (*api.Client, *VaultError) {
 	config := api.DefaultConfig()
@@ -63,14 +57,29 @@ func createVaultClient(vaultAddr, vaultToken string, timeout time.Duration) (*ap
 	return client, nil
 }
 
+// 1️⃣ Start Vault (First close existing Vault if running)
+func (v *VaultClient) startVault() *VaultError {
+	// Kill existing Vault process
+	v.closeVault()
+	// Start Vault in dev mode
+	vaultCmd = exec.Command("vault", "server", "-dev", "-dev-root-token-id="+v.client.Token())
+	vaultCmd.Stdout = os.Stdout
+	vaultCmd.Stderr = os.Stderr
+
+	if err := vaultCmd.Start(); err != nil {
+		return &VaultError{
+			Message: fmt.Sprintf(VaultErrorRunning, err),
+		}
+	}
+	return nil
+}
+
 // 2️⃣ Save a key-value pair in Vault
-func saveKey(vaultAddr, vaultToken, path, key, value string, timeout time.Duration) *VaultError {
+func (v *VaultClient) saveKey(path, key, value string) *VaultError {
 	if err := func() *VaultError {
 		switch {
-		case len(vaultAddr) == 0:
-			return &VaultError{Message: fmt.Sprintf(VaultErrorNoServerAddress)}
-		case len(vaultToken) == 0:
-			return &VaultError{Message: fmt.Sprintf(VaultErrorNoServerToken)}
+		case v.client == nil:
+			return &VaultError{Message: fmt.Sprintf(VaultErrorClient)}
 		case len(path) == 0:
 			return &VaultError{Message: fmt.Sprintf(VaultErrorNoKeyPath)}
 		case len(key) == 0:
@@ -84,11 +93,7 @@ func saveKey(vaultAddr, vaultToken, path, key, value string, timeout time.Durati
 		return err
 	}
 
-	client, err := createVaultClient(vaultAddr, vaultToken, timeout)
-	if err != nil {
-		return err
-	}
-
+	client := v.client
 	// Store key-value
 	secretData := map[string]interface{}{
 		"data": map[string]interface{}{
@@ -104,13 +109,11 @@ func saveKey(vaultAddr, vaultToken, path, key, value string, timeout time.Durati
 }
 
 // 3️⃣ Read a key from Vault
-func readKey(vaultAddr, vaultToken, path, key string, timeout time.Duration) (string, *VaultError) {
+func (v *VaultClient) readKey(path, key string) (string, *VaultError) {
 	if err := func() *VaultError {
 		switch {
-		case len(vaultAddr) == 0:
-			return &VaultError{Message: fmt.Sprintf(VaultErrorNoServerAddress)}
-		case len(vaultToken) == 0:
-			return &VaultError{Message: fmt.Sprintf(VaultErrorNoServerToken)}
+		case v.client == nil:
+			return &VaultError{Message: fmt.Sprintf(VaultErrorClient)}
 		case len(path) == 0:
 			return &VaultError{Message: fmt.Sprintf(VaultErrorNoKeyPath)}
 		case len(key) == 0:
@@ -122,10 +125,7 @@ func readKey(vaultAddr, vaultToken, path, key string, timeout time.Duration) (st
 		return "", err
 	}
 
-	client, err := createVaultClient(vaultAddr, vaultToken, timeout)
-	if err != nil {
-		return "", err
-	}
+	client := v.client
 
 	secret, vErr := client.Logical().Read("secret/data/" + path)
 	if vErr != nil || secret == nil {
@@ -146,13 +146,11 @@ func readKey(vaultAddr, vaultToken, path, key string, timeout time.Duration) (st
 }
 
 // 4️⃣ Remove a key from Vault
-func removeKey(vaultAddr, vaultToken, path, key string, timeout time.Duration) *VaultError {
+func (v *VaultClient) removeKey(path, key string) *VaultError {
 	if err := func() *VaultError {
 		switch {
-		case len(vaultAddr) == 0:
-			return &VaultError{Message: fmt.Sprintf(VaultErrorNoServerAddress)}
-		case len(vaultToken) == 0:
-			return &VaultError{Message: fmt.Sprintf(VaultErrorNoServerToken)}
+		case v.client == nil:
+			return &VaultError{Message: fmt.Sprintf(VaultErrorClient)}
 		case len(path) == 0:
 			return &VaultError{Message: fmt.Sprintf(VaultErrorNoKeyPath)}
 		case len(key) == 0:
@@ -163,10 +161,7 @@ func removeKey(vaultAddr, vaultToken, path, key string, timeout time.Duration) *
 	}(); err != nil {
 		return err
 	}
-	client, err := createVaultClient(vaultAddr, vaultToken, timeout)
-	if err != nil {
-		return err
-	}
+	client := v.client
 
 	// Read existing data
 	secret, vErr := client.Logical().Read("secret/data/" + path)
@@ -195,10 +190,9 @@ func removeKey(vaultAddr, vaultToken, path, key string, timeout time.Duration) *
 }
 
 // 5️⃣ Stop Vault Process
-func closeVault() {
+func (*VaultClient) closeVault() {
 	// Kill Vault process (Linux/Mac)
 	exec.Command("pkill", "vault").Run()
-	time.Sleep(2 * time.Second)
 
 	// If Vault was started in this process, terminate it
 	if vaultCmd != nil && vaultCmd.Process != nil {

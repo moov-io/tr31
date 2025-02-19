@@ -17,6 +17,7 @@ type Service interface {
 	GetMachine(ik string) (*Machine, error)
 	GetMachines() []*Machine
 	DeleteMachine(ik string) error
+	EncryptData(ik, keyPath, keyName, encKey string, header HeaderParams, timeout time.Duration) (string, error)
 	DecryptData(ik, keyPath, keyName, keyBlock string, timeout time.Duration) (string, error)
 }
 
@@ -71,6 +72,23 @@ func (s *service) GetMachine(ik string) (*Machine, error) {
 
 func (s *service) GetMachines() []*Machine {
 	return s.store.FindAllMachines()
+}
+
+func (s *service) EncryptData(ik, keyPath, keyName, encKey string, header HeaderParams, timeout time.Duration) (string, error) {
+	m, err := s.GetMachine(ik)
+	if err != nil {
+		return "", fmt.Errorf("make next ksn: %v(%s)", err, ik)
+	}
+	params := UnifiedParams{
+		VaultAddr:  m.vaultAuth.VaultAddress,
+		VaultToken: m.vaultAuth.VaultToken,
+		KeyPath:    keyPath,
+		KeyName:    keyName,
+		EncKey:     encKey,
+		Header:     header,
+		timeout:    timeout,
+	}
+	return EncryptData(params)
 }
 
 func (s *service) DecryptData(ik, keyPath, keyName, keyBlock string, timeout time.Duration) (string, error) {

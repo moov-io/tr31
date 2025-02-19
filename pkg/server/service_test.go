@@ -82,6 +82,28 @@ func TestService__DeleteMachine(t *testing.T) {
 	require.Equal(t, 0, len(machines))
 }
 
+func TestService_EncryptData(t *testing.T) {
+	s := mockServiceInMemory()
+	m := NewMachine(mockVaultAuthOne())
+	err := s.CreateMachine(m)
+	if err != nil {
+		return
+	}
+
+	header := HeaderParams{
+		VersionId:     "D",
+		KeyUsage:      "D0",
+		Algorithm:     "A",
+		ModeOfUse:     "D",
+		KeyVersion:    "00",
+		Exportability: "E",
+	}
+	data, err := s.EncryptData(m.InitialKey, "/auth/keys", "secretKey", "ccccccccccccccccdddddddddddddddd", header, 10)
+	require.NoError(t, err)
+	require.Equal(t, data, "A0088M3TC00E000022BD7EC46BBE2A6A73389D1BA6DB63120B386F912839F4679C0523399E4D8D0F1D9A356E")
+
+}
+
 func TestService_DecryptData(t *testing.T) {
 	s := mockServiceInMemory()
 
@@ -91,7 +113,7 @@ func TestService_DecryptData(t *testing.T) {
 		return
 	}
 
-	data, err := s.DecryptData(m.InitialKey, "/auth/keys", "secretKey", "A0088M3TC00E000022BD7EC46BBE2A6A73389D1BA6DB63120B386F912839F4679C0523399E4D8D0F1D9A356E")
+	data, err := s.DecryptData(m.InitialKey, "/auth/keys", "secretKey", "A0088M3TC00E000022BD7EC46BBE2A6A73389D1BA6DB63120B386F912839F4679C0523399E4D8D0F1D9A356E", 10)
 	require.NoError(t, err)
 	require.Equal(t, data, "ccccccccccccccccdddddddddddddddd")
 }

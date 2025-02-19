@@ -6,15 +6,31 @@ import (
 )
 
 func TestFetchKBPKLocal(t *testing.T) {
-	startLocalVault("my-fixed-token")
-	saveKey("http://127.0.0.1:8200", "my-fixed-token", "myapp/config", "kbkp", "AAAAAAAAAAAAAAAABBBBBBBBBBBBBBBBCCCCCCCCCCCCCCCC", 10)
-	kbkp, _ := readKey("http://127.0.0.1:8200", "my-fixed-token", "myapp/config", "kbkp", 10)
+	vaultClient, err := createVaultClient("http://127.0.0.1:8200", "my-fixed-token", 10000)
+	require.Nil(t, err)
+	vault := VaultClient{vaultClient}
+	vault.startVault()
+
+	//vErr := vault.saveKey("myapp/config", "kbkp", "AAAAAAAAAAAAAAAABBBBBBBBBBBBBBBBCCCCCCCCCCCCCCCC")
+	//require.Nil(t, vErr)
+
+	kbkp, vErr := vault.readKey("myapp/config", "kbkp")
+	require.Nil(t, vErr)
 	require.Equal(t, "AAAAAAAAAAAAAAAABBBBBBBBBBBBBBBBCCCCCCCCCCCCCCCC", kbkp)
-	removeKey("http://127.0.0.1:8200", "my-fixed-token", "myapp/config", "kbkp", 10)
-	closeVault()
+
+	vault.removeKey("myapp/config", "kbkp")
+
+	vault.closeVault()
 }
 
 func TestDecriptDataWithLocalVault(t *testing.T) {
+	vaultClient, err := createVaultClient("http://127.0.0.1:8200", "my-fixed-token", 1000)
+	require.Nil(t, err)
+	vault := VaultClient{vaultClient}
+	vault.startVault()
+
+	vault.saveKey("myapp/config", "kbkp", "AAAAAAAAAAAAAAAABBBBBBBBBBBBBBBBCCCCCCCCCCCCCCCC")
+
 	param := UnifiedParams{
 		VaultAddr:  "http://127.0.0.1:8200",
 		VaultToken: "my-fixed-token",
@@ -22,11 +38,11 @@ func TestDecriptDataWithLocalVault(t *testing.T) {
 		KeyName:    "kbkp",
 		KeyBlock:   "A0088M3TC00E000022BD7EC46BBE2A6A73389D1BA6DB63120B386F912839F4679C0523399E4D8D0F1D9A356E",
 	}
-	startLocalVault(param.VaultToken)
-	saveKey(param.VaultAddr, param.VaultToken, "myapp/config", "kbkp", "AAAAAAAAAAAAAAAABBBBBBBBBBBBBBBBCCCCCCCCCCCCCCCC", 10)
 
 	keyStr, _ := DecryptData(param)
-	removeKey(param.VaultAddr, param.VaultToken, "myapp/config", "kbkp", 10)
-	closeVault()
+
+	vault.removeKey("myapp/config", "kbkp")
+	vault.closeVault()
+
 	require.Equal(t, "ccccccccccccccccdddddddddddddddd", keyStr)
 }

@@ -133,6 +133,64 @@ func createMachineEndpoint(s Service) endpoint.Endpoint {
 	}
 }
 
+type encryptDataRequest struct {
+	requestID  string
+	ik         string
+	keyPath    string
+	keyName    string
+	encryptKey string
+	header     HeaderParams
+	timeout    time.Duration
+}
+type encryptDataResponse struct {
+	Data string `json:"data"`
+	Err  error  `json:"error"`
+}
+
+func decodeEncryptDataRequest(_ context.Context, request *http.Request) (interface{}, error) {
+	req := encryptDataRequest{
+		requestID: moovhttp.GetRequestID(request),
+	}
+	req.ik = mux.Vars(request)["ik"]
+	type requestParam struct {
+		keyPath    string
+		keyName    string
+		encryptKey string
+		header     HeaderParams
+		timeout    time.Duration
+	}
+	reqParams := requestParam{}
+	if err := bindJSON(request, &reqParams); err != nil {
+		return nil, err
+	}
+
+	req.keyPath = reqParams.keyPath
+	req.keyName = reqParams.keyName
+	req.encryptKey = reqParams.encryptKey
+	req.header = reqParams.header
+	req.timeout = reqParams.timeout
+	return req, nil
+}
+
+func encryptDataEndpoint(s Service) endpoint.Endpoint {
+	return func(_ context.Context, request interface{}) (interface{}, error) {
+		req, ok := request.(encryptDataRequest)
+		if !ok {
+			return encryptDataResponse{Err: ErrFoundABug}, ErrFoundABug
+		}
+
+		resp := encryptDataResponse{}
+		encrypted, err := s.EncryptData(req.ik, req.keyPath, req.keyName, req.encryptKey, req.header, req.timeout)
+		if err != nil {
+			resp.Err = err
+			return resp, nil
+		}
+
+		resp.Data = encrypted
+		return resp, nil
+	}
+}
+
 type decryptDataRequest struct {
 	requestID string
 	ik        string
@@ -141,7 +199,6 @@ type decryptDataRequest struct {
 	keyBlock  string
 	timeout   time.Duration
 }
-
 type decryptDataResponse struct {
 	Data string `json:"data"`
 	Err  error  `json:"error"`

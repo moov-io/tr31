@@ -8,12 +8,22 @@ import (
 	"time"
 )
 
+type HeaderParams struct {
+	VersionId     string
+	KeyUsage      string
+	Algorithm     string
+	ModeOfUse     string
+	KeyVersion    string
+	Exportability string
+}
 type UnifiedParams struct {
 	VaultAddr  string
 	VaultToken string
 	KeyPath    string
 	KeyName    string
 	KeyBlock   string
+	EncKey     string
+	Header     HeaderParams
 	timeout    time.Duration
 }
 
@@ -40,8 +50,52 @@ func TransactionKey(params UnifiedParams) (string, error) {
 	return identify, nil
 }
 
+func EncryptData(params UnifiedParams) (string, error) {
+	vaultClient, err := createVaultClient(params.VaultAddr, params.VaultToken, params.timeout)
+	if err != nil {
+		return "", errors.New(err.Message)
+	}
+	vault := VaultClient{vaultClient}
+	kbpkStr, err := vault.readKey(params.KeyPath, params.KeyName)
+	if err != nil {
+		return "", errors.New(err.Message)
+	}
+	kbpk, decErr := hex.DecodeString(kbpkStr)
+	if decErr != nil {
+		return "", decErr
+	}
+	enckey, decErr := hex.DecodeString(params.EncKey)
+	if decErr != nil {
+		return "", decErr
+	}
+	header, hErr := encryption.NewHeader(
+		params.Header.VersionId,
+		params.Header.KeyUsage,
+		params.Header.Algorithm,
+		params.Header.ModeOfUse,
+		params.Header.KeyVersion,
+		params.Header.Exportability)
+	if hErr != nil {
+		return "", decErr
+	}
+	kblock, bErr := encryption.NewKeyBlock(kbpk, header)
+	if bErr != nil {
+		return "", bErr
+	}
+	kb, wErr := kblock.Wrap(enckey, nil)
+	if wErr != nil {
+		return "", wErr
+	}
+	return kb, nil
+}
+
 func DecryptData(params UnifiedParams) (string, error) {
-	kbpkStr, err := readKey(params.VaultAddr, params.VaultToken, params.KeyPath, params.KeyName, params.timeout)
+	vaultClient, err := createVaultClient(params.VaultAddr, params.VaultToken, params.timeout)
+	if err != nil {
+		return "", errors.New(err.Message)
+	}
+	vault := VaultClient{vaultClient}
+	kbpkStr, err := vault.readKey(params.KeyPath, params.KeyName)
 	if err != nil {
 		return "", errors.New(err.Message)
 	}
