@@ -23,7 +23,7 @@ func mockVaultAuthOne() Vault {
 func mockVaultAuthTwo() Vault {
 	return Vault{
 		VaultAddress: "https://vault-cluster-public-vault-2d92a425.16ce2ded.z1.hashicorp.cloud:8200",
-		VaultToken:   "hvs.CAESIBsqFKMFzHabqYh0uf4O5Ui4zcDrqmLjc1I48p0gkCX7GicKImh2cy5IaFdsN2tGMTI4Zzg3aFBJUTBZWWZRN00udVFFUzQQ1hk",
+		VaultToken:   "input token",
 	}
 }
 
