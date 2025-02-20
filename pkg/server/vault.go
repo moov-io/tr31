@@ -28,7 +28,7 @@ const (
 	VaultErrorNoKeyPath       string = "Key path is not supported."
 	VaultErrorNoKeyName       string = "Key name is not supported."
 	VaultErrorNoKeyData       string = "Key data is not supported."
-	VaultErrorPermisson       string = "Error give permission to Vault with error: %v:"
+	VaultErrorPermission      string = "Error give permission to Vault with error: %v:"
 	VaultErrorWriting         string = "Error writing to Vault with error: %v:"
 	VaultErrorReadResult      string = "Error reading from Vault or no data found:%v"
 	VaultErrorResultNotString string = "Value is not a string: %v"
@@ -46,11 +46,6 @@ type VaultClientInterface interface {
 
 type VaultClient struct {
 	client VaultClientInterface
-}
-
-// Constructor
-func NewVaultClient(client VaultClientInterface) *VaultClient {
-	return &VaultClient{client: client}
 }
 
 // Proxy methods to delegate to the real or mock client
@@ -85,6 +80,16 @@ func NewOnlineVaultClient(client *api.Client) *OnlineVaultClient {
 // Vault Process Reference
 var vaultCmd *exec.Cmd
 
+// createVaultClient initializes and returns a new Vault API client.
+//
+// Parameters:
+// - vaultAddr: The address of the Vault server (e.g., "http://127.0.0.1:8200").
+// - vaultToken: The authentication token used to access Vault.
+// - timeout: The duration (in seconds) before the HTTP request times out.
+//
+// Returns:
+// - *api.Client: A pointer to the initialized Vault client if successful.
+// - *VaultError: An error object if the client creation fails.
 func createVaultClient(vaultAddr, vaultToken string, timeout time.Duration) (*api.Client, *VaultError) {
 	config := api.DefaultConfig()
 	config.Address = vaultAddr
@@ -98,6 +103,19 @@ func createVaultClient(vaultAddr, vaultToken string, timeout time.Duration) (*ap
 	client.SetToken(vaultToken)
 	return client, nil
 }
+
+// enableKVSecretsEngine enables the KV (Key-Value) secrets engine (version 2) at the specified path in Vault.
+//
+// Parameters:
+// - client: A pointer to the Vault API client.
+// - path: The mount path where the KV secrets engine should be enabled.
+//
+// Returns:
+// - error: An error if the operation fails; otherwise, nil.
+//
+// This function sends a request to the Vault server to mount the KV v2 secrets engine
+// at the specified path. It constructs the request body, makes an HTTP request, and
+// validates the response status.
 func enableKVSecretsEngine(client *api.Client, path string) error {
 	// Prepare the request body for enabling kv-v2 secrets engine
 	mountRequest := map[string]interface{}{
@@ -132,7 +150,16 @@ func enableKVSecretsEngine(client *api.Client, path string) error {
 	return nil
 }
 
-// 1️⃣ Start Vault (First close existing Vault if running)
+// startVault starts a local Vault server in development mode.
+//
+// This function is only called when using a locally installed Vault. It performs the following steps:
+// 1. Kills any existing Vault process.
+// 2. Starts a new Vault server in development mode with a predefined root token.
+// 3. Sets the VAULT_ADDR environment variable based on the operating system.
+// 4. Enables the KV secrets engine at the "secret" path.
+//
+// Returns:
+// - *VaultError: An error object if the Vault process fails to start or if setting the environment variable fails.
 func (v *OnlineVaultClient) startVault() *VaultError {
 	// Kill existing Vault process
 	v.closeVault()
@@ -169,7 +196,18 @@ func (v *OnlineVaultClient) startVault() *VaultError {
 	return nil
 }
 
-// 2️⃣ Save a key-value pair in Vault
+// saveKey stores a key-value pair in the Vault secrets engine in development mode.
+//
+// This function is intended for use with a local Vault instance. It validates input parameters
+// and writes the specified key-value pair to the given path in Vault.
+//
+// Parameters:
+// - path: The Vault path where the secret should be stored (e.g., "secret/myapp").
+// - key: The name of the key to store in the secret (e.g., "API_KEY").
+// - value: The value associated with the key.
+//
+// Returns:
+// - *VaultError: An error object if the operation fails; otherwise, nil.
 func (v *OnlineVaultClient) saveKey(path, key, value string) *VaultError {
 	if err := func() *VaultError {
 		switch {
@@ -203,7 +241,18 @@ func (v *OnlineVaultClient) saveKey(path, key, value string) *VaultError {
 	return nil
 }
 
-// 3️⃣ Read a key from Vault
+// readKey retrieves a specific key's value from the Vault secrets engine.
+//
+// This function reads a stored secret from Vault at the specified path and extracts
+// the requested key's value.
+//
+// Parameters:
+// - path: The Vault path where the secret is stored (e.g., "secret/myapp").
+// - key: The specific key within the secret to retrieve.
+//
+// Returns:
+// - string: The value associated with the key, if found.
+// - *VaultError: An error object if the operation fails or the key does not exist.
 func (v *OnlineVaultClient) readKey(path, key string) (string, *VaultError) {
 	if err := func() *VaultError {
 		switch {
@@ -240,7 +289,18 @@ func (v *OnlineVaultClient) readKey(path, key string) (string, *VaultError) {
 	}
 }
 
-// 4️⃣ Remove a key from Vault
+// removeKey removes a specific key from a stored secret in the Vault secrets engine.
+//
+// This function reads the existing secret data from Vault, removes the specified key,
+// and updates the stored secret. It is designed for use with a local Vault running
+// in development mode.
+//
+// Parameters:
+// - path: The Vault path where the secret is stored (e.g., "secret/myapp").
+// - key: The specific key within the secret that should be removed.
+//
+// Returns:
+// - *VaultError: An error object if the operation fails; otherwise, nil.
 func (v *OnlineVaultClient) removeKey(path, key string) *VaultError {
 	if err := func() *VaultError {
 		switch {
@@ -284,7 +344,16 @@ func (v *OnlineVaultClient) removeKey(path, key string) *VaultError {
 	return nil
 }
 
-// 5️⃣ Stop Vault Process
+// closeVault stops the running Vault process on the local machine in development mode.
+//
+// This function detects the operating system and executes the appropriate command
+// to terminate the Vault process. It is intended for use in development mode when
+// Vault is running locally.
+//
+// - On Windows, it uses PowerShell to forcefully stop the Vault process.
+// - On Linux/macOS, it uses the `pkill` command to terminate Vault.
+//
+// This function does not return an error but logs the status of the termination.
 func (v *OnlineVaultClient) closeVault() {
 	if runtime.GOOS == "windows" {
 		// Run PowerShell command to force kill Vault

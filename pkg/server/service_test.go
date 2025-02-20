@@ -7,11 +7,11 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func mockServiceInMemory() Service {
+func mockServiceInMock() Service {
 	repository := NewRepositoryInMemory(nil)
 	return NewMockService(repository)
 }
-func mockServiceInLocal() Service {
+func mockServiceInReal() Service {
 	repository := NewRepositoryInMemory(nil)
 	return NewService(repository)
 }
@@ -29,7 +29,7 @@ func mockVaultAuthTwo() Vault {
 }
 
 func TestService__CreateMachine(t *testing.T) {
-	s := mockServiceInMemory()
+	s := mockServiceInMock()
 	mDes := NewMachine(mockVaultAuthOne())
 	err := s.CreateMachine(mDes)
 	require.NoError(t, err)
@@ -39,7 +39,7 @@ func TestService__CreateMachine(t *testing.T) {
 }
 
 func TestService__GetMachine(t *testing.T) {
-	s := mockServiceInMemory()
+	s := mockServiceInMock()
 
 	m := NewMachine(mockVaultAuthOne())
 	err := s.CreateMachine(m)
@@ -56,7 +56,7 @@ func TestService__GetMachine(t *testing.T) {
 }
 
 func TestService__DeleteMachine(t *testing.T) {
-	s := mockServiceInMemory()
+	s := mockServiceInMock()
 	m1 := NewMachine(mockVaultAuthOne())
 	m2 := NewMachine(mockVaultAuthTwo())
 	err := s.CreateMachine(m1)
@@ -88,7 +88,7 @@ func TestService__DeleteMachine(t *testing.T) {
 }
 
 func TestService_Encrypt_Decrypt_Data_With_Mock(t *testing.T) {
-	s := mockServiceInMemory()
+	s := mockServiceInMock()
 	m := NewMachine(mockVaultAuthOne())
 	err := s.CreateMachine(m)
 	if err != nil {
@@ -124,7 +124,7 @@ func TestService_Encrypt_Decrypt_Data_With_Mock(t *testing.T) {
 /******************** Test hashicorp.cloud for develop  *********************/
 /****************************************************************************/
 func TestService_Encrypt_Decrypt_Data_WithHashicorp(t *testing.T) {
-	s := mockServiceInLocal()
+	s := mockServiceInReal()
 	m := NewMachine(mockVaultAuthTwo())
 	err := s.CreateMachine(m)
 	if err != nil {
@@ -160,7 +160,7 @@ func TestService_Encrypt_Decrypt_Data_WithHashicorp(t *testing.T) {
 /********************  Test local vault for develop  ************************/
 /****************************************************************************/
 func TestService_Encrypt_Decrypt_Data_With_Local(t *testing.T) {
-	s := mockServiceInLocal()
+	s := mockServiceInReal()
 	m := NewMachine(mockVaultAuthOne())
 	err := s.CreateMachine(m)
 	if err != nil {
