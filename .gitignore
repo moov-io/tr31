@@ -45,3 +45,6 @@ test/fuzz-reader/corpus/*.tar.gz
 
 # Gitleaks
 gitleaks.tar.gz
+
+# env
+env.go
