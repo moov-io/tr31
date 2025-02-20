@@ -3,7 +3,8 @@ package server
 import (
 	"bytes"
 	"encoding/hex"
-	"github.com/moov-io/psec/pkg/encryption"
+
+	"github.com/moov-io/tr31/pkg/encryption"
 )
 
 type UnifiedParams struct {
