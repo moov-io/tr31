@@ -21,6 +21,7 @@ type UnifiedParams struct {
 	VaultToken string
 	KeyPath    string
 	KeyName    string
+	Kbkp       string
 	KeyBlock   string
 	EncKey     string
 	Header     HeaderParams
@@ -50,16 +51,16 @@ func TransactionKey(params UnifiedParams) (string, error) {
 	return identify, nil
 }
 
-func EncryptData(params UnifiedParams) (string, error) {
-	vaultClient, err := createVaultClient(params.VaultAddr, params.VaultToken, params.timeout)
-	if err != nil {
-		return "", errors.New(err.Message)
-	}
-	vault := VaultClient{vaultClient}
+func readKey(vault VaultClientInterface, params UnifiedParams) (string, error) {
 	kbpkStr, err := vault.readKey(params.KeyPath, params.KeyName)
 	if err != nil {
 		return "", errors.New(err.Message)
 	}
+	return kbpkStr, nil
+}
+
+func EncryptData(params UnifiedParams) (string, error) {
+	kbpkStr := params.Kbkp
 	kbpk, decErr := hex.DecodeString(kbpkStr)
 	if decErr != nil {
 		return "", decErr
@@ -90,15 +91,7 @@ func EncryptData(params UnifiedParams) (string, error) {
 }
 
 func DecryptData(params UnifiedParams) (string, error) {
-	vaultClient, err := createVaultClient(params.VaultAddr, params.VaultToken, params.timeout)
-	if err != nil {
-		return "", errors.New(err.Message)
-	}
-	vault := VaultClient{vaultClient}
-	kbpkStr, err := vault.readKey(params.KeyPath, params.KeyName)
-	if err != nil {
-		return "", errors.New(err.Message)
-	}
+	kbpkStr := params.Kbkp
 	kbpk, decErr := hex.DecodeString(kbpkStr)
 	if decErr != nil {
 		return "", decErr

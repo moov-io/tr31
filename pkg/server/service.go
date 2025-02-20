@@ -13,6 +13,7 @@ var (
 
 // Service is a REST interface for interacting with machine structures
 type Service interface {
+	GetVaultClient() VaultClientInterface
 	CreateMachine(m *Machine) error
 	GetMachine(ik string) (*Machine, error)
 	GetMachines() []*Machine
@@ -23,14 +24,26 @@ type Service interface {
 
 // service a concrete implementation of the service.
 type service struct {
-	store Repository
+	store       Repository
+	vaultClient VaultClientInterface
 }
 
 // NewService creates a new concrete service
 func NewService(r Repository) Service {
 	return &service{
-		store: r,
+		store:       r,
+		vaultClient: nil,
 	}
+}
+func NewMockService(r Repository) Service {
+	return &service{
+		store:       r,
+		vaultClient: NewMockVaultClient(),
+	}
+}
+
+func (s *service) GetVaultClient() VaultClientInterface {
+	return s.vaultClient
 }
 
 // CreateMachine add a machine to storage
@@ -58,6 +71,14 @@ func (s *service) CreateMachine(m *Machine) error {
 		return err
 	}
 
+	if s.GetVaultClient() == nil {
+		println("CreateMachine: %s, %s", params.VaultAddr, params.VaultToken)
+		client, vErr := createVaultClient(params.VaultAddr, params.VaultToken, 10)
+		if vErr != nil {
+			return vErr
+		}
+		s.vaultClient = &VaultClient{NewOnlineVaultClient(client)}
+	}
 	return nil
 }
 
@@ -79,14 +100,23 @@ func (s *service) EncryptData(ik, keyPath, keyName, encKey string, header Header
 	if err != nil {
 		return "", fmt.Errorf("make next ksn: %v(%s)", err, ik)
 	}
-	params := UnifiedParams{
+
+	vaultParams := UnifiedParams{
 		VaultAddr:  m.vaultAuth.VaultAddress,
 		VaultToken: m.vaultAuth.VaultToken,
 		KeyPath:    keyPath,
 		KeyName:    keyName,
-		EncKey:     encKey,
-		Header:     header,
 		timeout:    timeout,
+	}
+	keyStr, vErr := readKey(s.vaultClient, vaultParams)
+	if vErr != nil {
+		return "", vErr
+	}
+	params := UnifiedParams{
+		Kbkp:    keyStr,
+		EncKey:  encKey,
+		Header:  header,
+		timeout: timeout,
 	}
 	return EncryptData(params)
 }
@@ -96,14 +126,23 @@ func (s *service) DecryptData(ik, keyPath, keyName, keyBlock string, timeout tim
 	if err != nil {
 		return "", fmt.Errorf("make next ksn: %v(%s)", err, ik)
 	}
-
-	params := UnifiedParams{
+	vaultParams := UnifiedParams{
 		VaultAddr:  m.vaultAuth.VaultAddress,
 		VaultToken: m.vaultAuth.VaultToken,
 		KeyPath:    keyPath,
 		KeyName:    keyName,
-		KeyBlock:   keyBlock,
 		timeout:    timeout,
+	}
+
+	keyStr, err := readKey(s.vaultClient, vaultParams)
+	if err != nil {
+		return "", err
+	}
+	params := UnifiedParams{
+		Kbkp:     keyStr,
+		KeyName:  keyName,
+		KeyBlock: keyBlock,
+		timeout:  timeout,
 	}
 
 	return DecryptData(params)

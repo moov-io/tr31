@@ -15,6 +15,10 @@ type VaultError struct {
 	Message string
 }
 
+func (e *VaultError) Error() string {
+	return e.Message
+}
+
 const (
 	VaultErrorRunning         string = "Vault failed to start with error: %v"
 	VaultErrorCreatClient     string = "Error creating Vault client: %v"
@@ -41,7 +45,41 @@ type VaultClientInterface interface {
 }
 
 type VaultClient struct {
+	client VaultClientInterface
+}
+
+// Constructor
+func NewVaultClient(client VaultClientInterface) *VaultClient {
+	return &VaultClient{client: client}
+}
+
+// Proxy methods to delegate to the real or mock client
+func (v *VaultClient) startVault() *VaultError {
+	return v.client.startVault()
+}
+func (v *VaultClient) saveKey(path, key, value string) *VaultError {
+	return v.client.saveKey(path, key, value)
+}
+
+func (v *VaultClient) readKey(path, key string) (string, *VaultError) {
+	return v.client.readKey(path, key)
+}
+
+func (v *VaultClient) removeKey(path, key string) *VaultError {
+	return v.client.removeKey(path, key)
+}
+
+func (v *VaultClient) closeVault() {
+	v.client.closeVault()
+}
+
+type OnlineVaultClient struct {
 	client *api.Client
+}
+
+// Constructor
+func NewOnlineVaultClient(client *api.Client) *OnlineVaultClient {
+	return &OnlineVaultClient{client: client}
 }
 
 // Vault Process Reference
@@ -95,7 +133,7 @@ func enableKVSecretsEngine(client *api.Client, path string) error {
 }
 
 // 1️⃣ Start Vault (First close existing Vault if running)
-func (v *VaultClient) startVault() *VaultError {
+func (v *OnlineVaultClient) startVault() *VaultError {
 	// Kill existing Vault process
 	v.closeVault()
 	// Start Vault in dev mode
@@ -132,7 +170,7 @@ func (v *VaultClient) startVault() *VaultError {
 }
 
 // 2️⃣ Save a key-value pair in Vault
-func (v *VaultClient) saveKey(path, key, value string) *VaultError {
+func (v *OnlineVaultClient) saveKey(path, key, value string) *VaultError {
 	if err := func() *VaultError {
 		switch {
 		case v.client == nil:
@@ -158,7 +196,7 @@ func (v *VaultClient) saveKey(path, key, value string) *VaultError {
 		},
 	}
 	fmt.Println("Saving secret at path:", path, "with key:", key, "and value:", value)
-	_, vErr := client.Logical().Write("secret/data/"+path, secretData)
+	_, vErr := client.Logical().Write(path, secretData)
 	if vErr != nil {
 		return &VaultError{Message: fmt.Sprintf(VaultErrorWriting, vErr)}
 	}
@@ -166,7 +204,7 @@ func (v *VaultClient) saveKey(path, key, value string) *VaultError {
 }
 
 // 3️⃣ Read a key from Vault
-func (v *VaultClient) readKey(path, key string) (string, *VaultError) {
+func (v *OnlineVaultClient) readKey(path, key string) (string, *VaultError) {
 	if err := func() *VaultError {
 		switch {
 		case v.client == nil:
@@ -184,7 +222,7 @@ func (v *VaultClient) readKey(path, key string) (string, *VaultError) {
 
 	client := v.client
 
-	secret, vErr := client.Logical().Read("secret/data/" + path)
+	secret, vErr := client.Logical().Read(path)
 	if vErr != nil || secret == nil {
 		return "", &VaultError{Message: fmt.Sprintf(VaultErrorReadResult, vErr)}
 	}
@@ -203,7 +241,7 @@ func (v *VaultClient) readKey(path, key string) (string, *VaultError) {
 }
 
 // 4️⃣ Remove a key from Vault
-func (v *VaultClient) removeKey(path, key string) *VaultError {
+func (v *OnlineVaultClient) removeKey(path, key string) *VaultError {
 	if err := func() *VaultError {
 		switch {
 		case v.client == nil:
@@ -221,7 +259,7 @@ func (v *VaultClient) removeKey(path, key string) *VaultError {
 	client := v.client
 
 	// Read existing data
-	secret, vErr := client.Logical().Read("secret/data/" + path)
+	secret, vErr := client.Logical().Read(path)
 	if vErr != nil || secret == nil {
 		return &VaultError{Message: fmt.Sprintf(VaultErrorReadResult, vErr)}
 	}
@@ -247,7 +285,7 @@ func (v *VaultClient) removeKey(path, key string) *VaultError {
 }
 
 // 5️⃣ Stop Vault Process
-func (v *VaultClient) closeVault() {
+func (v *OnlineVaultClient) closeVault() {
 	if runtime.GOOS == "windows" {
 		// Run PowerShell command to force kill Vault
 		cmd := exec.Command("powershell", "-Command", "Get-Process vault | Stop-Process -Force")
