@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"time"
 
 	"github.com/go-kit/kit/endpoint"
 	"github.com/gorilla/mux"
@@ -132,13 +133,72 @@ func createMachineEndpoint(s Service) endpoint.Endpoint {
 	}
 }
 
+type encryptDataRequest struct {
+	requestID  string
+	ik         string
+	keyPath    string
+	keyName    string
+	encryptKey string
+	header     HeaderParams
+	timeout    time.Duration
+}
+type encryptDataResponse struct {
+	Data string `json:"data"`
+	Err  error  `json:"error"`
+}
+
+func decodeEncryptDataRequest(_ context.Context, request *http.Request) (interface{}, error) {
+	req := encryptDataRequest{
+		requestID: moovhttp.GetRequestID(request),
+	}
+	req.ik = mux.Vars(request)["ik"]
+	type requestParam struct {
+		keyPath    string
+		keyName    string
+		encryptKey string
+		header     HeaderParams
+		timeout    time.Duration
+	}
+	reqParams := requestParam{}
+	if err := bindJSON(request, &reqParams); err != nil {
+		return nil, err
+	}
+
+	req.keyPath = reqParams.keyPath
+	req.keyName = reqParams.keyName
+	req.encryptKey = reqParams.encryptKey
+	req.header = reqParams.header
+	req.timeout = reqParams.timeout
+	return req, nil
+}
+
+func encryptDataEndpoint(s Service) endpoint.Endpoint {
+	return func(_ context.Context, request interface{}) (interface{}, error) {
+		req, ok := request.(encryptDataRequest)
+		if !ok {
+			return encryptDataResponse{Err: ErrFoundABug}, ErrFoundABug
+		}
+
+		resp := encryptDataResponse{}
+		encrypted, err := s.EncryptData(req.ik, req.keyPath, req.keyName, req.encryptKey, req.header, req.timeout)
+		if err != nil {
+			resp.Err = err
+			return resp, nil
+		}
+
+		resp.Data = encrypted
+		return resp, nil
+	}
+}
+
 type decryptDataRequest struct {
 	requestID string
 	ik        string
-	kekId     string
+	keyPath   string
+	keyName   string
 	keyBlock  string
+	timeout   time.Duration
 }
-
 type decryptDataResponse struct {
 	Data string `json:"data"`
 	Err  error  `json:"error"`
@@ -152,8 +212,10 @@ func decodeDecryptDataRequest(_ context.Context, request *http.Request) (interfa
 	req.ik = mux.Vars(request)["ik"]
 
 	type requestParam struct {
-		kekId    string
+		keyPath  string
+		keyName  string
 		keyBlock string
+		timeout  time.Duration
 	}
 
 	reqParams := requestParam{}
@@ -161,8 +223,10 @@ func decodeDecryptDataRequest(_ context.Context, request *http.Request) (interfa
 		return nil, err
 	}
 
-	req.kekId = reqParams.kekId
+	req.keyPath = reqParams.keyPath
+	req.keyName = reqParams.keyName
 	req.keyBlock = reqParams.keyBlock
+	req.timeout = reqParams.timeout
 	return req, nil
 }
 
@@ -174,7 +238,7 @@ func decryptDataEndpoint(s Service) endpoint.Endpoint {
 		}
 
 		resp := decryptDataResponse{}
-		decrypted, err := s.DecryptData(req.ik, req.kekId, req.keyBlock)
+		decrypted, err := s.DecryptData(req.ik, req.keyPath, req.keyName, req.keyBlock, req.timeout)
 		if err != nil {
 			resp.Err = err
 			return resp, nil
