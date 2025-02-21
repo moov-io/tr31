@@ -170,11 +170,11 @@ The library provides detailed error messages through two custom error types:
 Unwraps a TR-31 formatted key block to retrieve the original key. 
 
 ```bash
-Running tool: /opt/homebrew/bin/go test -benchmem -run=^$ -bench ^BenchmarkUnwrap_D_32_WithSetup$ github.com/moov-io/tr31/pkg/encryption
+Running tool: /opt/homebrew/bin/go test -benchmem -run=^$ -bench ^BenchmarkUnwrap_D_32_WithSetup$ github.com/moov-io/tr31/pkg/tr31
 
 goos: darwin
 goarch: arm64
-pkg: github.com/moov-io/tr31/pkg/encryption
+pkg: github.com/moov-io/tr31/pkg/tr31
 cpu: Apple M1 Pro
 BenchmarkUnwrap_D_32_WithSetup-10    	  301116	      3619 ns/op	    8608 B/op	      64 allocs/op
 ```
