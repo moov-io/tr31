@@ -4,7 +4,7 @@ import (
 	"bytes"
 	"encoding/hex"
 
-	"github.com/moov-io/tr31/pkg/encryption"
+	"github.com/moov-io/tr31/pkg/tr31"
 )
 
 type UnifiedParams struct {
@@ -19,7 +19,7 @@ type WrapperCall func(params UnifiedParams) (string, error)
 func InitialKey(params UnifiedParams) (string, error) {
 	planData := []byte(params.VaultAddr + params.VaultToken)
 	kbpk := bytes.Repeat([]byte("E"), 24)
-	encData, err := encryption.GenerateCBCMAC(kbpk, planData, 1, 8, encryption.DES)
+	encData, err := tr31.GenerateCBCMAC(kbpk, planData, 1, 8, tr31.DES)
 	if err != nil {
 		return "", err
 	}
@@ -29,7 +29,7 @@ func InitialKey(params UnifiedParams) (string, error) {
 func TransactionKey(params UnifiedParams) (string, error) {
 	planData := []byte(params.VaultAddr + params.VaultToken)
 	kbpk := bytes.Repeat([]byte("F"), 24)
-	encData, err := encryption.GenerateCBCMAC(kbpk, planData, 1, 8, encryption.DES)
+	encData, err := tr31.GenerateCBCMAC(kbpk, planData, 1, 8, tr31.DES)
 	if err != nil {
 		return "", err
 	}

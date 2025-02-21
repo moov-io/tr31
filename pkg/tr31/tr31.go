@@ -1,7 +1,7 @@
-// Package encryption implements the TR-31 (ANSI X9.143) key block standard for secure cryptographic key exchange.
+// Package tr31 implements the TR-31 (ANSI X9.143) key block standard for secure cryptographic key exchange.
 // TR-31 provides a method for secure exchange of cryptographic keys by wrapping them in a secure key block
 // that includes metadata about the key's usage, algorithm, and other attributes.
-package encryption
+package tr31
 
 import (
 	"crypto/rand"
