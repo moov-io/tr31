@@ -4,7 +4,7 @@ VERSION := $(shell grep -Eo '(v[0-9]+[\.][0-9]+[\.][0-9]+(-[a-zA-Z0-9]*)?)' vers
 .PHONY: check
 check:
 ifeq ($(OS),Windows_NT)
-	@echo "Skipping checks on Windows, currently unsupported."
+	go test ./...
 else
 	@wget -O lint-project.sh https://raw.githubusercontent.com/moov-io/infra/master/go/lint-project.sh
 	@chmod +x ./lint-project.sh
@@ -13,9 +13,9 @@ endif
 
 dist: clean
 ifeq ($(OS),Windows_NT)
-	CGO_ENABLED=1 GOOS=windows go build -o bin/dukptcli.exe github.com/moov-io/dukpt/cmd/dukptcli
+	CGO_ENABLED=1 GOOS=windows go build -o bin/tr31.exe github.com/moov-io/tr31/cmd/tr31
 else
-	CGO_ENABLED=1 GOOS=$(PLATFORM) go build -o bin/dukptcli-$(PLATFORM)-amd64 github.com/moov-io/dukpt/cmd/dukptcli
+	CGO_ENABLED=1 GOOS=$(PLATFORM) go build -o bin/tr31-$(PLATFORM)-amd64 github.com/moov-io/tr31/cmd/tr31
 endif
 
 .PHONY: clean
