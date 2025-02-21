@@ -9,35 +9,33 @@ import (
 /********************  Test local vault for develop  ************************/
 /****************************************************************************/
 func TestFetchKBPKLocal(t *testing.T) {
-	vaultClient, err := createVaultClient("http://127.0.0.1:8200", "my-fixed-token", 1)
+	vaultClient, err := NewVaultClient(Vault{VaultAddress: "http://127.0.0.1:8200", VaultToken: "my-fixed-token"})
 	require.Nil(t, err)
-	onlineVaultClient := NewOnlineVaultClient(vaultClient)
-	vault := VaultClient{onlineVaultClient}
-	vErr := vault.startVault()
+
+	vErr := vaultClient.StartClient()
 	require.Nil(t, vErr)
 
-	vErr = vault.saveKey("secret/data/myapp", "kbkp", "AAAAAAAAAAAAAAAABBBBBBBBBBBBBBBBCCCCCCCCCCCCCCCC")
+	vErr = vaultClient.WriteSecret("secret/data/myapp", "kbkp", "AAAAAAAAAAAAAAAABBBBBBBBBBBBBBBBCCCCCCCCCCCCCCCC")
 	require.Nil(t, vErr)
 
-	kbkp, vErr := vault.readKey("secret/data/myapp", "kbkp")
+	kbkp, vErr := vaultClient.ReadSecret("secret/data/myapp", "kbkp")
 	require.Nil(t, vErr)
 	require.Equal(t, "AAAAAAAAAAAAAAAABBBBBBBBBBBBBBBBCCCCCCCCCCCCCCCC", kbkp)
 
-	vault.removeKey("secret/data/myapp", "kbkp")
+	vaultClient.DeleteSecret("secret/data/myapp", "kbkp")
 
-	vault.closeVault()
+	vaultClient.CloseClient()
 }
 
 func TestDecryptDataWithLocalVault(t *testing.T) {
-	vaultClient, err := createVaultClient("http://127.0.0.1:8200", "my-fixed-token", 1)
+	vaultClient, err := NewVaultClient(Vault{VaultAddress: "http://127.0.0.1:8200", VaultToken: "my-fixed-token"})
 	require.Nil(t, err)
-	onlineVaultClient := NewOnlineVaultClient(vaultClient)
-	vault := VaultClient{onlineVaultClient}
-	vault.startVault()
 
-	vault.saveKey("secret/data/myapp", "kbkp", "AAAAAAAAAAAAAAAABBBBBBBBBBBBBBBBCCCCCCCCCCCCCCCC")
+	vaultClient.StartClient()
 
-	kbkp, vErr := vault.readKey("secret/data/myapp", "kbkp")
+	vaultClient.WriteSecret("secret/data/myapp", "kbkp", "AAAAAAAAAAAAAAAABBBBBBBBBBBBBBBBCCCCCCCCCCCCCCCC")
+
+	kbkp, vErr := vaultClient.ReadSecret("secret/data/myapp", "kbkp")
 	require.Nil(t, vErr)
 	require.Equal(t, "AAAAAAAAAAAAAAAABBBBBBBBBBBBBBBBCCCCCCCCCCCCCCCC", kbkp)
 
@@ -48,8 +46,8 @@ func TestDecryptDataWithLocalVault(t *testing.T) {
 
 	keyStr, _ := DecryptData(param)
 
-	vault.removeKey("secret/data/myapp", "kbkp")
-	vault.closeVault()
+	vaultClient.DeleteSecret("secret/data/myapp", "kbkp")
+	vaultClient.CloseClient()
 
 	require.Equal(t, "ccccccccccccccccdddddddddddddddd", keyStr)
 }
@@ -59,11 +57,10 @@ func TestDecryptDataWithLocalVault(t *testing.T) {
 /****************************************************************************/
 func TestDecryptData(t *testing.T) {
 	mockVault := NewMockVaultClient()
-	mockVault.startVault()
-	err := mockVault.saveKey("secret/data/myapp", "kbkp", "AAAAAAAAAAAAAAAABBBBBBBBBBBBBBBBCCCCCCCCCCCCCCCC")
+	err := mockVault.WriteSecret("secret/data/myapp", "kbkp", "AAAAAAAAAAAAAAAABBBBBBBBBBBBBBBBCCCCCCCCCCCCCCCC")
 	require.Nil(t, err)
 
-	kbkp, vErr := mockVault.readKey("secret/data/myapp", "kbkp")
+	kbkp, vErr := mockVault.ReadSecret("secret/data/myapp", "kbkp")
 	require.Nil(t, vErr)
 	require.Equal(t, "AAAAAAAAAAAAAAAABBBBBBBBBBBBBBBBCCCCCCCCCCCCCCCC", kbkp)
 
@@ -74,8 +71,7 @@ func TestDecryptData(t *testing.T) {
 
 	keyStr, _ := DecryptData(param)
 
-	mockVault.removeKey("secret/data/myapp", "kbkp")
-	mockVault.closeVault()
+	mockVault.DeleteSecret("secret/data/myapp", "kbkp")
 
 	require.Equal(t, "ccccccccccccccccdddddddddddddddd", keyStr)
 }

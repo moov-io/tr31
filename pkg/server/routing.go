@@ -18,13 +18,13 @@ import (
 )
 
 var (
-	bugReportHelp = "please report this as a bug -- https://github.com/moov-io/dukpt/issues/new"
+	bugReportHelp = "please report this as a bug -- https://github.com/moov-io/tr31/issues/new"
 
 	// ErrBadRouting is returned when an expected path variable is missing, which is always programmer error.
 	ErrBadRouting = fmt.Errorf("inconsistent mapping between route and handler, %s", bugReportHelp)
 	ErrFoundABug  = fmt.Errorf("snuck into machine with err == nil, %s", bugReportHelp)
 
-	errInvalidMachine = errors.New("invalid dukpt machine")
+	errInvalidMachine = errors.New("invalid tr31 machine")
 )
 
 // contextKey is a unique (and compariable) type we use

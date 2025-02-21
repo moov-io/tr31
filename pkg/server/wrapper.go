@@ -51,8 +51,8 @@ func TransactionKey(params UnifiedParams) (string, error) {
 	return identify, nil
 }
 
-func readKey(vault VaultClientInterface, params UnifiedParams) (string, error) {
-	kbpkStr, err := vault.readKey(params.KeyPath, params.KeyName)
+func readKey(vault SecretManager, params UnifiedParams) (string, error) {
+	kbpkStr, err := vault.ReadSecret(params.KeyPath, params.KeyName)
 	if err != nil {
 		return "", errors.New(err.Message)
 	}

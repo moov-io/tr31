@@ -36,45 +36,27 @@ const (
 	VaultErrorUpdate          string = "Error updating Vault: %v"
 )
 
-type VaultClientInterface interface {
-	startVault() *VaultError
-	saveKey(path, key, value string) *VaultError
-	readKey(path, key string) (string, *VaultError)
-	removeKey(path, key string) *VaultError
-	closeVault()
+type SecretManager interface {
+	// WriteSecret writes a secret to the specified path
+	WriteSecret(path, key, value string) *VaultError
+	// ReadSecret retrieves a secret from the specified path
+	ReadSecret(path, key string) (string, *VaultError)
+	// ListSecrets lists all secrets under a specified path
+	ListSecrets(path string) ([]string, *VaultError)
+	// DeleteSecret removes a secret at the specified path
+	DeleteSecret(path, key string) *VaultError
 }
 
 type VaultClient struct {
-	client VaultClientInterface
-}
-
-// Proxy methods to delegate to the real or mock client
-func (v *VaultClient) startVault() *VaultError {
-	return v.client.startVault()
-}
-func (v *VaultClient) saveKey(path, key, value string) *VaultError {
-	return v.client.saveKey(path, key, value)
-}
-
-func (v *VaultClient) readKey(path, key string) (string, *VaultError) {
-	return v.client.readKey(path, key)
-}
-
-func (v *VaultClient) removeKey(path, key string) *VaultError {
-	return v.client.removeKey(path, key)
-}
-
-func (v *VaultClient) closeVault() {
-	v.client.closeVault()
-}
-
-type OnlineVaultClient struct {
 	client *api.Client
 }
 
-// Constructor
-func NewOnlineVaultClient(client *api.Client) *OnlineVaultClient {
-	return &OnlineVaultClient{client: client}
+func NewVaultClient(v Vault) (*VaultClient, error) {
+	vClient, err := createVaultClient(v.VaultAddress, v.VaultToken, 10)
+	if err != nil {
+		return nil, err
+	}
+	return &VaultClient{vClient}, nil
 }
 
 // Vault Process Reference
@@ -97,6 +79,7 @@ func createVaultClient(vaultAddr, vaultToken string, timeout time.Duration) (*ap
 	client, err := api.NewClient(config)
 	if err != nil {
 		return nil, &VaultError{
+			
 			Message: fmt.Sprintf(VaultErrorCreatClient, err),
 		}
 	}
@@ -150,7 +133,7 @@ func enableKVSecretsEngine(client *api.Client, path string) error {
 	return nil
 }
 
-// startVault starts a local Vault server in development mode.
+// StartClient starts a local Vault server in development mode.
 //
 // This function is only called when using a locally installed Vault. It performs the following steps:
 // 1. Kills any existing Vault process.
@@ -160,9 +143,9 @@ func enableKVSecretsEngine(client *api.Client, path string) error {
 //
 // Returns:
 // - *VaultError: An error object if the Vault process fails to start or if setting the environment variable fails.
-func (v *OnlineVaultClient) startVault() *VaultError {
+func (v *VaultClient) StartClient() *VaultError {
 	// Kill existing Vault process
-	v.closeVault()
+	v.CloseClient()
 	// Start Vault in dev mode
 	vaultCmd = exec.Command("vault", "server", "-dev", "-dev-root-token-id="+v.client.Token())
 	vaultCmd.Stdout = os.Stdout
@@ -196,7 +179,7 @@ func (v *OnlineVaultClient) startVault() *VaultError {
 	return nil
 }
 
-// saveKey stores a key-value pair in the Vault secrets engine in development mode.
+// WriteSecret stores a key-value pair in the Vault secrets engine in development mode.
 //
 // This function is intended for use with a local Vault instance. It validates input parameters
 // and writes the specified key-value pair to the given path in Vault.
@@ -208,7 +191,7 @@ func (v *OnlineVaultClient) startVault() *VaultError {
 //
 // Returns:
 // - *VaultError: An error object if the operation fails; otherwise, nil.
-func (v *OnlineVaultClient) saveKey(path, key, value string) *VaultError {
+func (v *VaultClient) WriteSecret(path, key, value string) *VaultError {
 	if err := func() *VaultError {
 		switch {
 		case v.client == nil:
@@ -241,7 +224,7 @@ func (v *OnlineVaultClient) saveKey(path, key, value string) *VaultError {
 	return nil
 }
 
-// readKey retrieves a specific key's value from the Vault secrets engine.
+// ReadSecret retrieves a specific key's value from the Vault secrets engine.
 //
 // This function reads a stored secret from Vault at the specified path and extracts
 // the requested key's value.
@@ -253,7 +236,7 @@ func (v *OnlineVaultClient) saveKey(path, key, value string) *VaultError {
 // Returns:
 // - string: The value associated with the key, if found.
 // - *VaultError: An error object if the operation fails or the key does not exist.
-func (v *OnlineVaultClient) readKey(path, key string) (string, *VaultError) {
+func (v *VaultClient) ReadSecret(path, key string) (string, *VaultError) {
 	if err := func() *VaultError {
 		switch {
 		case v.client == nil:
@@ -289,7 +272,57 @@ func (v *OnlineVaultClient) readKey(path, key string) (string, *VaultError) {
 	}
 }
 
-// removeKey removes a specific key from a stored secret in the Vault secrets engine.
+// ListSecrets retrieves a specific key's value from the Vault secrets engine.
+//
+// This function reads a stored secret from Vault at the specified path and extracts
+// the requested key's value.
+//
+// Parameters:
+// - path: The Vault path where the secret is stored (e.g., "secret/myapp").
+// - key: The specific key within the secret to retrieve.
+//
+// Returns:
+// - string: The value associated with the key, if found.
+// - *VaultError: An error object if the operation fails or the key does not exist.
+func (v *VaultClient) ListSecrets(path string) ([]string, *VaultError) {
+	if err := func() *VaultError {
+		switch {
+		case v.client == nil:
+			return &VaultError{Message: fmt.Sprintf(VaultErrorClient)}
+		case len(path) == 0:
+			return &VaultError{Message: fmt.Sprintf(VaultErrorNoKeyPath)}
+		default:
+			return nil
+		}
+	}(); err != nil {
+		return nil, err
+	}
+
+	client := v.client
+
+	secret, vErr := client.Logical().Read(path)
+	if vErr != nil || secret == nil {
+		return nil, &VaultError{Message: fmt.Sprintf(VaultErrorReadResult, vErr)}
+	}
+
+	data, ok := secret.Data["data"].(map[string]interface{})
+	if !ok {
+		return nil, &VaultError{Message: fmt.Sprintf(VaultErrorReadResult, vErr)}
+	}
+	values := make([]interface{}, 0, len(data))
+	for _, value := range data {
+		values = append(values, value)
+	}
+	stringValues := []string{}
+	for _, value := range data {
+		if str, ok := value.(string); ok {
+			stringValues = append(stringValues, str)
+		}
+	}
+	return stringValues, nil
+}
+
+// DeleteSecret removes a specific key from a stored secret in the Vault secrets engine.
 //
 // This function reads the existing secret data from Vault, removes the specified key,
 // and updates the stored secret. It is designed for use with a local Vault running
@@ -301,7 +334,7 @@ func (v *OnlineVaultClient) readKey(path, key string) (string, *VaultError) {
 //
 // Returns:
 // - *VaultError: An error object if the operation fails; otherwise, nil.
-func (v *OnlineVaultClient) removeKey(path, key string) *VaultError {
+func (v *VaultClient) DeleteSecret(path, key string) *VaultError {
 	if err := func() *VaultError {
 		switch {
 		case v.client == nil:
@@ -344,7 +377,7 @@ func (v *OnlineVaultClient) removeKey(path, key string) *VaultError {
 	return nil
 }
 
-// closeVault stops the running Vault process on the local machine in development mode.
+// CloseClient stops the running Vault process on the local machine in development mode.
 //
 // This function detects the operating system and executes the appropriate command
 // to terminate the Vault process. It is intended for use in development mode when
@@ -354,7 +387,7 @@ func (v *OnlineVaultClient) removeKey(path, key string) *VaultError {
 // - On Linux/macOS, it uses the `pkill` command to terminate Vault.
 //
 // This function does not return an error but logs the status of the termination.
-func (v *OnlineVaultClient) closeVault() {
+func (v *VaultClient) CloseClient() {
 	if runtime.GOOS == "windows" {
 		// Run PowerShell command to force kill Vault
 		cmd := exec.Command("powershell", "-Command", "Get-Process vault | Stop-Process -Force")

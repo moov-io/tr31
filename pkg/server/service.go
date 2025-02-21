@@ -13,7 +13,7 @@ var (
 
 // Service is a REST interface for interacting with machine structures
 type Service interface {
-	GetVaultClient() VaultClientInterface
+	GetSecretManager() SecretManager
 	CreateMachine(m *Machine) error
 	GetMachine(ik string) (*Machine, error)
 	GetMachines() []*Machine
@@ -25,7 +25,7 @@ type Service interface {
 // service a concrete implementation of the service.
 type service struct {
 	store       Repository
-	vaultClient VaultClientInterface
+	vaultClient SecretManager
 }
 
 // NewService creates a new concrete service
@@ -42,7 +42,7 @@ func NewMockService(r Repository) Service {
 	}
 }
 
-func (s *service) GetVaultClient() VaultClientInterface {
+func (s *service) GetSecretManager() SecretManager {
 	return s.vaultClient
 }
 
@@ -71,13 +71,11 @@ func (s *service) CreateMachine(m *Machine) error {
 		return err
 	}
 
-	if s.GetVaultClient() == nil {
-		println("CreateMachine: %s, %s", params.VaultAddr, params.VaultToken)
-		client, vErr := createVaultClient(params.VaultAddr, params.VaultToken, 10)
-		if vErr != nil {
-			return vErr
+	if s.GetSecretManager() == nil {
+		s.vaultClient, err = NewVaultClient(Vault{VaultAddress: params.VaultAddr, VaultToken: params.VaultToken})
+		if err != nil {
+			return err
 		}
-		s.vaultClient = &VaultClient{NewOnlineVaultClient(client)}
 	}
 	return nil
 }

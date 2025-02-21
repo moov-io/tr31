@@ -95,7 +95,7 @@ func TestService_Encrypt_Decrypt_Data_With_Mock(t *testing.T) {
 		return
 	}
 
-	s.GetVaultClient().saveKey(
+	s.GetSecretManager().WriteSecret(
 		"secret/tr31",
 		"kbkp",
 		"AAAAAAAAAAAAAAAABBBBBBBBBBBBBBBBCCCCCCCCCCCCCCCC",
@@ -117,7 +117,7 @@ func TestService_Encrypt_Decrypt_Data_With_Mock(t *testing.T) {
 
 	require.Equal(t, data, "ccccccccccccccccdddddddddddddddd")
 
-	s.GetVaultClient().removeKey("/auth/keys", "kbkp")
+	s.GetSecretManager().DeleteSecret("/auth/keys", "kbkp")
 }
 
 /****************************************************************************/
@@ -167,32 +167,35 @@ func TestService_Encrypt_Decrypt_Data_With_Local(t *testing.T) {
 		return
 	}
 
-	vErr := s.GetVaultClient().startVault()
-	require.Nil(t, vErr)
+	vc, ok := s.GetSecretManager().(*VaultClient)
+	if ok {
+		vErr := vc.StartClient()
+		require.Nil(t, vErr)
 
-	s.GetVaultClient().saveKey(
-		"secret/data/myapp",
-		"kbkp",
-		"AAAAAAAAAAAAAAAABBBBBBBBBBBBBBBBCCCCCCCCCCCCCCCC",
-	)
+		s.GetSecretManager().WriteSecret(
+			"secret/data/myapp",
+			"kbkp",
+			"AAAAAAAAAAAAAAAABBBBBBBBBBBBBBBBCCCCCCCCCCCCCCCC",
+		)
 
-	header := HeaderParams{
-		VersionId:     "D",
-		KeyUsage:      "D0",
-		Algorithm:     "A",
-		ModeOfUse:     "D",
-		KeyVersion:    "00",
-		Exportability: "E",
+		header := HeaderParams{
+			VersionId:     "D",
+			KeyUsage:      "D0",
+			Algorithm:     "A",
+			ModeOfUse:     "D",
+			KeyVersion:    "00",
+			Exportability: "E",
+		}
+		data, err := s.EncryptData(m.InitialKey, "secret/data/myapp", "kbkp", "ccccccccccccccccdddddddddddddddd", header, 10)
+		require.NoError(t, err)
+
+		data, err = s.DecryptData(m.InitialKey, "secret/data/myapp", "kbkp", data, 10)
+		require.NoError(t, err)
+
+		require.Equal(t, data, "ccccccccccccccccdddddddddddddddd")
+
+		s.GetSecretManager().DeleteSecret("secret/data/myapp", "kbkp")
+
+		vc.CloseClient()
 	}
-	data, err := s.EncryptData(m.InitialKey, "secret/data/myapp", "kbkp", "ccccccccccccccccdddddddddddddddd", header, 10)
-	require.NoError(t, err)
-
-	data, err = s.DecryptData(m.InitialKey, "secret/data/myapp", "kbkp", data, 10)
-	require.NoError(t, err)
-
-	require.Equal(t, data, "ccccccccccccccccdddddddddddddddd")
-
-	s.GetVaultClient().removeKey("secret/data/myapp", "kbkp")
-
-	s.GetVaultClient().closeVault()
 }
