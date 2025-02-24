@@ -1,7 +1,7 @@
 package server
 
 import (
-	"github.com/moov-io/tr31"
+	"os"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -18,13 +18,13 @@ func mockServiceInReal() Service {
 func mockVaultAuthOne() Vault {
 	return Vault{
 		VaultAddress: "http://localhost:8200",
-		VaultToken:   tr31.Local_vault_key,
+		VaultToken:   os.Getenv("Local_vault_key"),
 	}
 }
 func mockVaultAuthTwo() Vault {
 	return Vault{
-		VaultAddress: "https://vault-cluster-public-vault-2d92a425.16ce2ded.z1.hashicorp.cloud:8200",
-		VaultToken:   tr31.Hashicorp_cloud_key,
+		VaultAddress: os.Getenv("Hashicorp_cloud_url"),
+		VaultToken:   os.Getenv("Hashicorp_cloud_key"),
 	}
 }
 

@@ -105,137 +105,100 @@ func TestRouting_machine_mgmt(t *testing.T) {
 	require.Equal(t, "99a16e3a9aeccd3c", response3.Machine.InitialKey)
 }
 
-//func TestCreateMachine(t *testing.T) {
-//	tests := []struct {
-//		name            string
-//		requestData     Vault
-//		expectedStatus  int
-//		expectedIK      string
-//		expectedMachine *Machine
-//		expectedError   string
-//	}{
-//		{
-//			name:           "Valid Request",
-//			requestData:    mockVaultAuthOne(),
-//			expectedStatus: http.StatusOK,
-//			expectedIK:     "99a16e3a9aeccd3c",
-//			expectedMachine: &Machine{
-//				ID:   "machine-001",
-//				Name: "Test Machine",
-//			},
-//			expectedError: "",
-//		},
-//		{
-//			name:           "Empty Request Body",
-//			requestData:    Vault{},
-//			expectedStatus: http.StatusBadRequest,
-//			expectedError:  "invalid request body",
-//		},
-//		{
-//			name: "Missing VaultToken",
-//			requestData: Vault{
-//				VaultAddress: "http://localhost:8200",
-//				VaultToken:   "",
-//			},
-//			expectedStatus: http.StatusBadRequest,
-//			expectedError:  "missing vault token",
-//		},
-//		{
-//			name: "Missing VaultAddress",
-//			requestData: Vault{
-//				VaultAddress: "",
-//				VaultToken:   "test-vault-token-123",
-//			},
-//			expectedStatus: http.StatusBadRequest,
-//			expectedError:  "missing vault address",
-//		},
-//		{
-//			name: "Invalid VaultToken",
-//			requestData: Vault{
-//				VaultAddress: "http://localhost:8200",
-//				VaultToken:   "invalid-token",
-//			},
-//			expectedStatus: http.StatusUnauthorized,
-//			expectedError:  "unauthorized access",
-//		},
-//		{
-//			name: "Invalid VaultAddress",
-//			requestData: Vault{
-//				VaultAddress: "invalid-url",
-//				VaultToken:   "test-vault-token-123",
-//			},
-//			expectedStatus: http.StatusBadRequest,
-//			expectedError:  "invalid vault address",
-//		},
-//		{
-//			name: "Long VaultToken",
-//			requestData: Vault{
-//				VaultAddress: "http://localhost:8200",
-//				VaultToken:   "long-token-string-exceeding-limits-12345678901234567890",
-//			},
-//			expectedStatus: http.StatusBadRequest,
-//			expectedError:  "invalid token format",
-//		},
-//		{
-//			name:           "Machine Creation Failure",
-//			requestData:    mockVaultAuthOne(),
-//			expectedStatus: http.StatusInternalServerError,
-//			expectedError:  "failed to create machine",
-//		},
-//		{
-//			name: "Valid Request with Different User",
-//			requestData: Vault{
-//				VaultAddress: "http://localhost:8200",
-//				VaultToken:   "test-vault-token-user002",
-//			},
-//			expectedStatus: http.StatusOK,
-//			expectedIK:     "99a16e3a9aeccd3c",
-//			expectedMachine: &Machine{
-//				ID:   "machine-002",
-//				Name: "Second Machine",
-//			},
-//			expectedError: "",
-//		},
-//		{
-//			name: "Invalid JSON Request",
-//			requestData: Vault{
-//				VaultAddress: "http://localhost:8200",
-//				VaultToken:   "<invalid-json>",
-//			},
-//			expectedStatus: http.StatusBadRequest,
-//			expectedError:  "could not parse json",
-//		},
-//	}
-//
-//	for _, tc := range tests {
-//		t.Run(tc.name, func(t *testing.T) {
-//			requestBody, err := json.Marshal(tc.requestData)
-//			require.NoError(t, err)
-//
-//			req := httptest.NewRequest("POST", "/machine", bytes.NewReader(requestBody))
-//			req.Header.Set("Origin", "https://moov.io")
-//
-//			w := httptest.NewRecorder()
-//			router.ServeHTTP(w, req)
-//			w.Flush()
-//
-//			// Verify HTTP status code
-//			require.Equal(t, tc.expectedStatus, w.Code)
-//
-//			// Parse response
-//			var response createMachineResponse
-//			err = json.Unmarshal(w.Body.Bytes(), &response)
-//
-//			// If the request was expected to be successful
-//			if tc.expectedStatus == http.StatusOK {
-//				require.NoError(t, err)
-//				require.Equal(t, tc.expectedIK, response.IK)
-//				require.Equal(t, tc.expectedMachine, response.Machine)
-//				require.Empty(t, response.Err)
-//			} else {
-//				// Expect error message
-//				require.Contains(t, response.Err, tc.expectedError)
-//			}
-//		})
-//	}
-//}
+func TestCreateMachine(t *testing.T) {
+	tests := []struct {
+		name           string
+		requestData    Vault
+		expectedStatus int
+		expectedIK     string
+		expectedError  string
+	}{
+		{
+			name:           "Valid Request",
+			requestData:    mockVaultAuthOne(),
+			expectedStatus: http.StatusOK,
+			expectedIK:     "99a16e3a9aeccd3c",
+		},
+		{
+			name:           "Missing Vault Address",
+			requestData:    Vault{VaultToken: "valid_token"},
+			expectedStatus: http.StatusBadRequest,
+			expectedError:  "missing vault address",
+		},
+		{
+			name:           "Missing Vault Token",
+			requestData:    Vault{VaultAddress: "http://localhost:8200"},
+			expectedStatus: http.StatusBadRequest,
+			expectedError:  "missing vault token",
+		},
+		{
+			name:           "Invalid Vault Address",
+			requestData:    Vault{VaultAddress: "invalid_address", VaultToken: "valid_token"},
+			expectedStatus: http.StatusBadRequest,
+			expectedError:  "invalid vault address",
+		},
+		{
+			name:           "Empty Request Body",
+			requestData:    Vault{},
+			expectedStatus: http.StatusBadRequest,
+			expectedError:  "invalid request body",
+		},
+		{
+			name:           "CORS Headers Set Correctly",
+			requestData:    mockVaultAuthOne(),
+			expectedStatus: http.StatusOK,
+			expectedIK:     "99a16e3a9aeccd3c",
+		},
+		{
+			name:           "Duplicate Machine Creation",
+			requestData:    mockVaultAuthOne(),
+			expectedStatus: http.StatusConflict,
+			expectedError:  "machine already exists",
+		},
+		{
+			name:           "Server Error",
+			requestData:    Vault{VaultAddress: "http://localhost:9999", VaultToken: "valid_token"},
+			expectedStatus: http.StatusInternalServerError,
+			expectedError:  "server error",
+		},
+		{
+			name:           "Invalid JSON Request",
+			requestData:    Vault{VaultAddress: "{invalid_json}", VaultToken: "valid_token"},
+			expectedStatus: http.StatusBadRequest,
+			expectedError:  "malformed request",
+		},
+	}
+
+	router := mockHttpHandler()
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			requestBody, err := json.Marshal(tt.requestData)
+			require.NoError(t, err)
+
+			req := httptest.NewRequest("POST", "/machine", bytes.NewReader(requestBody))
+			req.Header.Set("Origin", "https://moov.io")
+			w := httptest.NewRecorder()
+
+			router.ServeHTTP(w, req)
+			w.Flush()
+
+			require.Equal(t, tt.expectedStatus, w.Code)
+
+			if tt.expectedStatus == http.StatusOK {
+				var response createMachineResponse
+				err := json.Unmarshal(w.Body.Bytes(), &response)
+				require.NoError(t, err)
+				require.Equal(t, tt.expectedIK, response.IK)
+
+				resp := w.Result()
+				defer resp.Body.Close()
+				if v := resp.Header.Get("Access-Control-Allow-Origin"); v != "https://moov.io" {
+					t.Errorf("Access-Control-Allow-Origin: %s", v)
+				}
+			} else {
+				require.Contains(t, w.Body.String(), tt.expectedError)
+			}
+		})
+	}
+}
