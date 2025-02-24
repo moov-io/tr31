@@ -1,7 +1,6 @@
 package server
 
 import (
-	"os"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -15,16 +14,21 @@ func mockServiceInReal() Service {
 	repository := NewRepositoryInMemory(nil)
 	return NewService(repository)
 }
+
+const Hashicorp_cloud_key = "hashicorp cloud key"
+const Local_vault_key = "my-fixed-token"
+const Hashicorp_cloud_url = "https://vault-cluster-public-vault-2d92a425.16ce2ded.z1.hashicorp.cloud:8200"
+
 func mockVaultAuthOne() Vault {
 	return Vault{
 		VaultAddress: "http://localhost:8200",
-		VaultToken:   os.Getenv("Local_vault_key"),
+		VaultToken:   Local_vault_key,
 	}
 }
 func mockVaultAuthTwo() Vault {
 	return Vault{
-		VaultAddress: os.Getenv("Hashicorp_cloud_url"),
-		VaultToken:   os.Getenv("Hashicorp_cloud_key"),
+		VaultAddress: Hashicorp_cloud_url,
+		VaultToken:   Hashicorp_cloud_key,
 	}
 }
 
