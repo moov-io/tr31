@@ -1,6 +1,8 @@
 package server
 
 import (
+	"cmp"
+	"os"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -15,20 +17,18 @@ func mockServiceInReal() Service {
 	return NewService(repository)
 }
 
-const Hashicorp_cloud_key = "hashicorp cloud key"
-const Local_vault_key = "my-fixed-token"
-const Hashicorp_cloud_url = "https://vault-cluster-public-vault-2d92a425.16ce2ded.z1.hashicorp.cloud:8200"
-
 func mockVaultAuthOne() Vault {
+	address := cmp.Or(os.Getenv("VAULT_ADDR"), "http://localhost:8200")
+
 	return Vault{
-		VaultAddress: "http://localhost:8200",
-		VaultToken:   Local_vault_key,
+		VaultAddress: address,
+		VaultToken:   os.Getenv("VAULT_TOKEN"),
 	}
 }
 func mockVaultAuthTwo() Vault {
 	return Vault{
-		VaultAddress: Hashicorp_cloud_url,
-		VaultToken:   Hashicorp_cloud_key,
+		VaultAddress: os.Getenv("HASHICORP_VAULT_ADDRESS"),
+		VaultToken:   os.Getenv("HASHICORP_VAULT_TOKEN"),
 	}
 }
 
