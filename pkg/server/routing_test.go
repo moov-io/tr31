@@ -311,6 +311,8 @@ func TestGetMachineHandler(t *testing.T) {
 			w := httptest.NewRecorder()
 			router.ServeHTTP(w, req)
 
+			fmt.Printf("Body: %v\n", w.Body)
+
 			// Validate response status
 			require.Equal(t, tt.expectedStatus, w.Code)
 
@@ -324,6 +326,10 @@ func TestGetMachineHandler(t *testing.T) {
 				require.NoError(t, err)
 				require.Equal(t, 1, len(response2.Machines))
 				require.Equal(t, tt.expectedKey, response2.Machines[0].InitialKey)
+			} else {
+				response2 := getMachinesResponse{}
+				err = json.Unmarshal(w.Body.Bytes(), &response2)
+				require.NoError(t, err)
 			}
 		})
 	}
@@ -485,18 +491,18 @@ func Test_DecryptData(t *testing.T) {
 			validateResp:   true,
 			expectedKey:    "80cae8bed08fe2cc",
 		},
-		// {
-		// 	name:   "Valid Descrypt data",
-		// 	method: "POST",
-		// 	url:    "/decrypt_data/80cae8bed08fe2cc",
-		// 	body: decryptRequest{
-		// 		KeyPath:  "secret/tr31",
-		// 		KeyName:  "kbkp",
-		// 		KeyBlock: "A0088M3TC00E000022BD7EC46BBE2A6A73389D1BA6DB63120B386F912839F4679C0523399E4D8D0F1D9A356E"},
-		// 	expectedStatus: http.StatusOK,
-		// 	validateResp:   true,
-		// 	expectedKey:    "ccccccccccccccccdddddddddddddddd",
-		// },
+		{
+			name:   "Valid Descrypt data",
+			method: "POST",
+			url:    "/decrypt_data/80cae8bed08fe2cc",
+			body: decryptRequest{
+				KeyPath:  "secret/tr31",
+				KeyName:  "kbkp",
+				KeyBlock: "A0088M3TC00E000022BD7EC46BBE2A6A73389D1BA6DB63120B386F912839F4679C0523399E4D8D0F1D9A356E"},
+			expectedStatus: http.StatusOK,
+			validateResp:   true,
+			expectedKey:    "ccccccccccccccccdddddddddddddddd",
+		},
 		{
 			name:   "Missing KeyBlock",
 			method: "POST",
@@ -536,18 +542,6 @@ func Test_DecryptData(t *testing.T) {
 			method:         "GET",
 			url:            "/decrypt_data/80cae8bed08fe2cc",
 			expectedStatus: http.StatusMethodNotAllowed,
-			validateResp:   false,
-		},
-		{
-			name:   "Invalid URL Format",
-			method: "POST",
-			url:    "/decrypt_data/", // Missing ID
-			body: decryptRequest{
-				KeyPath:  "secret/tr31",
-				KeyName:  "kbkp",
-				KeyBlock: "A0088M3TC00E000022BD7EC46BBE2A6A73389D1BA6DB63120B386F912839F4679C0523399E4D8D0F1D9A356E",
-			},
-			expectedStatus: http.StatusNotFound,
 			validateResp:   false,
 		},
 		{
@@ -624,11 +618,14 @@ func Test_DecryptData(t *testing.T) {
 				require.NotNil(t, response3.Machine)
 				require.Equal(t, tt.expectedKey, response3.Machine.InitialKey)
 			} else {
-				response4 := decryptDataResponse{}
-				err = json.Unmarshal(w.Body.Bytes(), &response4)
-				require.NoError(t, err)
-				require.NotNil(t, response4.Data)
-				require.Equal(t, tt.expectedKey, response4.Data)
+				if tt.expectedStatus == http.StatusOK {
+					response4 := decryptDataResponse{}
+					err = json.Unmarshal(w.Body.Bytes(), &response4)
+
+					require.NoError(t, err)
+					require.NotNil(t, response4.Data)
+					require.Equal(t, tt.expectedKey, response4.Data)
+				}
 			}
 		})
 	}

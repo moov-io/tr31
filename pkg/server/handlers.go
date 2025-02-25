@@ -18,9 +18,7 @@ func bindJSON(request *http.Request, params interface{}) (err error) {
 	if err != nil {
 		return fmt.Errorf("could not parse json request: %s", err)
 	}
-	fmt.Println("Raw body:", string(body))
 	err = json.Unmarshal(body, params)
-	fmt.Printf("Raw params: %+v\n", params)
 	if err != nil {
 		return fmt.Errorf("could not parse json request: %s", err)
 	}
@@ -33,7 +31,7 @@ type getMachinesRequest struct {
 
 type getMachinesResponse struct {
 	Machines []*Machine `json:"machines"`
-	Err      error      `json:"error"`
+	Err      string     `json:"error"`
 }
 
 func decodeGetMachinesRequest(_ context.Context, request *http.Request) (interface{}, error) {
@@ -46,7 +44,7 @@ func getMachinesEndpoint(s Service) endpoint.Endpoint {
 	return func(_ context.Context, _ interface{}) (interface{}, error) {
 		return getMachinesResponse{
 			Machines: s.GetMachines(),
-			Err:      nil,
+			Err:      "",
 		}, nil
 	}
 }
@@ -58,7 +56,7 @@ type findMachineRequest struct {
 
 type findMachineResponse struct {
 	Machine *Machine `json:"machine"`
-	Err     error    `json:"error"`
+	Err     string   `json:"error"`
 }
 
 func decodeFindMachineRequest(_ context.Context, request *http.Request) (interface{}, error) {
@@ -73,16 +71,16 @@ func findMachineEndpoint(s Service) endpoint.Endpoint {
 	return func(_ context.Context, request interface{}) (interface{}, error) {
 		req, ok := request.(findMachineRequest)
 		if !ok {
-			return findMachineResponse{Err: ErrFoundABug}, ErrFoundABug
+			return findMachineResponse{Err: ErrFoundABug.Error()}, ErrFoundABug
 		}
 		if req.ik == "" {
-			return findMachineResponse{Err: ErrFoundABug}, errInvalidRequestId
+			return findMachineResponse{Err: errInvalidRequestId.Error()}, ErrFoundABug
 		}
 
 		resp := findMachineResponse{}
 		m, err := s.GetMachine(req.ik)
 		if err != nil {
-			resp.Err = err
+			resp.Err = err.Error()
 			return resp, err
 		}
 
@@ -99,7 +97,7 @@ type createMachineRequest struct {
 type createMachineResponse struct {
 	IK      string   `json:"ik"`
 	Machine *Machine `json:"machine"`
-	Err     error    `json:"error"`
+	Err     string   `json:"error"`
 }
 
 func decodeCreateMachineRequest(_ context.Context, request *http.Request) (interface{}, error) {
@@ -118,16 +116,16 @@ func createMachineEndpoint(s Service) endpoint.Endpoint {
 	return func(_ context.Context, request interface{}) (interface{}, error) {
 		req, ok := request.(createMachineRequest)
 		if req.vaultAuth.VaultAddress == "" {
-			return createMachineResponse{Err: ErrFoundABug}, errInvalidVaultAddress
+			return createMachineResponse{Err: errInvalidVaultAddress.Error()}, ErrFoundABug
 		}
 		if req.vaultAuth.VaultToken == "" {
-			return createMachineResponse{Err: ErrFoundABug}, errInvalidVaultToken
+			return createMachineResponse{Err: errInvalidVaultToken.Error()}, ErrFoundABug
 		}
 		if !IsValidURL(req.vaultAuth.VaultAddress) {
-			return createMachineResponse{Err: ErrFoundABug}, errInvalidVaultAddress
+			return createMachineResponse{Err: errInvalidVaultAddress.Error()}, ErrFoundABug
 		}
 		if !ok {
-			return createMachineResponse{Err: ErrFoundABug}, ErrFoundABug
+			return createMachineResponse{Err: ErrFoundABug.Error()}, ErrFoundABug
 		}
 
 		resp := createMachineResponse{}
@@ -135,13 +133,79 @@ func createMachineEndpoint(s Service) endpoint.Endpoint {
 		m := NewMachine(req.vaultAuth)
 		err := s.CreateMachine(m)
 		if err != nil {
-			resp.Err = err
+			resp.Err = err.Error()
 			return resp, err
 		}
 
 		resp.Machine = m
 		resp.IK = m.InitialKey
 
+		return resp, nil
+	}
+}
+
+type decryptDataRequest struct {
+	requestID string
+	ik        string
+	keyPath   string
+	keyName   string
+	keyBlock  string
+	timeout   time.Duration
+}
+
+type decryptDataResponse struct {
+	Data string `json:"data"`
+	Err  string `json:"error"`
+}
+
+func decodeDecryptDataRequest(_ context.Context, request *http.Request) (interface{}, error) {
+
+	req := decryptDataRequest{
+		requestID: moovhttp.GetRequestID(request),
+	}
+
+	type requestParam struct {
+		KeyPath  string
+		KeyName  string
+		KeyBlock string
+	}
+
+	reqParams := requestParam{}
+	if err := bindJSON(request, &reqParams); err != nil {
+		return req, err
+	}
+	req.ik = mux.Vars(request)["ik"]
+	req.keyPath = reqParams.KeyPath
+	req.keyName = reqParams.KeyName
+	req.keyBlock = reqParams.KeyBlock
+	return req, nil
+}
+
+func decryptDataEndpoint(s Service) endpoint.Endpoint {
+	return func(_ context.Context, request interface{}) (interface{}, error) {
+		req, ok := request.(decryptDataRequest)
+		if !ok {
+			return decryptDataResponse{Err: ErrFoundABug.Error()}, ErrFoundABug
+		}
+
+		if req.keyPath == "" {
+			return decryptDataResponse{Err: errInvalidKeyPath.Error()}, ErrFoundABug
+		}
+		if req.keyName == "" {
+			return decryptDataResponse{Err: errInvalidKeyName.Error()}, ErrFoundABug
+		}
+		if req.keyBlock == "" {
+			return decryptDataResponse{Err: errInvalidKeyBlock.Error()}, ErrFoundABug
+		}
+
+		resp := decryptDataResponse{}
+		decrypted, err := s.DecryptData(req.ik, req.keyPath, req.keyName, req.keyBlock, req.timeout)
+		if err != nil {
+			resp.Err = err.Error()
+			return resp, err
+		}
+
+		resp.Data = decrypted
 		return resp, nil
 	}
 }
@@ -200,70 +264,6 @@ func encryptDataEndpoint(s Service) endpoint.Endpoint {
 		}
 
 		resp.Data = encrypted
-		return resp, nil
-	}
-}
-
-type decryptDataRequest struct {
-	requestID string
-	ik        string
-	keyPath   string
-	keyName   string
-	keyBlock  string
-	timeout   time.Duration
-}
-type decryptDataResponse struct {
-	Data string `json:"data"`
-	Err  error  `json:"error"`
-}
-
-func decodeDecryptDataRequest(_ context.Context, request *http.Request) (interface{}, error) {
-
-	req := decryptDataRequest{
-		requestID: moovhttp.GetRequestID(request),
-	}
-
-	type requestParam struct {
-		KeyPath  string
-		KeyName  string
-		KeyBlock string
-	}
-
-	reqParams := requestParam{}
-	if err := bindJSON(request, &reqParams); err != nil {
-		return req, err
-	}
-	req.ik = mux.Vars(request)["ik"]
-	req.keyPath = reqParams.KeyPath
-	req.keyName = reqParams.KeyName
-	req.keyBlock = reqParams.KeyBlock
-	return req, nil
-}
-
-func decryptDataEndpoint(s Service) endpoint.Endpoint {
-	return func(_ context.Context, request interface{}) (interface{}, error) {
-		req, ok := request.(decryptDataRequest)
-		if req.keyPath == "" {
-			return createMachineResponse{Err: ErrFoundABug}, errInvalidKeyPath
-		}
-		if req.keyName == "" {
-			return createMachineResponse{Err: ErrFoundABug}, errInvalidKeyName
-		}
-		if req.keyBlock == "" {
-			return createMachineResponse{Err: ErrFoundABug}, errInvalidKeyBlock
-		}
-		if !ok {
-			return decryptDataResponse{Err: ErrFoundABug}, ErrFoundABug
-		}
-
-		resp := decryptDataResponse{}
-		decrypted, err := s.DecryptData(req.ik, req.keyPath, req.keyName, req.keyBlock, req.timeout)
-		if err != nil {
-			resp.Err = err
-			return resp, err
-		}
-
-		resp.Data = decrypted
 		return resp, nil
 	}
 }
