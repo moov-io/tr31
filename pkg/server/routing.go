@@ -25,6 +25,9 @@ var (
 	ErrFoundABug  = fmt.Errorf("snuck into machine with err == nil, %s", bugReportHelp)
 
 	errInvalidMachine = errors.New("invalid tr31 machine")
+
+	errInvalidVaultAddress = errors.New("Invalid Vault Address.")
+	errInvalidVaultToken   = errors.New("Invalid vault Token.")
 )
 
 // contextKey is a unique (and compariable) type we use

@@ -113,6 +113,15 @@ func decodeCreateMachineRequest(_ context.Context, request *http.Request) (inter
 func createMachineEndpoint(s Service) endpoint.Endpoint {
 	return func(_ context.Context, request interface{}) (interface{}, error) {
 		req, ok := request.(createMachineRequest)
+		if req.vaultAuth.VaultAddress == "" {
+			return createMachineResponse{Err: ErrFoundABug}, errInvalidVaultAddress
+		}
+		if req.vaultAuth.VaultToken == "" {
+			return createMachineResponse{Err: ErrFoundABug}, errInvalidVaultToken
+		}
+		if IsValidURL(req.vaultAuth.VaultAddress) == false {
+			return createMachineResponse{Err: ErrFoundABug}, errInvalidVaultAddress
+		}
 		if !ok {
 			return createMachineResponse{Err: ErrFoundABug}, ErrFoundABug
 		}
@@ -123,7 +132,7 @@ func createMachineEndpoint(s Service) endpoint.Endpoint {
 		err := s.CreateMachine(m)
 		if err != nil {
 			resp.Err = err
-			return resp, nil
+			return resp, err
 		}
 
 		resp.Machine = m

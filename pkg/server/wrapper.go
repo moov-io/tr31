@@ -5,6 +5,7 @@ import (
 	"encoding/hex"
 	"errors"
 	"github.com/moov-io/tr31/pkg/encryption"
+	"regexp"
 	"time"
 )
 
@@ -106,4 +107,9 @@ func DecryptData(params UnifiedParams) (string, error) {
 	}
 	encodedStr := hex.EncodeToString(resultKB)
 	return encodedStr, nil
+}
+
+func IsValidURL(str string) bool {
+	re := regexp.MustCompile(`^(https?:\/\/)?((localhost|\d{1,3}(\.\d{1,3}){3}|[\w-]+(\.[\w-]+)+))(:\d{1,5})?(\/[\w- ./?%&=]*)?$`)
+	return re.MatchString(str)
 }

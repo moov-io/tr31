@@ -19,10 +19,11 @@ func mockServiceInReal() Service {
 
 func mockVaultAuthOne() Vault {
 	address := cmp.Or(os.Getenv("VAULT_ADDR"), "http://localhost:8200")
+	token := cmp.Or(os.Getenv("VAULT_TOKEN"), "token")
 
 	return Vault{
 		VaultAddress: address,
-		VaultToken:   os.Getenv("VAULT_TOKEN"),
+		VaultToken:   token,
 	}
 }
 func mockVaultAuthTwo() Vault {

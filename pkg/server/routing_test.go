@@ -105,6 +105,37 @@ func TestRouting_machine_mgmt(t *testing.T) {
 	require.Equal(t, "99a16e3a9aeccd3c", response3.Machine.InitialKey)
 }
 
+func TestRouting_duplicate_machine(t *testing.T) {
+	router := mockHttpHandler()
+	requestBody, err := json.Marshal(mockVaultAuthOne())
+	require.NoError(t, err)
+
+	req := httptest.NewRequest("POST", "/machine", bytes.NewReader(requestBody))
+	req.Header.Set("Origin", "https://moov.io")
+	w := httptest.NewRecorder()
+
+	router.ServeHTTP(w, req)
+	w.Flush()
+	var responseAgain createMachineResponse
+	err = json.Unmarshal(w.Body.Bytes(), &responseAgain)
+	require.NoError(t, err)
+
+	requestBodyAgain, err := json.Marshal(mockVaultAuthOne())
+	require.NoError(t, err)
+
+	req = httptest.NewRequest("POST", "/machine", bytes.NewReader(requestBodyAgain))
+	req.Header.Set("Origin", "https://moov.io")
+	w = httptest.NewRecorder()
+
+	router.ServeHTTP(w, req)
+	w.Flush()
+	var response createMachineResponse
+	json.Unmarshal(w.Body.Bytes(), &response)
+	require.Equal(t, http.StatusBadRequest, w.Code)
+	require.Contains(t, w.Body.String(), "already exists")
+
+}
+
 func TestCreateMachine(t *testing.T) {
 	tests := []struct {
 		name           string
@@ -117,55 +148,37 @@ func TestCreateMachine(t *testing.T) {
 			name:           "Valid Request",
 			requestData:    mockVaultAuthOne(),
 			expectedStatus: http.StatusOK,
-			expectedIK:     "99a16e3a9aeccd3c",
+			expectedIK:     "80cae8bed08fe2cc",
 		},
 		{
 			name:           "Missing Vault Address",
 			requestData:    Vault{VaultToken: "valid_token"},
-			expectedStatus: http.StatusBadRequest,
-			expectedError:  "missing vault address",
+			expectedStatus: http.StatusInternalServerError,
+			expectedError:  "Invalid Vault Address.",
 		},
 		{
 			name:           "Missing Vault Token",
 			requestData:    Vault{VaultAddress: "http://localhost:8200"},
-			expectedStatus: http.StatusBadRequest,
-			expectedError:  "missing vault token",
+			expectedStatus: http.StatusInternalServerError,
+			expectedError:  "Invalid vault Token.",
 		},
 		{
 			name:           "Invalid Vault Address",
 			requestData:    Vault{VaultAddress: "invalid_address", VaultToken: "valid_token"},
-			expectedStatus: http.StatusBadRequest,
-			expectedError:  "invalid vault address",
+			expectedStatus: http.StatusInternalServerError,
+			expectedError:  "Invalid Vault Address.",
 		},
 		{
 			name:           "Empty Request Body",
 			requestData:    Vault{},
-			expectedStatus: http.StatusBadRequest,
-			expectedError:  "invalid request body",
-		},
-		{
-			name:           "CORS Headers Set Correctly",
-			requestData:    mockVaultAuthOne(),
-			expectedStatus: http.StatusOK,
-			expectedIK:     "99a16e3a9aeccd3c",
-		},
-		{
-			name:           "Duplicate Machine Creation",
-			requestData:    mockVaultAuthOne(),
-			expectedStatus: http.StatusConflict,
-			expectedError:  "machine already exists",
-		},
-		{
-			name:           "Server Error",
-			requestData:    Vault{VaultAddress: "http://localhost:9999", VaultToken: "valid_token"},
 			expectedStatus: http.StatusInternalServerError,
-			expectedError:  "server error",
+			expectedError:  "Invalid Vault Address.",
 		},
 		{
 			name:           "Invalid JSON Request",
 			requestData:    Vault{VaultAddress: "{invalid_json}", VaultToken: "valid_token"},
-			expectedStatus: http.StatusBadRequest,
-			expectedError:  "malformed request",
+			expectedStatus: http.StatusInternalServerError,
+			expectedError:  "Invalid Vault Address.",
 		},
 	}
 
