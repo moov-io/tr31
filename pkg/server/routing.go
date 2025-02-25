@@ -28,6 +28,10 @@ var (
 
 	errInvalidVaultAddress = errors.New("Invalid Vault Address.")
 	errInvalidVaultToken   = errors.New("Invalid vault Token.")
+	errInvalidRequestId    = errors.New("Invalid Request ID.")
+	errInvalidKeyPath      = errors.New("Invalid Key Path.")
+	errInvalidKeyName      = errors.New("Invalid Key Name.")
+	errInvalidKeyBlock     = errors.New("Invalid Key Block.")
 )
 
 // contextKey is a unique (and compariable) type we use
@@ -197,11 +201,11 @@ func encodeError(_ context.Context, err error, w http.ResponseWriter) {
 	}
 	w.Header().Set("Content-Type", "application/json; charset=utf-8")
 	w.WriteHeader(codeFrom(err))
-	err = json.NewEncoder(w).Encode(map[string]interface{}{
+	cErr := json.NewEncoder(w).Encode(map[string]interface{}{
 		"error": err.Error(),
 	})
-	if err != nil {
-		w.Write([]byte(fmt.Sprintf("problem rendering json: %v", err)))
+	if cErr != nil {
+		w.Write([]byte(fmt.Sprintf("problem rendering json: %v", cErr)))
 	}
 }
 

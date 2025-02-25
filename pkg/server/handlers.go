@@ -18,8 +18,9 @@ func bindJSON(request *http.Request, params interface{}) (err error) {
 	if err != nil {
 		return fmt.Errorf("could not parse json request: %s", err)
 	}
-
+	fmt.Println("Raw body:", string(body))
 	err = json.Unmarshal(body, params)
+	fmt.Printf("Raw params: %+v\n", params)
 	if err != nil {
 		return fmt.Errorf("could not parse json request: %s", err)
 	}
@@ -74,12 +75,15 @@ func findMachineEndpoint(s Service) endpoint.Endpoint {
 		if !ok {
 			return findMachineResponse{Err: ErrFoundABug}, ErrFoundABug
 		}
+		if req.ik == "" {
+			return findMachineResponse{Err: ErrFoundABug}, errInvalidRequestId
+		}
 
 		resp := findMachineResponse{}
 		m, err := s.GetMachine(req.ik)
 		if err != nil {
 			resp.Err = err
-			return resp, nil
+			return resp, err
 		}
 
 		resp.Machine = m
@@ -119,7 +123,7 @@ func createMachineEndpoint(s Service) endpoint.Endpoint {
 		if req.vaultAuth.VaultToken == "" {
 			return createMachineResponse{Err: ErrFoundABug}, errInvalidVaultToken
 		}
-		if IsValidURL(req.vaultAuth.VaultAddress) == false {
+		if !IsValidURL(req.vaultAuth.VaultAddress) {
 			return createMachineResponse{Err: ErrFoundABug}, errInvalidVaultAddress
 		}
 		if !ok {
@@ -214,34 +218,40 @@ type decryptDataResponse struct {
 }
 
 func decodeDecryptDataRequest(_ context.Context, request *http.Request) (interface{}, error) {
+
 	req := decryptDataRequest{
 		requestID: moovhttp.GetRequestID(request),
 	}
 
-	req.ik = mux.Vars(request)["ik"]
-
 	type requestParam struct {
-		keyPath  string
-		keyName  string
-		keyBlock string
-		timeout  time.Duration
+		KeyPath  string
+		KeyName  string
+		KeyBlock string
 	}
 
 	reqParams := requestParam{}
 	if err := bindJSON(request, &reqParams); err != nil {
-		return nil, err
+		return req, err
 	}
-
-	req.keyPath = reqParams.keyPath
-	req.keyName = reqParams.keyName
-	req.keyBlock = reqParams.keyBlock
-	req.timeout = reqParams.timeout
+	req.ik = mux.Vars(request)["ik"]
+	req.keyPath = reqParams.KeyPath
+	req.keyName = reqParams.KeyName
+	req.keyBlock = reqParams.KeyBlock
 	return req, nil
 }
 
 func decryptDataEndpoint(s Service) endpoint.Endpoint {
 	return func(_ context.Context, request interface{}) (interface{}, error) {
 		req, ok := request.(decryptDataRequest)
+		if req.keyPath == "" {
+			return createMachineResponse{Err: ErrFoundABug}, errInvalidKeyPath
+		}
+		if req.keyName == "" {
+			return createMachineResponse{Err: ErrFoundABug}, errInvalidKeyName
+		}
+		if req.keyBlock == "" {
+			return createMachineResponse{Err: ErrFoundABug}, errInvalidKeyBlock
+		}
 		if !ok {
 			return decryptDataResponse{Err: ErrFoundABug}, ErrFoundABug
 		}
@@ -250,7 +260,7 @@ func decryptDataEndpoint(s Service) endpoint.Endpoint {
 		decrypted, err := s.DecryptData(req.ik, req.keyPath, req.keyName, req.keyBlock, req.timeout)
 		if err != nil {
 			resp.Err = err
-			return resp, nil
+			return resp, err
 		}
 
 		resp.Data = decrypted
