@@ -436,7 +436,7 @@ func Test_DecryptData(t *testing.T) {
 			body: decryptRequest{
 				KeyPath:  "secret/tr31",
 				KeyName:  "kbkp",
-				KeyBlock: "A0088M3TC00E000022BD7EC46BBE2A6A73389D1BA6DB63120B386F912839F4679C0523399E4D8D0F1D9A356E"},
+				KeyBlock: "A0088M3TC00E000022BD7EC46BBE2A6A73389D1BA6DB63120B386F912839F4679C0523399E4D8D0F1D9A356E"}, // Non-sensitive test key
 			expectedStatus: http.StatusOK,
 			validateResp:   true,
 			expectedKey:    "ccccccccccccccccdddddddddddddddd",
@@ -470,7 +470,7 @@ func Test_DecryptData(t *testing.T) {
 			url:    "/decrypt_data/80cae8bed08fe2cc",
 			body: decryptRequest{
 				KeyName:  "kbkp",
-				KeyBlock: "A0088M3TC00E000022BD7EC46BBE2A6A73389D1BA6DB63120B386F912839F4679C0523399E4D8D0F1D9A356E",
+				KeyBlock: "A0088M3TC00E000022BD7EC46BBE2A6A73389D1BA6DB63120B386F912839F4679C0523399E4D8D0F1D9A356E", // Non-sensitive test key
 			},
 			expectedStatus: http.StatusInternalServerError,
 			validateResp:   false,
