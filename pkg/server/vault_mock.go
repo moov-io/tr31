@@ -32,7 +32,6 @@ func (m *MockVaultClient) WriteSecret(path, key, value string) *VaultError {
 	}
 	m.storage[path][key] = value
 
-	fmt.Printf("Mock saved key %s in path %s\n", key, path)
 	return nil
 }
 
@@ -47,7 +46,6 @@ func (m *MockVaultClient) ReadSecret(path, key string) (string, *VaultError) {
 
 	if values, exists := m.storage[path]; exists {
 		if value, exists := values[key]; exists {
-			fmt.Printf("Mock read key %s from path %s\n", key, path)
 			return value, nil
 		}
 	}
@@ -88,7 +86,6 @@ func (m *MockVaultClient) DeleteSecret(path, key string) *VaultError {
 	if values, exists := m.storage[path]; exists {
 		if _, exists := values[key]; exists {
 			delete(values, key)
-			fmt.Printf("Mock removed key %s from path %s\n", key, path)
 			return nil
 		}
 	}
