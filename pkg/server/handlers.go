@@ -70,11 +70,11 @@ func decodeFindMachineRequest(_ context.Context, request *http.Request) (interfa
 func findMachineEndpoint(s Service) endpoint.Endpoint {
 	return func(_ context.Context, request interface{}) (interface{}, error) {
 		req, ok := request.(findMachineRequest)
+		if req.ik == "" {
+			return findMachineResponse{Err: errInvalidRequestId.Error()}, errInvalidRequestId
+		}
 		if !ok {
 			return findMachineResponse{Err: ErrFoundABug.Error()}, ErrFoundABug
-		}
-		if req.ik == "" {
-			return findMachineResponse{Err: errInvalidRequestId.Error()}, ErrFoundABug
 		}
 
 		resp := findMachineResponse{}
@@ -116,13 +116,13 @@ func createMachineEndpoint(s Service) endpoint.Endpoint {
 	return func(_ context.Context, request interface{}) (interface{}, error) {
 		req, ok := request.(createMachineRequest)
 		if req.vaultAuth.VaultAddress == "" {
-			return createMachineResponse{Err: errInvalidVaultAddress.Error()}, ErrFoundABug
+			return createMachineResponse{Err: errInvalidVaultAddress.Error()}, errInvalidVaultAddress
 		}
 		if req.vaultAuth.VaultToken == "" {
-			return createMachineResponse{Err: errInvalidVaultToken.Error()}, ErrFoundABug
+			return createMachineResponse{Err: errInvalidVaultToken.Error()}, errInvalidVaultToken
 		}
 		if !IsValidURL(req.vaultAuth.VaultAddress) {
-			return createMachineResponse{Err: errInvalidVaultAddress.Error()}, ErrFoundABug
+			return createMachineResponse{Err: errInvalidVaultAddress.Error()}, errInvalidVaultAddress
 		}
 		if !ok {
 			return createMachineResponse{Err: ErrFoundABug.Error()}, ErrFoundABug
@@ -189,13 +189,13 @@ func decryptDataEndpoint(s Service) endpoint.Endpoint {
 		}
 
 		if req.keyPath == "" {
-			return decryptDataResponse{Err: errInvalidKeyPath.Error()}, ErrFoundABug
+			return decryptDataResponse{Err: errInvalidKeyPath.Error()}, errInvalidKeyPath
 		}
 		if req.keyName == "" {
-			return decryptDataResponse{Err: errInvalidKeyName.Error()}, ErrFoundABug
+			return decryptDataResponse{Err: errInvalidKeyName.Error()}, errInvalidKeyName
 		}
 		if req.keyBlock == "" {
-			return decryptDataResponse{Err: errInvalidKeyBlock.Error()}, ErrFoundABug
+			return decryptDataResponse{Err: errInvalidKeyBlock.Error()}, errInvalidKeyBlock
 		}
 
 		resp := decryptDataResponse{}
