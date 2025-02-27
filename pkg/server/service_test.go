@@ -26,6 +26,7 @@ func mockVaultAuthOne() Vault {
 		VaultToken:   token,
 	}
 }
+
 func mockVaultAuthTwo() Vault {
 	return Vault{
 		VaultAddress: os.Getenv("HASHICORP_VAULT_ADDRESS"),

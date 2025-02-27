@@ -1,4 +1,4 @@
-package encryption
+package tr31
 
 import (
 	"encoding/binary"

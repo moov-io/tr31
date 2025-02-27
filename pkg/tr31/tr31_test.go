@@ -1,12 +1,13 @@
-package encryption
+package tr31
 
 import (
 	"bytes"
 	"encoding/hex"
 	"fmt"
-	"github.com/stretchr/testify/assert"
 	"strings"
 	"testing"
+
+	"github.com/stretchr/testify/assert"
 )
 
 func TestHeaderLoad(t *testing.T) {
@@ -392,7 +393,7 @@ func Test_kb_sanity(t *testing.T) {
 			//keyLens := []int{0, 1, 8, 16, 24, 32, 99, 999}
 			keyLens := []int{24}
 			for _, keyLen := range keyLens {
-				err := sanityCheck(tt.kbpk, urandom(keyLen), h)
+				err := sanityCheck(tt.kbpk, urandom(t, keyLen), h)
 				assert.Equal(t, nil, err)
 			}
 		})

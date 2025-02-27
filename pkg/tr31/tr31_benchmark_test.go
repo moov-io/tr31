@@ -1,4 +1,4 @@
-package encryption
+package tr31
 
 import (
 	"encoding/hex"
@@ -35,7 +35,7 @@ func BenchmarkUnwrap_D_32_WithSetup(b *testing.B) {
 		}
 		keyBlocks[i] = kblock
 
-		expectedKeys[i] = urandom(16)
+		expectedKeys[i] = urandom(b, 16)
 		rawKeyBlocks[i], err = kblock.Wrap(expectedKeys[i], nil)
 		if err != nil {
 			b.Fatalf("failed to wrap key block: %v", err)
@@ -88,7 +88,7 @@ func BenchmarkUnwrap_D_32_Parallel(b *testing.B) {
 		}
 		keyBlocks[i] = kblock
 
-		expectedKeys[i] = urandom(16)
+		expectedKeys[i] = urandom(b, 16)
 		rawKeyBlocks[i], err = kblock.Wrap(expectedKeys[i], nil)
 		if err != nil {
 			b.Fatalf("failed to wrap key block: %v", err)
