@@ -3,7 +3,6 @@ package server
 import (
 	"bytes"
 	"encoding/json"
-	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -248,8 +247,6 @@ func TestGetMachineHandler(t *testing.T) {
 			// Send request
 			w := httptest.NewRecorder()
 			router.ServeHTTP(w, req)
-
-			fmt.Printf("Body: %v\n", w.Body)
 
 			// Validate response status
 			require.Equal(t, tt.expectedStatus, w.Code)

@@ -4,11 +4,12 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-	"github.com/hashicorp/vault/api"
 	"os"
 	"os/exec"
 	"runtime"
 	"time"
+
+	"github.com/hashicorp/vault/api"
 )
 
 type VaultError struct {
@@ -129,7 +130,6 @@ func enableKVSecretsEngine(client *api.Client, path string) error {
 		return fmt.Errorf("failed to enable KV engine, unexpected status code: %v", resp.StatusCode)
 	}
 
-	fmt.Printf("Successfully enabled KV version 2 at path: %s\n", path)
 	return nil
 }
 
@@ -381,9 +381,7 @@ func (v *VaultClient) CloseClient() {
 		cmd := exec.Command("powershell", "-Command", "Get-Process vault | Stop-Process -Force")
 		err := cmd.Run()
 		if err != nil {
-			fmt.Println("Error killing Vault process:", err)
 		} else {
-			fmt.Println("Vault process terminated successfully (Windows)")
 		}
 	} else {
 		// Linux/macOS: Use pkill
