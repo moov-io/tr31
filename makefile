@@ -18,6 +18,14 @@ else
 	CGO_ENABLED=1 GOOS=$(PLATFORM) go build -o bin/tr31-$(PLATFORM)-amd64 github.com/moov-io/tr31/cmd/tr31
 endif
 
+.PHONY: setup
+setup:
+	docker compose up -d --force-recreate --remove-orphans
+
+.PHONY: teardown
+teardown:
+	-docker compose down --remove-orphans
+
 .PHONY: clean
 clean:
 	@rm -rf ./bin/ ./tmp/ coverage.txt misspell* staticcheck lint-project.sh

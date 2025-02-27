@@ -48,6 +48,8 @@ type VaultClient struct {
 	client *api.Client
 }
 
+var _ SecretManager = (&VaultClient{})
+
 func NewVaultClient(v Vault) (*VaultClient, error) {
 	vClient, err := createVaultClient(v.VaultAddress, v.VaultToken, 10)
 	if err != nil {
