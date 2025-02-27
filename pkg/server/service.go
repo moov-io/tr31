@@ -149,3 +149,53 @@ func (s *service) DecryptData(ik, keyPath, keyName, keyBlock string, timeout tim
 func (s *service) DeleteMachine(ik string) error {
 	return s.store.DeleteMachine(ik)
 }
+
+func Encrypt(params UnifiedParams) (string, error) {
+	vaultClient, err := NewVaultClient(Vault{VaultAddress: params.VaultAddr, VaultToken: params.VaultToken})
+	if err != nil {
+		return "", err
+	}
+	vaultParams := UnifiedParams{
+		VaultAddr:  params.VaultAddr,
+		VaultToken: params.VaultToken,
+		KeyPath:    params.KeyPath,
+		KeyName:    params.KeyName,
+		timeout:    0,
+	}
+	keyStr, err := readKey(vaultClient, vaultParams)
+	if err != nil {
+		return "", err
+	}
+	enc_params := UnifiedParams{
+		Kbkp:    keyStr,
+		EncKey:  params.EncKey,
+		Header:  params.Header,
+		timeout: 0,
+	}
+	return EncryptData(enc_params)
+}
+
+func Decrypt(params UnifiedParams) (string, error) {
+	vaultClient, err := NewVaultClient(Vault{VaultAddress: params.VaultAddr, VaultToken: params.VaultToken})
+	if err != nil {
+		return "", err
+	}
+	vaultParams := UnifiedParams{
+		VaultAddr:  params.VaultAddr,
+		VaultToken: params.VaultToken,
+		KeyPath:    params.KeyPath,
+		KeyName:    params.KeyName,
+		timeout:    0,
+	}
+	keyStr, err := readKey(vaultClient, vaultParams)
+	if err != nil {
+		return "", err
+	}
+	dec_params := UnifiedParams{
+		Kbkp:     keyStr,
+		KeyName:  params.KeyName,
+		KeyBlock: params.KeyBlock,
+		timeout:  0,
+	}
+	return DecryptData(dec_params)
+}
