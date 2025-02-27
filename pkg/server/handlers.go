@@ -121,9 +121,6 @@ func createMachineEndpoint(s Service) endpoint.Endpoint {
 		if req.vaultAuth.VaultToken == "" {
 			return createMachineResponse{Err: errInvalidVaultToken.Error()}, errInvalidVaultToken
 		}
-		if !IsValidURL(req.vaultAuth.VaultAddress) {
-			return createMachineResponse{Err: errInvalidVaultAddress.Error()}, errInvalidVaultAddress
-		}
 		if !ok {
 			return createMachineResponse{Err: ErrFoundABug.Error()}, ErrFoundABug
 		}
