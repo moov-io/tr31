@@ -50,7 +50,7 @@ package main
 
 import (
     "fmt"
-    "github.com/moov-io/tr31/encryption"
+    "github.com/moov-io/tr31/tr31"
 )
 
 func main() {

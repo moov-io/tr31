@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"encoding/hex"
 	"errors"
-	"github.com/moov-io/tr31/pkg/encryption"
 	"regexp"
 	"time"
 
@@ -72,7 +71,7 @@ func EncryptData(params UnifiedParams) (string, error) {
 	if decErr != nil {
 		return "", decErr
 	}
-	header, hErr := encryption.NewHeader(
+	header, hErr := tr31.NewHeader(
 		params.Header.VersionId,
 		params.Header.KeyUsage,
 		params.Header.Algorithm,
@@ -82,7 +81,7 @@ func EncryptData(params UnifiedParams) (string, error) {
 	if hErr != nil {
 		return "", decErr
 	}
-	kblock, bErr := encryption.NewKeyBlock(kbpk, header)
+	kblock, bErr := tr31.NewKeyBlock(kbpk, header)
 	if bErr != nil {
 		return "", bErr
 	}
@@ -99,7 +98,7 @@ func DecryptData(params UnifiedParams) (string, error) {
 	if decErr != nil {
 		return "", decErr
 	}
-	block, bErr := encryption.NewKeyBlock(kbpk, nil)
+	block, bErr := tr31.NewKeyBlock(kbpk, nil)
 	if bErr != nil {
 		return "", bErr
 	}

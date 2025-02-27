@@ -59,7 +59,7 @@ func TestRouting_create_duplicate_machine(t *testing.T) {
 	var responseAgain createMachineResponse
 	err = json.Unmarshal(w.Body.Bytes(), &responseAgain)
 	require.NoError(t, err)
-	require.Equal(t, expectedMachineIK, response1.IK)
+	require.Equal(t, expectedMachineIK, responseAgain.IK)
 
 	requestBodyAgain, err := json.Marshal(mockVaultAuthOne())
 	require.NoError(t, err)
@@ -129,15 +129,6 @@ func TestCreateMachine(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			requestBody, err := json.Marshal(tt.requestData)
 			require.NoError(t, err)
-
-	response2 := getMachinesResponse{}
-	err = json.Unmarshal(w.Body.Bytes(), &response2)
-	require.NoError(t, err)
-	require.Equal(t, 1, len(response2.Machines))
-	require.Equal(t, expectedMachineIK, response2.Machines[0].InitialKey)
-
-	req = httptest.NewRequest("GET", "/machine/"+expectedMachineIK, nil)
-	req.Header.Set("Origin", "https://moov.io")
 
 			req := httptest.NewRequest("POST", "/machine", bytes.NewReader(requestBody))
 			req.Header.Set("Origin", "https://moov.io")
