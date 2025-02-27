@@ -1,12 +1,8 @@
 package server
 
 import (
-	"bytes"
-	"encoding/json"
 	"fmt"
-	"os"
 	"os/exec"
-	"runtime"
 	"time"
 
 	"github.com/hashicorp/vault/api"
@@ -86,97 +82,6 @@ func createVaultClient(vaultAddr, vaultToken string, timeout time.Duration) (*ap
 	}
 	client.SetToken(vaultToken)
 	return client, nil
-}
-
-// enableKVSecretsEngine enables the KV (Key-Value) secrets engine (version 2) at the specified path in Vault.
-//
-// Parameters:
-// - client: A pointer to the Vault API client.
-// - path: The mount path where the KV secrets engine should be enabled.
-//
-// Returns:
-// - error: An error if the operation fails; otherwise, nil.
-//
-// This function sends a request to the Vault server to mount the KV v2 secrets engine
-// at the specified path. It constructs the request body, makes an HTTP request, and
-// validates the response status.
-func enableKVSecretsEngine(client *api.Client, path string) error {
-	// Prepare the request body for enabling kv-v2 secrets engine
-	mountRequest := map[string]interface{}{
-		"type":        "kv",
-		"options":     map[string]interface{}{"version": "2"}, // specify kv-v2 version
-		"description": "KV secrets engine version 2",
-	}
-
-	// Marshal the request body into JSON
-	mountRequestBody, err := json.Marshal(mountRequest)
-	if err != nil {
-		return fmt.Errorf("failed to marshal mount request: %v", err)
-	}
-
-	// Use the Vault client to send an HTTP request to the sys/mounts endpoint
-	req := client.NewRequest("POST", fmt.Sprintf("/v1/sys/mounts/%s", path))
-
-	// Set the request body
-	req.Body = bytes.NewBuffer(mountRequestBody)
-
-	// Send the request to enable the KV engine at the given path
-	resp, err := client.RawRequest(req)
-	if err != nil {
-		return fmt.Errorf("failed to enable KV engine at path %s: %v", path, err)
-	}
-
-	if resp.StatusCode != 204 {
-		return fmt.Errorf("failed to enable KV engine, unexpected status code: %v", resp.StatusCode)
-	}
-
-	return nil
-}
-
-// StartClient starts a local Vault server in development mode.
-//
-// This function is only called when using a locally installed Vault. It performs the following steps:
-// 1. Kills any existing Vault process.
-// 2. Starts a new Vault server in development mode with a predefined root token.
-// 3. Sets the VAULT_ADDR environment variable based on the operating system.
-// 4. Enables the KV secrets engine at the "secret" path.
-//
-// Returns:
-// - *VaultError: An error object if the Vault process fails to start or if setting the environment variable fails.
-func (v *VaultClient) StartClient() *VaultError {
-	// Kill existing Vault process
-	v.CloseClient()
-	// Start Vault in dev mode
-	vaultCmd = exec.Command("vault", "server", "-dev", "-dev-root-token-id="+v.client.Token())
-	vaultCmd.Stdout = os.Stdout
-	vaultCmd.Stderr = os.Stderr
-
-	// Set environment variable based on OS
-	if runtime.GOOS == "windows" {
-		// For Windows (cmd.exe and PowerShell)
-		err := os.Setenv("VAULT_ADDR", "http://127.0.0.1:8200")
-		if err != nil {
-			return &VaultError{
-				Message: fmt.Sprintf("failed to set VAULT_ADDR: %v", err),
-			}
-		}
-	} else {
-		// For Linux/macOS
-		os.Setenv("VAULT_ADDR", "http://127.0.0.1:8200")
-	}
-
-	if err := vaultCmd.Start(); err != nil {
-		return &VaultError{
-			Message: fmt.Sprintf(VaultErrorRunning, err),
-		}
-	}
-	time.Sleep(1 * time.Second)
-
-	_ = enableKVSecretsEngine(v.client, "secret")
-	//if sErr != nil {
-	//	return &VaultError{Message: fmt.Sprintf("%v", sErr)}
-	//}
-	return nil
 }
 
 // WriteSecret stores a key-value pair in the Vault secrets engine in development mode.
@@ -363,29 +268,4 @@ func (v *VaultClient) DeleteSecret(path, key string) *VaultError {
 		return &VaultError{Message: fmt.Sprintf(VaultErrorUpdate, key)}
 	}
 	return nil
-}
-
-// CloseClient stops the running Vault process on the local machine in development mode.
-//
-// This function detects the operating system and executes the appropriate command
-// to terminate the Vault process. It is intended for use in development mode when
-// Vault is running locally.
-//
-// - On Windows, it uses PowerShell to forcefully stop the Vault process.
-// - On Linux/macOS, it uses the `pkill` command to terminate Vault.
-//
-// This function does not return an error but logs the status of the termination.
-func (v *VaultClient) CloseClient() {
-	if runtime.GOOS == "windows" {
-		// Run PowerShell command to force kill Vault
-		cmd := exec.Command("powershell", "-Command", "Get-Process vault | Stop-Process -Force")
-		err := cmd.Run()
-		if err != nil {
-		} else {
-		}
-	} else {
-		// Linux/macOS: Use pkill
-		cmd := exec.Command("pkill", "vault")
-		cmd.Run()
-	}
 }

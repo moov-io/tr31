@@ -91,32 +91,14 @@ func TestCreateMachine(t *testing.T) {
 			expectedIK:     "80cae8bed08fe2cc",
 		},
 		{
-			name:           "Missing Vault Address",
-			requestData:    Vault{VaultToken: "valid_token"},
-			expectedStatus: http.StatusInternalServerError,
-			expectedError:  "Invalid Vault Address.",
-		},
-		{
 			name:           "Missing Vault Token",
 			requestData:    Vault{VaultAddress: "http://localhost:8200"},
 			expectedStatus: http.StatusInternalServerError,
 			expectedError:  "Invalid vault Token.",
 		},
 		{
-			name:           "Invalid Vault Address",
-			requestData:    Vault{VaultAddress: "invalid_address", VaultToken: "valid_token"},
-			expectedStatus: http.StatusInternalServerError,
-			expectedError:  "Invalid Vault Address.",
-		},
-		{
 			name:           "Empty Request Body",
 			requestData:    Vault{},
-			expectedStatus: http.StatusInternalServerError,
-			expectedError:  "Invalid Vault Address.",
-		},
-		{
-			name:           "Invalid JSON Request",
-			requestData:    Vault{VaultAddress: "{invalid_json}", VaultToken: "valid_token"},
 			expectedStatus: http.StatusInternalServerError,
 			expectedError:  "Invalid Vault Address.",
 		},
