@@ -42,7 +42,7 @@ func TestDecryptDataWithLocalVault(t *testing.T) {
 
 	param := UnifiedParams{
 		Kbkp:     kbkp,
-		KeyBlock: "A0088M3TC00E000022BD7EC46BBE2A6A73389D1BA6DB63120B386F912839F4679C0523399E4D8D0F1D9A356E", // Non-sensitive test key
+		KeyBlock: "A0088M3TC00E000022BD7EC46BBE2A6A73389D1BA6DB63120B386F912839F4679C0523399E4D8D0F1D9A356E", // gitleaks:allow
 	}
 
 	keyStr, _ := DecryptData(param)
@@ -67,7 +67,7 @@ func TestDecryptData(t *testing.T) {
 
 	param := UnifiedParams{
 		Kbkp:     kbkp,
-		KeyBlock: "A0088M3TC00E000022BD7EC46BBE2A6A73389D1BA6DB63120B386F912839F4679C0523399E4D8D0F1D9A356E", // Non-sensitive test key
+		KeyBlock: "A0088M3TC00E000022BD7EC46BBE2A6A73389D1BA6DB63120B386F912839F4679C0523399E4D8D0F1D9A356E", // gitleaks:allow
 	}
 
 	keyStr, _ := DecryptData(param)
