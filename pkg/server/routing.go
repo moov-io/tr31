@@ -18,13 +18,20 @@ import (
 )
 
 var (
-	bugReportHelp = "please report this as a bug -- https://github.com/moov-io/dukpt/issues/new"
+	bugReportHelp = "please report this as a bug -- https://github.com/moov-io/tr31/issues/new"
 
 	// ErrBadRouting is returned when an expected path variable is missing, which is always programmer error.
 	ErrBadRouting = fmt.Errorf("inconsistent mapping between route and handler, %s", bugReportHelp)
 	ErrFoundABug  = fmt.Errorf("snuck into machine with err == nil, %s", bugReportHelp)
 
-	errInvalidMachine = errors.New("invalid dukpt machine")
+	errInvalidMachine = errors.New("invalid tr31 machine")
+
+	errInvalidVaultAddress = errors.New("Invalid Vault Address.")
+	errInvalidVaultToken   = errors.New("Invalid vault Token.")
+	errInvalidRequestId    = errors.New("Invalid Request ID.")
+	errInvalidKeyPath      = errors.New("Invalid Key Path.")
+	errInvalidKeyName      = errors.New("Invalid Key Name.")
+	errInvalidKeyBlock     = errors.New("Invalid Key Block.")
 )
 
 // contextKey is a unique (and compariable) type we use
@@ -110,6 +117,13 @@ func MakeHTTPHandler(s Service) http.Handler {
 	r.Methods("POST").Path("/machine").Handler(httptransport.NewServer(
 		createMachineEndpoint(s),
 		decodeCreateMachineRequest,
+		encodeResponse,
+		options...,
+	))
+
+	r.Methods("POST").Path("/encrypt_data/{ik}").Handler(httptransport.NewServer(
+		encryptDataEndpoint(s),
+		decodeEncryptDataRequest,
 		encodeResponse,
 		options...,
 	))

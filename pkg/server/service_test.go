@@ -1,32 +1,41 @@
 package server
 
 import (
+	"cmp"
+	"os"
 	"testing"
 
 	"github.com/stretchr/testify/require"
 )
 
-func mockServiceInMemory() Service {
+func mockServiceInMock() Service {
+	repository := NewRepositoryInMemory(nil)
+	return NewMockService(repository)
+}
+func mockServiceInReal() Service {
 	repository := NewRepositoryInMemory(nil)
 	return NewService(repository)
 }
 
 func mockVaultAuthOne() Vault {
+	address := cmp.Or(os.Getenv("VAULT_ADDR"), "http://localhost:8200")
+	token := cmp.Or(os.Getenv("VAULT_TOKEN"), "token")
+
 	return Vault{
-		VaultAddress: "http://localhost:8200",
-		VaultToken:   "hvs.EqkXJUliZk0KUNII5lsydvGB",
+		VaultAddress: address,
+		VaultToken:   token,
 	}
 }
 
 func mockVaultAuthTwo() Vault {
 	return Vault{
-		VaultAddress: "https://https://portal.cloud.hashicorp.com:8200",
-		VaultToken:   "hvs.EqkXJUliZk0KUNII5lsydvGBC",
+		VaultAddress: os.Getenv("HASHICORP_VAULT_ADDRESS"),
+		VaultToken:   os.Getenv("HASHICORP_VAULT_TOKEN"),
 	}
 }
 
 func TestService__CreateMachine(t *testing.T) {
-	s := mockServiceInMemory()
+	s := mockServiceInMock()
 	mDes := NewMachine(mockVaultAuthOne())
 	err := s.CreateMachine(mDes)
 	require.NoError(t, err)
@@ -36,7 +45,7 @@ func TestService__CreateMachine(t *testing.T) {
 }
 
 func TestService__GetMachine(t *testing.T) {
-	s := mockServiceInMemory()
+	s := mockServiceInMock()
 
 	m := NewMachine(mockVaultAuthOne())
 	err := s.CreateMachine(m)
@@ -49,11 +58,11 @@ func TestService__GetMachine(t *testing.T) {
 
 	machine, err := s.GetMachine(machines[0].InitialKey)
 	require.NoError(t, err)
-	require.Equal(t, "8a5af5de83579a84", machine.TransactionKey)
+	require.Equal(t, "44cbb6e6434ddb22", machine.TransactionKey)
 }
 
 func TestService__DeleteMachine(t *testing.T) {
-	s := mockServiceInMemory()
+	s := mockServiceInMock()
 	m1 := NewMachine(mockVaultAuthOne())
 	m2 := NewMachine(mockVaultAuthTwo())
 	err := s.CreateMachine(m1)
@@ -84,16 +93,35 @@ func TestService__DeleteMachine(t *testing.T) {
 	require.Equal(t, 0, len(machines))
 }
 
-func TestService_DecryptData(t *testing.T) {
-	s := mockServiceInMemory()
-
+func TestService_Encrypt_Decrypt_Data_With_Mock(t *testing.T) {
+	s := mockServiceInMock()
 	m := NewMachine(mockVaultAuthOne())
 	err := s.CreateMachine(m)
 	if err != nil {
 		return
 	}
 
-	data, err := s.DecryptData(m.InitialKey, "AAAAAAAAAAAAAAAA", "AAAAAAAAAAAAAAAA")
+	s.GetSecretManager().WriteSecret(
+		"secret/tr31",
+		"kbkp",
+		"AAAAAAAAAAAAAAAABBBBBBBBBBBBBBBBCCCCCCCCCCCCCCCC",
+	)
+
+	header := HeaderParams{
+		VersionId:     "D",
+		KeyUsage:      "D0",
+		Algorithm:     "A",
+		ModeOfUse:     "D",
+		KeyVersion:    "00",
+		Exportability: "E",
+	}
+	data, err := s.EncryptData(m.InitialKey, "secret/tr31", "kbkp", "ccccccccccccccccdddddddddddddddd", header, 10)
 	require.NoError(t, err)
-	require.Equal(t, data, "aaaaaaaaa")
+
+	data, err = s.DecryptData(m.InitialKey, "secret/tr31", "kbkp", data, 10)
+	require.NoError(t, err)
+
+	require.Equal(t, data, "ccccccccccccccccdddddddddddddddd")
+
+	s.GetSecretManager().DeleteSecret("/auth/keys", "kbkp")
 }

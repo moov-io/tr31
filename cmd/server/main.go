@@ -21,8 +21,8 @@ import (
 )
 
 var (
-	httpAddr  = flag.String("http.addr", bind.HTTP("dukpt"), "HTTP listen address")
-	adminAddr = flag.String("admin.addr", bind.Admin("dukpt"), "Admin HTTP listen address")
+	httpAddr  = flag.String("http.addr", bind.HTTP("tr31"), "HTTP listen address")
+	adminAddr = flag.String("admin.addr", bind.Admin("tr31"), "Admin HTTP listen address")
 
 	flagLogFormat = flag.String("log.format", "", "Format for log lines (Options: json, plain")
 
@@ -45,9 +45,9 @@ func main() {
 	}
 
 	logger := log.NewLogger(kitlogger)
-	logger.Logf("Starting dukpt server version %s", tr31.Version)
+	logger.Logf("Starting tr31 server version %s", tr31.Version)
 
-	// Setup underlying dukpt service
+	// Setup underlying tr31 service
 	r := server.NewRepositoryInMemory(logger)
 	svc = server.NewService(r)
 
