@@ -84,7 +84,7 @@ func main() {
 
 	// Create the main HTTP server using newServer
 	serve := newServer(handler, *httpAddr, logger)
-	
+
 	// Function to gracefully shut down the server
 	shutdownServer := func() {
 		if err := serve.Shutdown(context.TODO()); err != nil {
