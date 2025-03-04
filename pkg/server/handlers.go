@@ -142,12 +142,14 @@ func createMachineEndpoint(s Service) endpoint.Endpoint {
 }
 
 type decryptDataRequest struct {
-	requestID string
-	ik        string
-	keyPath   string
-	keyName   string
-	keyBlock  string
-	timeout   time.Duration
+	requestID  string
+	ik         string
+	vaultAddr  string
+	vaultToken string
+	keyPath    string
+	keyName    string
+	keyBlock   string
+	timeout    time.Duration
 }
 
 type decryptDataResponse struct {
@@ -162,16 +164,19 @@ func decodeDecryptDataRequest(_ context.Context, request *http.Request) (interfa
 	}
 
 	type requestParam struct {
-		KeyPath  string
-		KeyName  string
-		KeyBlock string
+		VaultAddr  string
+		VaultToken string
+		KeyPath    string
+		KeyName    string
+		KeyBlock   string
 	}
 
 	reqParams := requestParam{}
 	if err := bindJSON(request, &reqParams); err != nil {
 		return req, err
 	}
-	req.ik = mux.Vars(request)["ik"]
+	req.vaultAddr = reqParams.VaultAddr
+	req.vaultToken = reqParams.VaultToken
 	req.keyPath = reqParams.KeyPath
 	req.keyName = reqParams.KeyName
 	req.keyBlock = reqParams.KeyBlock
@@ -196,7 +201,7 @@ func decryptDataEndpoint(s Service) endpoint.Endpoint {
 		}
 
 		resp := decryptDataResponse{}
-		decrypted, err := s.DecryptData(req.ik, req.keyPath, req.keyName, req.keyBlock, req.timeout)
+		decrypted, err := s.DecryptData(req.vaultAddr, req.vaultToken, req.keyPath, req.keyName, req.keyBlock, req.timeout)
 		if err != nil {
 			resp.Err = err.Error()
 			return resp, err
@@ -210,6 +215,8 @@ func decryptDataEndpoint(s Service) endpoint.Endpoint {
 type encryptDataRequest struct {
 	requestID  string
 	ik         string
+	vaultAddr  string
+	vaultToken string
 	keyPath    string
 	keyName    string
 	encryptKey string
@@ -227,22 +234,26 @@ func decodeEncryptDataRequest(_ context.Context, request *http.Request) (interfa
 	}
 	req.ik = mux.Vars(request)["ik"]
 	type requestParam struct {
-		keyPath    string
-		keyName    string
-		encryptKey string
-		header     HeaderParams
-		timeout    time.Duration
+		VaultAddr  string
+		VaultToken string
+		KeyPath    string
+		KeyName    string
+		EncryptKey string
+		Header     HeaderParams
+		Timeout    time.Duration
 	}
 	reqParams := requestParam{}
 	if err := bindJSON(request, &reqParams); err != nil {
 		return nil, err
 	}
 
-	req.keyPath = reqParams.keyPath
-	req.keyName = reqParams.keyName
-	req.encryptKey = reqParams.encryptKey
-	req.header = reqParams.header
-	req.timeout = reqParams.timeout
+	req.vaultAddr = reqParams.VaultAddr
+	req.vaultToken = reqParams.VaultToken
+	req.keyPath = reqParams.KeyPath
+	req.keyName = reqParams.KeyName
+	req.encryptKey = reqParams.EncryptKey
+	req.header = reqParams.Header
+	req.timeout = reqParams.Timeout
 	return req, nil
 }
 
@@ -254,7 +265,7 @@ func encryptDataEndpoint(s Service) endpoint.Endpoint {
 		}
 
 		resp := encryptDataResponse{}
-		encrypted, err := s.EncryptData(req.ik, req.keyPath, req.keyName, req.encryptKey, req.header, req.timeout)
+		encrypted, err := s.EncryptData(req.vaultAddr, req.vaultToken, req.keyPath, req.keyName, req.encryptKey, req.header, req.timeout)
 		if err != nil {
 			resp.Err = err
 			return resp, nil

@@ -115,10 +115,10 @@ func TestService_Encrypt_Decrypt_Data_With_Mock(t *testing.T) {
 		KeyVersion:    "00",
 		Exportability: "E",
 	}
-	data, err := s.EncryptData(m.InitialKey, "secret/tr31", "kbkp", "ccccccccccccccccdddddddddddddddd", header, 10)
+	data, err := s.EncryptData(mockVaultAuthOne().VaultAddress, mockVaultAuthOne().VaultToken, "secret/tr31", "kbkp", "ccccccccccccccccdddddddddddddddd", header, 10)
 	require.NoError(t, err)
 
-	data, err = s.DecryptData(m.InitialKey, "secret/tr31", "kbkp", data, 10)
+	data, err = s.DecryptData(mockVaultAuthOne().VaultAddress, mockVaultAuthOne().VaultToken, "secret/tr31", "kbkp", data, 10)
 	require.NoError(t, err)
 
 	require.Equal(t, data, "ccccccccccccccccdddddddddddddddd")

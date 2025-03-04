@@ -2,7 +2,6 @@ package server
 
 import (
 	"errors"
-	"fmt"
 	"time"
 )
 
@@ -18,8 +17,8 @@ type Service interface {
 	GetMachine(ik string) (*Machine, error)
 	GetMachines() []*Machine
 	DeleteMachine(ik string) error
-	EncryptData(ik, keyPath, keyName, encKey string, header HeaderParams, timeout time.Duration) (string, error)
-	DecryptData(ik, keyPath, keyName, keyBlock string, timeout time.Duration) (string, error)
+	EncryptData(vaultAddr, vaultToken, keyPath, keyName, encKey string, header HeaderParams, timeout time.Duration) (string, error)
+	DecryptData(vaultAddr, vaultToken, keyPath, keyName, keyBlock string, timeout time.Duration) (string, error)
 }
 
 // service a concrete implementation of the service.
@@ -70,13 +69,6 @@ func (s *service) CreateMachine(m *Machine) error {
 	if err = s.store.StoreMachine(m); err != nil {
 		return err
 	}
-
-	if s.GetSecretManager() == nil {
-		s.vaultClient, err = NewVaultClient(Vault{VaultAddress: params.VaultAddr, VaultToken: params.VaultToken})
-		if err != nil {
-			return err
-		}
-	}
 	return nil
 }
 
@@ -93,18 +85,21 @@ func (s *service) GetMachines() []*Machine {
 	return s.store.FindAllMachines()
 }
 
-func (s *service) EncryptData(ik, keyPath, keyName, encKey string, header HeaderParams, timeout time.Duration) (string, error) {
-	m, err := s.GetMachine(ik)
-	if err != nil {
-		return "", fmt.Errorf("make next ksn: %v(%s)", err, ik)
-	}
+func (s *service) EncryptData(vaultAddr, vaultToken, keyPath, keyName, encKey string, header HeaderParams, timeout time.Duration) (string, error) {
 
 	vaultParams := UnifiedParams{
-		VaultAddr:  m.vaultAuth.VaultAddress,
-		VaultToken: m.vaultAuth.VaultToken,
+		VaultAddr:  vaultAddr,
+		VaultToken: vaultToken,
 		KeyPath:    keyPath,
 		KeyName:    keyName,
 		timeout:    timeout,
+	}
+	if s.GetSecretManager() == nil {
+		client, err := NewVaultClient(Vault{VaultAddress: vaultParams.VaultAddr, VaultToken: vaultParams.VaultToken})
+		s.vaultClient = client
+		if err != nil {
+			return "", err
+		}
 	}
 	keyStr, vErr := readKey(s.vaultClient, vaultParams)
 	if vErr != nil {
@@ -119,19 +114,21 @@ func (s *service) EncryptData(ik, keyPath, keyName, encKey string, header Header
 	return EncryptData(params)
 }
 
-func (s *service) DecryptData(ik, keyPath, keyName, keyBlock string, timeout time.Duration) (string, error) {
-	m, err := s.GetMachine(ik)
-	if err != nil {
-		return "", fmt.Errorf("make next ksn: %v(%s)", err, ik)
-	}
+func (s *service) DecryptData(vaultAddr, vaultToken, keyPath, keyName, keyBlock string, timeout time.Duration) (string, error) {
 	vaultParams := UnifiedParams{
-		VaultAddr:  m.vaultAuth.VaultAddress,
-		VaultToken: m.vaultAuth.VaultToken,
+		VaultAddr:  vaultAddr,
+		VaultToken: vaultToken,
 		KeyPath:    keyPath,
 		KeyName:    keyName,
 		timeout:    timeout,
 	}
-
+	if s.GetSecretManager() == nil {
+		client, err := NewVaultClient(Vault{VaultAddress: vaultParams.VaultAddr, VaultToken: vaultParams.VaultToken})
+		s.vaultClient = client
+		if err != nil {
+			return "", err
+		}
+	}
 	keyStr, err := readKey(s.vaultClient, vaultParams)
 	if err != nil {
 		return "", err
