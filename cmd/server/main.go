@@ -72,7 +72,7 @@ func main() {
 
 	// Setup underlying tr31 service
 	r := server.NewRepositoryInMemory(logger)
-	svc = server.NewService(r)
+	svc = server.NewService(r, server.MODE_VAULT)
 
 	// Create HTTP server
 	handler = server.MakeHTTPHandler(svc)

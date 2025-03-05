@@ -10,11 +10,11 @@ import (
 
 func mockServiceInMock() Service {
 	repository := NewRepositoryInMemory(nil)
-	return NewMockService(repository)
+	return NewService(repository, MODE_MOCK)
 }
 func mockServiceInReal() Service {
 	repository := NewRepositoryInMemory(nil)
-	return NewService(repository)
+	return NewService(repository, MODE_MOCK)
 }
 
 func mockVaultAuthOne() Vault {

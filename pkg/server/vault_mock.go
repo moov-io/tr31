@@ -17,6 +17,12 @@ func NewMockVaultClient() *MockVaultClient {
 		storage: make(map[string]map[string]string),
 	}
 }
+func (m *MockVaultClient) SetAddress(address string) *VaultError {
+	return nil
+}
+func (m *MockVaultClient) SetToken(token string) *VaultError {
+	return nil
+}
 
 // WriteSecret simulates saving a key-value pair in Vault.
 func (m *MockVaultClient) WriteSecret(path, key, value string) *VaultError {

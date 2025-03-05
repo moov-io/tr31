@@ -1,6 +1,6 @@
 module github.com/moov-io/tr31
 
-go 1.24
+go 1.24.0
 
 require (
 	github.com/go-kit/kit v0.13.0

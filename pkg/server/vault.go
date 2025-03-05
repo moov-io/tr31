@@ -34,6 +34,10 @@ const (
 )
 
 type SecretManager interface {
+	// SetAddress set a vault server url
+	SetAddress(address string) *VaultError
+	// SetToken set a vault token
+	SetToken(token string) *VaultError
 	// WriteSecret writes a secret to the specified path
 	WriteSecret(path, key, value string) *VaultError
 	// ReadSecret retrieves a secret from the specified path
@@ -82,6 +86,22 @@ func createVaultClient(vaultAddr, vaultToken string, timeout time.Duration) (*ap
 	}
 	client.SetToken(vaultToken)
 	return client, nil
+}
+func (v *VaultClient) SetAddress(address string) *VaultError {
+	if v.client == nil {
+		return &VaultError{Message: fmt.Sprintf(VaultErrorClient)}
+	}
+	client := v.client
+	client.SetAddress(address)
+	return nil
+}
+func (v *VaultClient) SetToken(token string) *VaultError {
+	if v.client == nil {
+		return &VaultError{Message: fmt.Sprintf(VaultErrorClient)}
+	}
+	client := v.client
+	client.SetToken(token)
+	return nil
 }
 
 // WriteSecret stores a key-value pair in the Vault secrets engine in development mode.

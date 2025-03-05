@@ -12,12 +12,12 @@ import (
 
 func mockHttpHandler() http.Handler {
 	repository := NewRepositoryInMemory(nil)
-	return MakeHTTPHandler(NewMockService(repository))
+	return MakeHTTPHandler(NewService(repository, MODE_MOCK))
 }
 
 func TestRouting_ping(t *testing.T) {
 	repository := NewRepositoryInMemory(nil)
-	mockService := NewMockService(repository)
+	mockService := NewService(repository, MODE_MOCK)
 
 	router := MakeHTTPHandler(mockService)
 
@@ -491,7 +491,7 @@ func Test_DecryptData(t *testing.T) {
 	}
 
 	repository := NewRepositoryInMemory(nil)
-	mockService := NewMockService(repository)
+	mockService := NewService(repository, MODE_MOCK)
 	mockService.GetSecretManager().WriteSecret(
 		"secret/tr31",
 		"kbkp",
