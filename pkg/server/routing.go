@@ -121,14 +121,14 @@ func MakeHTTPHandler(s Service) http.Handler {
 		options...,
 	))
 
-	r.Methods("POST").Path("/encrypt_data/{ik}").Handler(httptransport.NewServer(
+	r.Methods("POST").Path("/encrypt_data").Handler(httptransport.NewServer(
 		encryptDataEndpoint(s),
 		decodeEncryptDataRequest,
 		encodeResponse,
 		options...,
 	))
 
-	r.Methods("POST").Path("/decrypt_data/{ik}").Handler(httptransport.NewServer(
+	r.Methods("POST").Path("/decrypt_data").Handler(httptransport.NewServer(
 		decryptDataEndpoint(s),
 		decodeDecryptDataRequest,
 		encodeResponse,

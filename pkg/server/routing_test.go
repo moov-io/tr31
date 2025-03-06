@@ -12,12 +12,12 @@ import (
 
 func mockHttpHandler() http.Handler {
 	repository := NewRepositoryInMemory(nil)
-	return MakeHTTPHandler(NewMockService(repository))
+	return MakeHTTPHandler(NewService(repository, MODE_MOCK))
 }
 
 func TestRouting_ping(t *testing.T) {
 	repository := NewRepositoryInMemory(nil)
-	mockService := NewMockService(repository)
+	mockService := NewService(repository, MODE_MOCK)
 
 	router := MakeHTTPHandler(mockService)
 
@@ -378,9 +378,11 @@ func TestFindMachine(t *testing.T) {
 }
 func Test_DecryptData(t *testing.T) {
 	type decryptRequest struct {
-		KeyPath  string `json:"keyPath"`
-		KeyName  string `json:"keyName"`
-		KeyBlock string `json:"keyBlock"`
+		VaultAdd   string `json:"vaultAdd"`
+		VaultToken string `json:"vaultToken"`
+		KeyPath    string `json:"keyPath"`
+		KeyName    string `json:"keyName"`
+		KeyBlock   string `json:"keyBlock"`
 	}
 
 	tests := []struct {
@@ -414,13 +416,15 @@ func Test_DecryptData(t *testing.T) {
 			expectedKey:    "80cae8bed08fe2cc",
 		},
 		{
-			name:   "Valid Descrypt data",
+			name:   "Valid Decrypt data",
 			method: "POST",
-			url:    "/decrypt_data/80cae8bed08fe2cc",
+			url:    "/decrypt_data",
 			body: decryptRequest{
-				KeyPath:  "secret/tr31",
-				KeyName:  "kbkp",
-				KeyBlock: "A0088M3TC00E000022BD7EC46BBE2A6A73389D1BA6DB63120B386F912839F4679C0523399E4D8D0F1D9A356E"}, // gitleaks:allow
+				VaultAdd:   "mock",
+				VaultToken: "mock",
+				KeyPath:    "secret/tr31",
+				KeyName:    "kbkp",
+				KeyBlock:   "A0088M3TC00E000022BD7EC46BBE2A6A73389D1BA6DB63120B386F912839F4679C0523399E4D8D0F1D9A356E"}, // gitleaks:allow
 			expectedStatus: http.StatusOK,
 			validateResp:   true,
 			expectedKey:    "ccccccccccccccccdddddddddddddddd",
@@ -428,7 +432,7 @@ func Test_DecryptData(t *testing.T) {
 		{
 			name:   "Missing KeyBlock",
 			method: "POST",
-			url:    "/decrypt_data/80cae8bed08fe2cc",
+			url:    "/decrypt_data",
 			body: decryptRequest{
 				KeyPath: "secret/tr31",
 				KeyName: "kbkp",
@@ -439,7 +443,7 @@ func Test_DecryptData(t *testing.T) {
 		{
 			name:   "Invalid KeyBlock Format",
 			method: "POST",
-			url:    "/decrypt_data/80cae8bed08fe2cc",
+			url:    "/decrypt_data",
 			body: decryptRequest{
 				KeyPath:  "secret/tr31",
 				KeyName:  "kbkp",
@@ -451,7 +455,7 @@ func Test_DecryptData(t *testing.T) {
 		{
 			name:   "Missing KeyPath",
 			method: "POST",
-			url:    "/decrypt_data/80cae8bed08fe2cc",
+			url:    "/decrypt_data",
 			body: decryptRequest{
 				KeyName:  "kbkp",
 				KeyBlock: "A0088M3TC00E000022BD7EC46BBE2A6A73389D1BA6DB63120B386F912839F4679C0523399E4D8D0F1D9A356E", // gitleaks:allow
@@ -462,14 +466,14 @@ func Test_DecryptData(t *testing.T) {
 		{
 			name:           "Invalid HTTP Method",
 			method:         "GET",
-			url:            "/decrypt_data/80cae8bed08fe2cc",
+			url:            "/decrypt_data",
 			expectedStatus: http.StatusMethodNotAllowed,
 			validateResp:   false,
 		},
 		{
 			name:           "Empty Request Body",
 			method:         "POST",
-			url:            "/decrypt_data/80cae8bed08fe2cc",
+			url:            "/decrypt_data",
 			body:           nil,
 			expectedStatus: http.StatusInternalServerError,
 			validateResp:   false,
@@ -477,7 +481,7 @@ func Test_DecryptData(t *testing.T) {
 		{
 			name:   "Unexpected JSON Structure",
 			method: "POST",
-			url:    "/decrypt_data/80cae8bed08fe2cc",
+			url:    "/decrypt_data",
 			body: map[string]interface{}{
 				"wrongField": "unexpected",
 			},
@@ -487,7 +491,7 @@ func Test_DecryptData(t *testing.T) {
 	}
 
 	repository := NewRepositoryInMemory(nil)
-	mockService := NewMockService(repository)
+	mockService := NewService(repository, MODE_MOCK)
 	mockService.GetSecretManager().WriteSecret(
 		"secret/tr31",
 		"kbkp",

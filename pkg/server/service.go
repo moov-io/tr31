@@ -2,8 +2,15 @@ package server
 
 import (
 	"errors"
-	"fmt"
+	"sync"
 	"time"
+)
+
+type RunningMode string
+
+var (
+	MODE_MOCK  RunningMode = "MOCK"
+	MODE_VAULT RunningMode = "VAULT"
 )
 
 var (
@@ -18,32 +25,39 @@ type Service interface {
 	GetMachine(ik string) (*Machine, error)
 	GetMachines() []*Machine
 	DeleteMachine(ik string) error
-	EncryptData(ik, keyPath, keyName, encKey string, header HeaderParams, timeout time.Duration) (string, error)
-	DecryptData(ik, keyPath, keyName, keyBlock string, timeout time.Duration) (string, error)
+	EncryptData(vaultAddr, vaultToken, keyPath, keyName, encKey string, header HeaderParams, timeout time.Duration) (string, error)
+	DecryptData(vaultAddr, vaultToken, keyPath, keyName, keyBlock string, timeout time.Duration) (string, error)
 }
 
 // service a concrete implementation of the service.
 type service struct {
-	store       Repository
-	vaultClient SecretManager
+	store   Repository
+	clients sync.Map
+	mode    RunningMode
+	// vaultClient SecretManager
+	// mu          sync.Mutex
 }
 
 // NewService creates a new concrete service
-func NewService(r Repository) Service {
-	return &service{
-		store:       r,
-		vaultClient: nil,
+func NewService(r Repository, mode RunningMode) Service {
+	s := service{
+		store: r,
 	}
-}
-func NewMockService(r Repository) Service {
-	return &service{
-		store:       r,
-		vaultClient: NewMockVaultClient(),
-	}
+	vaultClient, _ := NewVaultClient(Vault{VaultAddress: "", VaultToken: ""})
+	mockClient := NewMockVaultClient()
+	s.clients.Store(MODE_VAULT, vaultClient)
+	s.clients.Store(MODE_MOCK, mockClient)
+	s.mode = mode
+	return &s
 }
 
 func (s *service) GetSecretManager() SecretManager {
-	return s.vaultClient
+	if client, ok := s.clients.Load(s.mode); ok {
+		if sm, valid := client.(SecretManager); valid {
+			return sm
+		}
+	}
+	return nil
 }
 
 // CreateMachine add a machine to storage
@@ -70,13 +84,6 @@ func (s *service) CreateMachine(m *Machine) error {
 	if err = s.store.StoreMachine(m); err != nil {
 		return err
 	}
-
-	if s.GetSecretManager() == nil {
-		s.vaultClient, err = NewVaultClient(Vault{VaultAddress: params.VaultAddr, VaultToken: params.VaultToken})
-		if err != nil {
-			return err
-		}
-	}
 	return nil
 }
 
@@ -93,20 +100,20 @@ func (s *service) GetMachines() []*Machine {
 	return s.store.FindAllMachines()
 }
 
-func (s *service) EncryptData(ik, keyPath, keyName, encKey string, header HeaderParams, timeout time.Duration) (string, error) {
-	m, err := s.GetMachine(ik)
-	if err != nil {
-		return "", fmt.Errorf("make next ksn: %v(%s)", err, ik)
-	}
+func (s *service) EncryptData(vaultAddr, vaultToken, keyPath, keyName, encKey string, header HeaderParams, timeout time.Duration) (string, error) {
 
 	vaultParams := UnifiedParams{
-		VaultAddr:  m.vaultAuth.VaultAddress,
-		VaultToken: m.vaultAuth.VaultToken,
+		VaultAddr:  vaultAddr,
+		VaultToken: vaultToken,
 		KeyPath:    keyPath,
 		KeyName:    keyName,
 		timeout:    timeout,
 	}
-	keyStr, vErr := readKey(s.vaultClient, vaultParams)
+
+	s.GetSecretManager().SetAddress(vaultParams.VaultAddr)
+	s.GetSecretManager().SetToken(vaultParams.VaultToken)
+
+	keyStr, vErr := readKey(s.GetSecretManager(), vaultParams)
 	if vErr != nil {
 		return "", vErr
 	}
@@ -119,20 +126,18 @@ func (s *service) EncryptData(ik, keyPath, keyName, encKey string, header Header
 	return EncryptData(params)
 }
 
-func (s *service) DecryptData(ik, keyPath, keyName, keyBlock string, timeout time.Duration) (string, error) {
-	m, err := s.GetMachine(ik)
-	if err != nil {
-		return "", fmt.Errorf("make next ksn: %v(%s)", err, ik)
-	}
+func (s *service) DecryptData(vaultAddr, vaultToken, keyPath, keyName, keyBlock string, timeout time.Duration) (string, error) {
 	vaultParams := UnifiedParams{
-		VaultAddr:  m.vaultAuth.VaultAddress,
-		VaultToken: m.vaultAuth.VaultToken,
+		VaultAddr:  vaultAddr,
+		VaultToken: vaultToken,
 		KeyPath:    keyPath,
 		KeyName:    keyName,
 		timeout:    timeout,
 	}
+	s.GetSecretManager().SetAddress(vaultParams.VaultAddr)
+	s.GetSecretManager().SetToken(vaultParams.VaultToken)
 
-	keyStr, err := readKey(s.vaultClient, vaultParams)
+	keyStr, err := readKey(s.GetSecretManager(), vaultParams)
 	if err != nil {
 		return "", err
 	}

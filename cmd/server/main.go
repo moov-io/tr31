@@ -30,6 +30,29 @@ var (
 	handler http.Handler
 )
 
+// newServer initializes and returns an HTTP server with the required settings.
+func newServer(handler http.Handler, httpAddr string, logger log.Logger) *http.Server {
+	readTimeout, _ := time.ParseDuration("30s")
+	writeTimeout, _ := time.ParseDuration("30s")
+	idleTimeout, _ := time.ParseDuration("60s")
+
+	serve := &http.Server{
+		Addr:    httpAddr,
+		Handler: handler,
+		TLSConfig: &tls.Config{
+			InsecureSkipVerify:       false,
+			PreferServerCipherSuites: true,
+			MinVersion:               tls.VersionTLS12,
+		},
+		ReadTimeout:       readTimeout,
+		ReadHeaderTimeout: readTimeout,
+		WriteTimeout:      writeTimeout,
+		IdleTimeout:       idleTimeout,
+	}
+
+	return serve
+}
+
 func main() {
 	flag.Parse()
 
@@ -49,46 +72,33 @@ func main() {
 
 	// Setup underlying tr31 service
 	r := server.NewRepositoryInMemory(logger)
-	svc = server.NewService(r)
+	svc = server.NewService(r, server.MODE_VAULT)
 
 	// Create HTTP server
 	handler = server.MakeHTTPHandler(svc)
-
-	// Listen for application termination.
-	errs := make(chan error)
-	go func() {
-		c := make(chan os.Signal, 1)
-		signal.Notify(c, syscall.SIGINT, syscall.SIGTERM)
-		errs <- fmt.Errorf("%s", <-c)
-	}()
-
-	readTimeout, _ := time.ParseDuration("30s")
-	writTimeout, _ := time.ParseDuration("30s")
-	idleTimeout, _ := time.ParseDuration("60s")
 
 	// Check to see if our -http.addr flag has been overridden
 	if v := os.Getenv("HTTP_BIND_ADDRESS"); v != "" {
 		*httpAddr = v
 	}
 
-	serve := &http.Server{
-		Addr:    *httpAddr,
-		Handler: handler,
-		TLSConfig: &tls.Config{
-			InsecureSkipVerify:       false,
-			PreferServerCipherSuites: true,
-			MinVersion:               tls.VersionTLS12,
-		},
-		ReadTimeout:       readTimeout,
-		ReadHeaderTimeout: readTimeout,
-		WriteTimeout:      writTimeout,
-		IdleTimeout:       idleTimeout,
-	}
+	// Create the main HTTP server using newServer
+	serve := newServer(handler, *httpAddr, logger)
+
+	// Function to gracefully shut down the server
 	shutdownServer := func() {
 		if err := serve.Shutdown(context.TODO()); err != nil {
 			logger.LogError(err)
 		}
 	}
+
+	// Handle application termination signals
+	errs := make(chan error)
+	go func() {
+		c := make(chan os.Signal, 1)
+		signal.Notify(c, syscall.SIGINT, syscall.SIGTERM)
+		errs <- fmt.Errorf("%s", <-c)
+	}()
 
 	// Check to see if our -admin.addr flag has been overridden
 	if v := os.Getenv("HTTP_ADMIN_BIND_ADDRESS"); v != "" {
@@ -119,9 +129,11 @@ func main() {
 		} else {
 			logger.Logf("startup binding to %s for HTTP server", *httpAddr)
 			if err := serve.ListenAndServe(); err != nil {
+
 				errs <- err
 				logger.LogError(err)
 			}
+
 		}
 	}()
 
