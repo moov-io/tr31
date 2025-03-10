@@ -186,7 +186,7 @@ tr31 is a tool for managing both TDES and AES-derived unique keys per transactio
 USAGE 
     tr31 [-v] [-algorithm] [-e] [-d]
 
-EXAMPLES 
+**EXAMPLES**
     tr31 -v 
         Print the version of tr31 (Example: v1.0.0) 
     tr31 -e 
