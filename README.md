@@ -179,6 +179,66 @@ cpu: Apple M1 Pro
 BenchmarkUnwrap_D_32_WithSetup-10    	  301116	      3619 ns/op	    8608 B/op	      64 allocs/op
 ```
 
+### Command Line Usage
+
+tr31 is a tool for managing both TDES and AES-derived unique keys per transaction (TR-31) key management.
+
+USAGE 
+    tr31 [-v] [-algorithm] [-e] [-d]
+
+EXAMPLES 
+    tr31 -v 
+        Print the version of tr31 (Example: v1.0.0) 
+    tr31 -e 
+        Encrypt a card data block using the TR-31 transaction key 
+    tr31 -d 
+        Decrypt a card data block using the TR-31 transaction key
+
+FLAGS
+    -e_va string 
+        Vault address where the encryption key is stored 
+    -e_tk string 
+        Vault token for authentication 
+    -e_kp string 
+        Path to the encryption key in the vault 
+    -e_kn string 
+        Name of the encryption key in the vault 
+    -e_ek string 
+        Encryption key
+
+    -d_va string 
+        Vault address where the decryption key is stored 
+    -d_tk string 
+        Vault token for authentication 
+    -d_kp string 
+        Path to the decryption key in the vault 
+    -d_kn string 
+        Name of the decryption key in the vault 
+    -d_kb string 
+        Wrapped key block for decryption
+
+**EXAMPLES**
+```
+      tr31 -e -enc_va="https://vault-cluster....com:8200" -e_tk="hvs.CA******Ak" -e_kp="kv/.../key" -e_kn="encKey" -e_ek="A0088******A356E"
+      tr31 -d -dec_va="https://vault-cluster....com:8200" -d_tk="hvs.CA******Ak" -d_kp="kv/.../key" -d_kn="kbkp" -d_kb="A0088******A356E"
+```
+
+### Rest APIs
+TR31 library provided web server. Please check following http endpoints
+
+| Method | Request Body | Route              | Action         |
+|--------|--------------|--------------------|----------------|
+| GET    |              | /machines          | Get Machines   |
+| GET    |              | /machine/{ik}      | Get Machine    |
+| POST   |              | /machine           | Create Machine |
+| POST   | JSON         | /encrypt_data      | Encrypt Data   |
+| POST   | JSON         | /decrypt_data      | Decrypt Data   | 
+
+User can create web service using following http handler 
+```
+	handler = server.MakeHTTPHandler(svc)
+```
+
 ## Contributing
 
 Contributions are welcome! Please feel free to submit a Pull Request.
