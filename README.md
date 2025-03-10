@@ -181,7 +181,7 @@ BenchmarkUnwrap_D_32_WithSetup-10    	  301116	      3619 ns/op	    8608 B/op	  
 
 ### Command Line Usage
 
-tr31 is a tool for managing both TDES and AES-derived unique keys per transaction (TR-31) key management.
+tr31 is a tool for managing both 3DES and AES-derived unique keys per transaction (TR-31) key management.
 
 ### USAGE 
     tr31 [-v] [-algorithm] [-e] [-d]
@@ -195,56 +195,25 @@ tr31 is a tool for managing both TDES and AES-derived unique keys per transactio
       Decrypt a card data block using the TR-31 transaction key
 
 ### FLAGS
-    -e_va string 
-      Vault address where the encryption key is stored 
-    -e_tk string 
+    -vault_address string 
+      Vault address where the encryption/decryption key is stored 
+    -vault_token string 
       Vault token for authentication 
-    -e_kp string 
-      Path to the encryption key in the vault 
-    -e_kn string 
-      Name of the encryption key in the vault 
-    -e_ek string 
+    -key_path string 
+      Path to the encryption/decryption key in the vault 
+    -key_name string 
+      Name of the encryption/decryption key in the vault 
+    -enc_key string 
       Encryption key
-
-    -d_va string 
-      Vault address where the decryption key is stored 
-    -d_tk string 
-      Vault token for authentication 
-    -d_kp string 
-      Path to the decryption key in the vault 
-    -d_kn string 
-      Name of the decryption key in the vault 
-    -d_kb string 
+    -key_block string 
       Wrapped key block for decryption
 
 ### EXAMPLES
 ```
-      tr31 -e -enc_va="https://vault-cluster....com:8200" -e_tk="hvs.CA******Ak" -e_kp="kv/.../key" -e_kn="encKey" -e_ek="A0088******A356E"
-      tr31 -d -dec_va="https://vault-cluster....com:8200" -d_tk="hvs.CA******Ak" -d_kp="kv/.../key" -d_kn="kbkp" -d_kb="A0088******A356E"
-```
-### Service instance
-TR31 library provided service instance that support multi tr31 encrypt machines. 
-```
-type Service interface {
-	GetSecretManager() SecretManager
-	CreateMachine(m *Machine) error
-	GetMachine(ik string) (*Machine, error)
-	GetMachines() []*Machine
-	DeleteMachine(ik string) error
-	EncryptData(vaultAddr, vaultToken, keyPath, keyName, encKey string, header HeaderParams, timeout time.Duration) (string, error)
-	DecryptData(vaultAddr, vaultToken, keyPath, keyName, keyBlock string, timeout time.Duration) (string, error)
-}
+      tr31 -e -vault_address="https://vault-cluster....com:8200" -vault_token="hvs.CA******Ak" -key_path="kv/.../key" -key_name="encKey" -enc_key="A0088******A356E"
+      tr31 -d -vault_address="https://vault-cluster....com:8200" -vault_token="hvs.CA******Ak" -key_path="kv/.../key" -key_name="kbkp" -key_block="A0088******A356E"
 ```
 
-User can use the service instance using special logger
-```
-	logger := log.NewLogger(kitlogger)
-	logger.Logf("Starting tr31 server version %s", tr31.Version)
-
-	// Setup underlying tr31 service
-	r := server.NewRepositoryInMemory(logger)
-	svc = server.NewService(r)
-```
 ### Rest APIs
 TR31 library provided web server. Please check following http endpoints
 
@@ -256,10 +225,6 @@ TR31 library provided web server. Please check following http endpoints
 | POST   | JSON         | /encrypt_data      | Encrypt Data   |
 | POST   | JSON         | /decrypt_data      | Decrypt Data   | 
 
-User can create web service using following http handler 
-```
-	handler = server.MakeHTTPHandler(svc)
-```
 
 ## Contributing
 
