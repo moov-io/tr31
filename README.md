@@ -188,34 +188,34 @@ tr31 is a tool for managing both TDES and AES-derived unique keys per transactio
 
 ### EXAMPLES
     tr31 -v 
-      # Print the version of tr31 (Example: v1.0.0) 
+      Print the version of tr31 (Example: v1.0.0) 
     tr31 -e 
-      # Encrypt a card data block using the TR-31 transaction key 
+      Encrypt a card data block using the TR-31 transaction key 
     tr31 -d 
-      # Decrypt a card data block using the TR-31 transaction key
+      Decrypt a card data block using the TR-31 transaction key
 
 ### FLAGS
     -e_va string 
-      # Vault address where the encryption key is stored 
+      Vault address where the encryption key is stored 
     -e_tk string 
-      # Vault token for authentication 
+      Vault token for authentication 
     -e_kp string 
-      # Path to the encryption key in the vault 
+      Path to the encryption key in the vault 
     -e_kn string 
-      # Name of the encryption key in the vault 
+      Name of the encryption key in the vault 
     -e_ek string 
-      # Encryption key
+      Encryption key
 
     -d_va string 
-      # Vault address where the decryption key is stored 
+      Vault address where the decryption key is stored 
     -d_tk string 
-      # Vault token for authentication 
+      Vault token for authentication 
     -d_kp string 
-      # Path to the decryption key in the vault 
+      Path to the decryption key in the vault 
     -d_kn string 
-      # Name of the decryption key in the vault 
+      Name of the decryption key in the vault 
     -d_kb string 
-      # Wrapped key block for decryption
+      Wrapped key block for decryption
 
 ### EXAMPLES
 ```
