@@ -219,9 +219,6 @@ TR31 library provided web server. Please check following http endpoints
 
 | Method | Request Body | Route              | Action         |
 |--------|--------------|--------------------|----------------|
-| GET    |              | /machines          | Get Machines   |
-| GET    |              | /machine/{ik}      | Get Machine    |
-| POST   |              | /machine           | Create Machine |
 | POST   | JSON         | /encrypt_data      | Encrypt Data   |
 | POST   | JSON         | /decrypt_data      | Decrypt Data   | 
 
