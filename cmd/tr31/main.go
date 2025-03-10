@@ -107,7 +107,7 @@ func makeFuncCall(f server.WrapperCall, params server.UnifiedParams) {
 
 func help() {
 	fmt.Printf(strings.TrimSpace(`
-tr31 is a Go library implementing the TR-31 (ANSI X9.143) key block standard for secure cryptographic key exchange.
+tr31 is a CLI implementing the TR-31 (ANSI X9.143) key block standard for secure cryptographic key exchange.
 
 USAGE
    tr31 [-v] [-e] [-d]
