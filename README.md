@@ -222,7 +222,29 @@ tr31 is a tool for managing both TDES and AES-derived unique keys per transactio
       tr31 -e -enc_va="https://vault-cluster....com:8200" -e_tk="hvs.CA******Ak" -e_kp="kv/.../key" -e_kn="encKey" -e_ek="A0088******A356E"
       tr31 -d -dec_va="https://vault-cluster....com:8200" -d_tk="hvs.CA******Ak" -d_kp="kv/.../key" -d_kn="kbkp" -d_kb="A0088******A356E"
 ```
+### Service instance
+TR31 library provided service instance that support multi tr31 encrypt machines. 
+```
+type Service interface {
+	GetSecretManager() SecretManager
+	CreateMachine(m *Machine) error
+	GetMachine(ik string) (*Machine, error)
+	GetMachines() []*Machine
+	DeleteMachine(ik string) error
+	EncryptData(vaultAddr, vaultToken, keyPath, keyName, encKey string, header HeaderParams, timeout time.Duration) (string, error)
+	DecryptData(vaultAddr, vaultToken, keyPath, keyName, keyBlock string, timeout time.Duration) (string, error)
+}
+```
 
+User can use the service instance using special logger
+```
+	logger := log.NewLogger(kitlogger)
+	logger.Logf("Starting tr31 server version %s", tr31.Version)
+
+	// Setup underlying tr31 service
+	r := server.NewRepositoryInMemory(logger)
+	svc = server.NewService(r)
+```
 ### Rest APIs
 TR31 library provided web server. Please check following http endpoints
 
