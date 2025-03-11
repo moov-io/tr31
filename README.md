@@ -38,7 +38,7 @@ TR-31 is a method defined by ASC X9.143 for secure cryptographic key exchange be
 ## Installation
 
 ```bash
-go get github.com/yourusername/tr31
+go get github.com/moov-io/tr31
 ```
 
 ## Usage
@@ -50,7 +50,7 @@ package main
 
 import (
     "fmt"
-    "github.com/moov-io/tr31/tr31"
+    "github.com/moov-io/tr31/pkg/tr31"
 )
 
 func main() {
