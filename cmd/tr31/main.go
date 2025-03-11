@@ -19,7 +19,7 @@ var (
 	flagVaultToken      = flag.String("vault_token", "", "key stored vault token")
 	flagKeyPath         = flag.String("key_path", "", "key stored vault key path")
 	flagKeyName         = flag.String("key_name", "", "key stored vault key name")
-	flagEncKey          = flag.String("enc_key", "", "encrypt key")
+	flagWrapperKey      = flag.String("wrapper_key", "", "Symmetric key")
 	flagDecryptKeyBlock = flag.String("key_block", "", "wrapped key block for decryption")
 )
 
@@ -52,15 +52,15 @@ func main() {
 			fmt.Printf("please select vault key name with key_name flag\n")
 			os.Exit(1)
 		}
-		if *flagEncKey == "" {
-			fmt.Printf("please select vault block with enc_key flag\n")
+		if *flagWrapperKey == "" {
+			fmt.Printf("please select vault block with wrapper_key flag\n")
 			os.Exit(1)
 		}
 		params.VaultAddr = *flagVaultAddress
 		params.VaultToken = *flagVaultToken
 		params.KeyPath = *flagKeyPath
 		params.KeyName = *flagKeyName
-		params.EncKey = *flagEncKey
+		params.EncKey = *flagWrapperKey
 		makeFuncCall(server.Encrypt, params)
 	}
 

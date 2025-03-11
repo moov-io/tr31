@@ -203,14 +203,14 @@ tr31 is a tool for managing both 3DES and AES-derived unique keys per transactio
       Path to the encryption/decryption key in the vault 
     -key_name string 
       Name of the encryption/decryption key in the vault 
-    -enc_key string 
-      Encryption key
+    -wrapper_key string 
+      Symmetric key
     -key_block string 
       Wrapped key block for decryption
 
 ### EXAMPLES
 ```
-      tr31 -e -vault_address="https://vault-cluster....com:8200" -vault_token="hvs.CA******Ak" -key_path="kv/.../key" -key_name="encKey" -enc_key="A0088******A356E"
+      tr31 -e -vault_address="https://vault-cluster....com:8200" -vault_token="hvs.CA******Ak" -key_path="kv/.../key" -key_name="wrapper_key" -wrapper_key="A0088******A356E"
       tr31 -d -vault_address="https://vault-cluster....com:8200" -vault_token="hvs.CA******Ak" -key_path="kv/.../key" -key_name="kbkp" -key_block="A0088******A356E"
 ```
 
