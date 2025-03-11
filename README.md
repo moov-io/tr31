@@ -38,7 +38,7 @@ TR-31 is a method defined by ASC X9.143 for secure cryptographic key exchange be
 ## Installation
 
 ```bash
-go get github.com/yourusername/tr31
+go get github.com/moov-io/tr31
 ```
 
 ## Usage
@@ -50,7 +50,7 @@ package main
 
 import (
     "fmt"
-    "github.com/moov-io/tr31/tr31"
+    "github.com/moov-io/tr31/pkg/tr31"
 )
 
 func main() {
@@ -178,6 +178,50 @@ pkg: github.com/moov-io/tr31/pkg/tr31
 cpu: Apple M1 Pro
 BenchmarkUnwrap_D_32_WithSetup-10    	  301116	      3619 ns/op	    8608 B/op	      64 allocs/op
 ```
+
+### Command Line Usage
+
+tr31 is a tool for managing both 3DES and AES-derived unique keys per transaction (TR-31) key management.
+
+### USAGE 
+    tr31 [-v] [-algorithm] [-e] [-d]
+
+### EXAMPLES
+    tr31 -v 
+      Print the version of tr31 (Example: v1.0.0) 
+    tr31 -e 
+      Encrypt a card data block using the TR-31 transaction key 
+    tr31 -d 
+      Decrypt a card data block using the TR-31 transaction key
+
+### FLAGS
+    -vault_address string 
+      Vault address where the encryption/decryption key is stored 
+    -vault_token string 
+      Vault token for authentication 
+    -key_path string 
+      Path to the encryption/decryption key in the vault 
+    -key_name string 
+      Name of the encryption/decryption key in the vault 
+    -wrapper_key string 
+      Symmetric key
+    -key_block string 
+      Wrapped key block for decryption
+
+### EXAMPLES
+```
+      tr31 -e -vault_address="https://vault-cluster....com:8200" -vault_token="hvs.CA******Ak" -key_path="kv/.../key" -key_name="wrapper_key" -wrapper_key="A0088******A356E"
+      tr31 -d -vault_address="https://vault-cluster....com:8200" -vault_token="hvs.CA******Ak" -key_path="kv/.../key" -key_name="kbkp" -key_block="A0088******A356E"
+```
+
+### Rest APIs
+TR31 library provided web server. Please check following http endpoints
+
+| Method | Request Body | Route              | Action         |
+|--------|--------------|--------------------|----------------|
+| POST   | JSON         | /encrypt_data      | Encrypt Data   |
+| POST   | JSON         | /decrypt_data      | Decrypt Data   | 
+
 
 ## Contributing
 
