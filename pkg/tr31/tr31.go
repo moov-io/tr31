@@ -1145,7 +1145,7 @@ func (kb *KeyBlock) DWrap(header string, key []byte, extraPad int) (string, erro
 	}
 
 	// Return the concatenated result
-	return header + hex.EncodeToString(encKey) + hex.EncodeToString(mac), nil
+	return header + strings.ToUpper(hex.EncodeToString(encKey)+hex.EncodeToString(mac)), nil
 }
 func (kb *KeyBlock) dDerive() ([]byte, []byte, error) {
 	// Key Derivation data
