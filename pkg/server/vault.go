@@ -3,7 +3,6 @@ package server
 import (
 	"fmt"
 	"os/exec"
-	"time"
 
 	"github.com/hashicorp/vault/api"
 )
@@ -20,8 +19,6 @@ const (
 	VaultErrorRunning         string = "Vault failed to start with error: %v"
 	VaultErrorCreatClient     string = "Error creating Vault client: %v"
 	VaultErrorClient          string = "Error Vault client."
-	VaultErrorNoServerAddress string = "Server address is not supported."
-	VaultErrorNoServerToken   string = "Vault token is not supported."
 	VaultErrorNoKeyPath       string = "Key path is not supported."
 	VaultErrorNoKeyName       string = "Key name is not supported."
 	VaultErrorNoKeyData       string = "Key data is not supported."
@@ -55,7 +52,7 @@ type VaultClient struct {
 var _ SecretManager = (&VaultClient{})
 
 func NewVaultClient(v Vault) (*VaultClient, error) {
-	vClient, err := createVaultClient(v.VaultAddress, v.VaultToken, 10)
+	vClient, err := createVaultClient(v.VaultAddress, v.VaultToken)
 	if err != nil {
 		return nil, err
 	}
@@ -75,10 +72,9 @@ var vaultCmd *exec.Cmd
 // Returns:
 // - *api.Client: A pointer to the initialized Vault client if successful.
 // - *VaultError: An error object if the client creation fails.
-func createVaultClient(vaultAddr, vaultToken string, timeout time.Duration) (*api.Client, *VaultError) {
+func createVaultClient(vaultAddr, vaultToken string) (*api.Client, *VaultError) {
 	config := api.DefaultConfig()
 	config.Address = vaultAddr
-	config.HttpClient.Timeout = timeout * time.Second
 	client, err := api.NewClient(config)
 	if err != nil {
 		return nil, &VaultError{
@@ -273,7 +269,12 @@ func (v *VaultClient) DeleteSecret(path, key string) *VaultError {
 	}
 
 	// Remove key from data
-	data := secret.Data["data"].(map[string]interface{})
+	data, ok := secret.Data["data"].(map[string]interface{})
+	if !ok {
+		return &VaultError{
+			Message: "Invalid type for key 'data'. Expected map[string]interface{}.",
+		}
+	}
 	if _, exists := data[key]; exists {
 		delete(data, key)
 	} else {
