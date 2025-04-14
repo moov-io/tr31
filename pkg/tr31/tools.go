@@ -5,6 +5,7 @@ import (
 	"encoding/binary"
 	"fmt"
 	"log"
+	"math"
 	"regexp"
 	"unicode"
 )
@@ -123,23 +124,35 @@ func bytesToInt(b []byte) int64 {
 	if len(b) < 8 {
 		return 0 // or handle this case as per your requirements
 	}
-	return int64(binary.BigEndian.Uint64(b))
+	val := binary.BigEndian.Uint64(b)
+	if val > uint64(math.MaxInt64) {
+		return 0
+	}
+	return int64(val)
 }
 
 func intToBytes(i int, length int) []byte {
+	if length <= 0 {
+		return nil
+	}
+	if length > 8 {
+		return nil
+	}
+
 	b := make([]byte, length)
+
 	if length >= 8 {
-		// Use BigEndian to put the integer into the byte slice
+		// Directly write the integer into the last 8 bytes of the slice
 		binary.BigEndian.PutUint64(b[len(b)-8:], uint64(i))
 	} else {
-		// If length is less than 8, handle smaller slices
-		temp := make([]byte, 8)
-		binary.BigEndian.PutUint64(temp, uint64(i))
-		copy(b[len(b)-length:], temp[len(temp)-length:])
+		// Write the integer into the last `length` bytes of the slice
+		for j := 0; j < length; j++ {
+			b[len(b)-length+j] = byte(uint64(i) >> (8 * (7 - j)))
+		}
 	}
-	return b
-}
 
+	return b 
+}
 func hexToInt(hexStr string) int {
 	var result int
 	_, err := fmt.Sscanf(hexStr, "%X", &result)
