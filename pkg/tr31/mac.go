@@ -4,7 +4,6 @@ import (
 	"encoding/binary"
 	"errors"
 	"fmt"
-	"math"
 )
 
 type Algorithm int
@@ -134,35 +133,23 @@ func padISO3(data []byte, blockSize int) ([]byte, error) {
 			lengthBytes[i] = byte(value >> (8 * (blockSize - 1 - i))) // Extract highest bytes first
 		}
 	} else if blockSize < 8 {
-		// Ensure slice size is sufficient for PutUint32
 		if len(lengthBytes) < 4 {
 			return nil, errors.New("lengthBytes slice must be at least 4 bytes for PutUint32")
 		}
-		// Prevent overflow for uint32
 		dataLen := len(data)
 		if dataLen > (1<<29)-1 { // Max value for uint32 after multiplication by 8
 			return nil, errors.New("data length too large to encode as uint32")
 		}
-		if len(data)*8 <= math.MaxUint32 {
-			binary.BigEndian.PutUint32(lengthBytes, uint32(len(data)*8))
-		} else {
-			return nil, fmt.Errorf("data length exceeds uint32 limit")
-		}
+		binary.BigEndian.PutUint32(lengthBytes, uint32(dataLen*8))
 	} else {
-		// Ensure slice size is sufficient for PutUint64
 		if len(lengthBytes) < 8 {
 			return nil, errors.New("lengthBytes slice must be at least 8 bytes for PutUint64")
 		}
-		// Prevent overflow for uint64
 		dataLen := len(data)
 		if dataLen > (1<<61)-1 { // Max value for uint64 after multiplication by 8
 			return nil, errors.New("data length too large to encode as uint64")
 		}
-		if len(data)*8 <= math.MaxUint64 {
-			binary.BigEndian.PutUint64(lengthBytes, uint64(len(data)*8))
-		} else {
-			return nil, fmt.Errorf("data length exceeds uint64 limit")
-		}
+		binary.BigEndian.PutUint64(lengthBytes, uint64(dataLen*8))
 	}
 	paddedData, err := padISO1(data, blockSize)
 	if err != nil {
