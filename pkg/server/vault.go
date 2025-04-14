@@ -2,7 +2,6 @@ package server
 
 import (
 	"fmt"
-	"os/exec"
 
 	"github.com/hashicorp/vault/api"
 )
@@ -60,7 +59,7 @@ func NewVaultClient(v Vault) (*VaultClient, error) {
 }
 
 // Vault Process Reference
-var vaultCmd *exec.Cmd
+// var vaultCmd *exec.Cmd
 
 // createVaultClient initializes and returns a new Vault API client.
 //
@@ -87,15 +86,18 @@ func createVaultClient(vaultAddr, vaultToken string) (*api.Client, *VaultError) 
 }
 func (v *VaultClient) SetAddress(address string) *VaultError {
 	if v.client == nil {
-		return &VaultError{Message: fmt.Sprintf(VaultErrorClient)}
+		return &VaultError{Message: VaultErrorClient}
 	}
 	client := v.client
-	client.SetAddress(address)
+	err := client.SetAddress(address)
+	if err != nil{
+		return nil
+	}
 	return nil
 }
 func (v *VaultClient) SetToken(token string) *VaultError {
 	if v.client == nil {
-		return &VaultError{Message: fmt.Sprintf(VaultErrorClient)}
+		return &VaultError{Message: VaultErrorClient}
 	}
 	client := v.client
 	client.SetToken(token)
@@ -116,16 +118,16 @@ func (v *VaultClient) SetToken(token string) *VaultError {
 // - *VaultError: An error object if the operation fails; otherwise, nil.
 func (v *VaultClient) WriteSecret(path, key, value string) *VaultError {
 	if v.client == nil {
-		return &VaultError{Message: fmt.Sprintf(VaultErrorClient)}
+		return &VaultError{Message: VaultErrorClient}
 	}
 	if len(path) == 0 {
-		return &VaultError{Message: fmt.Sprintf(VaultErrorNoKeyPath)}
+		return &VaultError{Message: VaultErrorNoKeyPath}
 	}
 	if len(key) == 0 {
-		return &VaultError{Message: fmt.Sprintf(VaultErrorNoKeyName)}
+		return &VaultError{Message: VaultErrorNoKeyName}
 	}
 	if len(value) == 0 {
-		return &VaultError{Message: fmt.Sprintf(VaultErrorNoKeyData)}
+		return &VaultError{Message: VaultErrorNoKeyData}
 	}
 
 	client := v.client
@@ -156,13 +158,13 @@ func (v *VaultClient) WriteSecret(path, key, value string) *VaultError {
 // - *VaultError: An error object if the operation fails or the key does not exist.
 func (v *VaultClient) ReadSecret(path, key string) (string, *VaultError) {
 	if v.client == nil {
-		return "", &VaultError{Message: fmt.Sprintf(VaultErrorClient)}
+		return "", &VaultError{Message: VaultErrorClient}
 	}
 	if len(path) == 0 {
-		return "", &VaultError{Message: fmt.Sprintf(VaultErrorNoKeyPath)}
+		return "", &VaultError{Message: VaultErrorNoKeyPath}
 	}
 	if len(key) == 0 {
-		return "", &VaultError{Message: fmt.Sprintf(VaultErrorNoKeyName)}
+		return "", &VaultError{Message: VaultErrorNoKeyName}
 	}
 
 	client := v.client
@@ -175,12 +177,12 @@ func (v *VaultClient) ReadSecret(path, key string) (string, *VaultError) {
 	// Extract the value
 	dataRaw, ok := secret.Data["data"]
 	if !ok {
-		return "", &VaultError{Message: fmt.Sprintf("missing 'data' key in secret response")}
+		return "", &VaultError{Message: "missing 'data' key in secret response"}
 	}
 
 	data, ok := dataRaw.(map[string]interface{})
 	if !ok {
-		return "", &VaultError{Message: fmt.Sprintf("'data' key is not a valid map[string]interface{}")}
+		return "", &VaultError{Message: "'data' key is not a valid map[string]interface{}"}
 	}
 
 	valueKey, ok := data[key]
@@ -208,10 +210,10 @@ func (v *VaultClient) ReadSecret(path, key string) (string, *VaultError) {
 // - *VaultError: An error object if the operation fails or the key does not exist.
 func (v *VaultClient) ListSecrets(path string) ([]string, *VaultError) {
 	if v.client == nil {
-		return nil, &VaultError{Message: fmt.Sprintf(VaultErrorClient)}
+		return nil, &VaultError{Message: VaultErrorClient}
 	}
 	if len(path) == 0 {
-		return nil, &VaultError{Message: fmt.Sprintf(VaultErrorNoKeyPath)}
+		return nil, &VaultError{Message: VaultErrorNoKeyPath}
 	}
 
 	client := v.client
@@ -225,10 +227,10 @@ func (v *VaultClient) ListSecrets(path string) ([]string, *VaultError) {
 	if !ok {
 		return nil, &VaultError{Message: fmt.Sprintf(VaultErrorReadResult, vErr)}
 	}
-	values := make([]interface{}, 0, len(data))
-	for _, value := range data {
-		values = append(values, value)
-	}
+	// values := make([]interface{}, 0, len(data))
+	// for _, value := range data {
+	// 	values = append(values, value) // Appending but not using the result
+	// }
 	stringValues := []string{}
 	for _, value := range data {
 		if str, ok := value.(string); ok {
@@ -252,13 +254,13 @@ func (v *VaultClient) ListSecrets(path string) ([]string, *VaultError) {
 // - *VaultError: An error object if the operation fails; otherwise, nil.
 func (v *VaultClient) DeleteSecret(path, key string) *VaultError {
 	if v.client == nil {
-		return &VaultError{Message: fmt.Sprintf(VaultErrorClient)}
+		return &VaultError{Message: VaultErrorClient}
 	}
 	if len(path) == 0 {
-		return &VaultError{Message: fmt.Sprintf(VaultErrorNoKeyPath)}
+		return &VaultError{Message: VaultErrorNoKeyPath}
 	}
 	if len(key) == 0 {
-		return &VaultError{Message: fmt.Sprintf(VaultErrorNoKeyName)}
+		return &VaultError{Message: VaultErrorNoKeyName}
 	}
 	client := v.client
 

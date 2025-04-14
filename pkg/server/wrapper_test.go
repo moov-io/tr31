@@ -22,7 +22,7 @@ func TestDecryptData(t *testing.T) {
 
 	keyStr, _ := DecryptData(param)
 
-	mockVault.DeleteSecret("secret/data/myapp", "kbkp")
-
+	derr := mockVault.DeleteSecret("secret/data/myapp", "kbkp")
+	require.Nil(t, derr)
 	require.Equal(t, "ccccccccccccccccdddddddddddddddd", keyStr)
 }

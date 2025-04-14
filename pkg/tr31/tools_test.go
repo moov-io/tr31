@@ -341,9 +341,7 @@ func TestUrandom(t *testing.T) {
 
 			// Ensure the random bytes are in the valid range [0, 255]
 			for _, b := range got {
-				if b < 0 || b > 255 {
-					t.Errorf("urandom(%d) generated an invalid byte: %d", tt.length, b)
-				}
+				t.Errorf("urandom(%d) generated an invalid byte: %d", tt.length, b)
 			}
 		})
 	}

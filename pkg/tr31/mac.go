@@ -2,6 +2,7 @@ package tr31
 
 import (
 	"encoding/binary"
+	"errors"
 	"fmt"
 )
 
@@ -20,13 +21,13 @@ var _padDispatch = map[int]func(data []byte, blockSize int) ([]byte, error){
 
 func GenerateCBCMAC(key []byte, data []byte, padding int, length int, algorithm Algorithm) ([]byte, error) {
 	if padding == 0 {
-		return nil, fmt.Errorf("Specify valid padding method: 1, 2 or 3.")
+		return nil, fmt.Errorf("specify valid padding method: 1, 2 or 3")
 	}
 	if key == nil {
-		return nil, fmt.Errorf("Invalid key.")
+		return nil, fmt.Errorf("invalid key")
 	}
-	if data == nil || len(data) == 0 {
-		return nil, fmt.Errorf("Invalid data.")
+	if len(data) == 0 {
+		return nil, fmt.Errorf("invalid data")
 	}
 	if length == 0 {
 		if algorithm == AES {
@@ -48,7 +49,7 @@ func GenerateCBCMAC(key []byte, data []byte, padding int, length int, algorithm 
 		implementation = EncryptAESCBC
 	}
 	if padding > 3 {
-		return nil, fmt.Errorf("Specify valid padding method: 1, 2 or 3.")
+		return nil, errors.New("specify valid padding method: 1, 2 or 3")
 	}
 	paddedData, err := _padDispatch[padding](data, blockSize)
 	if err != nil {
@@ -66,13 +67,13 @@ func GenerateCBCMAC(key []byte, data []byte, padding int, length int, algorithm 
 
 func generateRetailMAC(key1 []byte, key2 []byte, data []byte, padding int, length int) ([]byte, error) {
 	if padding == 0 || padding > 3 {
-		return nil, fmt.Errorf("Specify valid padding method: 1, 2 or 3.")
+		return nil, errors.New("specify valid padding method: 1, 2 or 3")
 	}
 	if key1 == nil || key2 == nil {
-		return nil, fmt.Errorf("Invalid key.")
+		return nil, errors.New("invalid key")
 	}
-	if data == nil || len(data) == 0 {
-		return nil, fmt.Errorf("Invalid data.")
+	if len(data) == 0 {
+		return nil, errors.New("invalid data")
 	}
 	if length == 0 {
 		length = 8
@@ -132,8 +133,26 @@ func padISO3(data []byte, blockSize int) ([]byte, error) {
 			lengthBytes[i] = byte(value >> (8 * (blockSize - 1 - i))) // Extract highest bytes first
 		}
 	} else if blockSize < 8 {
+		// Ensure slice size is sufficient for PutUint32
+		if len(lengthBytes) < 4 {
+			panic("lengthBytes slice must be at least 4 bytes for PutUint32")
+		}
+		// Prevent overflow for uint32
+		dataLen := len(data)
+		if dataLen > (1<<29)-1 { // Max value for uint32 after multiplication by 8
+			panic("data length too large to encode as uint32")
+		}
 		binary.BigEndian.PutUint32(lengthBytes, uint32(len(data)*8))
 	} else {
+		// Ensure slice size is sufficient for PutUint64
+		if len(lengthBytes) < 8 {
+			panic("lengthBytes slice must be at least 8 bytes for PutUint64")
+		}
+		// Prevent overflow for uint64
+		dataLen := len(data)
+		if dataLen > (1<<61)-1 { // Max value for uint64 after multiplication by 8
+			panic("data length too large to encode as uint64")
+		}
 		binary.BigEndian.PutUint64(lengthBytes, uint64(len(data)*8))
 	}
 	paddedData, err := padISO1(data, blockSize)

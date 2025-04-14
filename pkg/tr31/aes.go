@@ -3,13 +3,14 @@ package tr31
 import (
 	"crypto/aes"
 	"crypto/cipher"
+	"errors"
 	"fmt"
 )
 
 // EncryptAESCBC encrypts data using AES CBC algorithm
 func EncryptAESCBC(key []byte, iv []byte, data []byte) ([]byte, error) {
 	if len(data) == 0 {
-		return nil, fmt.Errorf("Data is empty")
+		return nil, fmt.Errorf("data is empty")
 	}
 	if len(data)%aes.BlockSize != 0 {
 		return nil, fmt.Errorf("data length (%d) must be a multiple of AES block size %d", len(data), aes.BlockSize)
@@ -32,7 +33,7 @@ func EncryptAESCBC(key []byte, iv []byte, data []byte) ([]byte, error) {
 // EncryptAESECB encrypts data using AES ECB algorithm
 func EncryptAESECB(key []byte, data []byte) ([]byte, error) {
 	if len(data) == 0 {
-		return nil, fmt.Errorf("Data is empty")
+		return nil, fmt.Errorf("data is empty")
 	}
 	if len(data)%aes.BlockSize != 0 {
 		return nil, fmt.Errorf("data length (%d) must be a multiple of AES block size %d", len(data), aes.BlockSize)
@@ -54,7 +55,7 @@ func EncryptAESECB(key []byte, data []byte) ([]byte, error) {
 // DecryptAESCBC decrypts data using AES CBC algorithm
 func DecryptAESCBC(key []byte, iv []byte, data []byte) ([]byte, error) {
 	if len(data) == 0 {
-		return nil, fmt.Errorf("Data is empty")
+		return nil, fmt.Errorf("data is empty")
 	}
 	if len(data)%aes.BlockSize != 0 {
 		return nil, fmt.Errorf("data length (%d) must be a multiple of AES block size %d", len(data), aes.BlockSize)
@@ -78,7 +79,7 @@ func DecryptAESCBC(key []byte, iv []byte, data []byte) ([]byte, error) {
 // DecryptAESECB decrypts data using AES ECB algorithm
 func DecryptAESECB(key []byte, data []byte) ([]byte, error) {
 	if len(data) == 0 {
-		return nil, fmt.Errorf("Data is empty")
+		return nil, errors.New("data is empty")
 	}
 	if len(data)%aes.BlockSize != 0 {
 		return nil, fmt.Errorf("data length (%d) must be a multiple of AES block size %d", len(data), aes.BlockSize)

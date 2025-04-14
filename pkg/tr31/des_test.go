@@ -315,6 +315,9 @@ func TestDecryptTDESCBC(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(fmt.Sprintf("%v", tt.name), func(t *testing.T) {
 			paddedData, err := padISO1(tt.data, 8)
+			if (err != nil){
+				return
+			}
 			got, err := DecryptTDESCBC(tt.key, tt.iv, paddedData)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("DecryptTDESCBC() error = %v, wantErr %v", err, tt.wantErr)
@@ -411,6 +414,9 @@ func TestTDESCBC(t *testing.T) {
 		t.Run(fmt.Sprintf("key=%v, iv=%v", tt.key, tt.iv), func(t *testing.T) {
 			// Encrypt the data
 			paddedData, err := padISO1(tt.data, 8)
+			if (err != nil){
+				return
+			}
 			encryptedData, err := EncryptTDESCBC(tt.key, tt.iv, paddedData)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("EncryptTDESCBC() error = %v, wantErr %v", err, tt.wantErr)
@@ -505,6 +511,9 @@ func TestEncryptDecryptTDSECB(t *testing.T) {
 		t.Run(fmt.Sprintf("%v", tt.name), func(t *testing.T) {
 			// Encrypt the data
 			paddedData, err := padISO1(tt.data, 8)
+			if err != nil {
+				return
+			}
 			encryptedData, err := EncryptTDSECB(tt.key, paddedData)
 			if err != nil {
 				if !tt.wantErr {

@@ -4,6 +4,7 @@ import (
 	"crypto/subtle"
 	"encoding/binary"
 	"fmt"
+	"log"
 	"regexp"
 	"unicode"
 )
@@ -21,7 +22,7 @@ https://stackoverflow.com/a/29409299
 	A byte slice that is the result of XOR'ing data with the key.
 */
 func xor(data, key []byte) []byte {
-	if key == nil || len(key) == 0 {
+	if len(key) == 0 {
 		return nil
 	}
 	result := make([]byte, len(data))
@@ -141,7 +142,10 @@ func intToBytes(i int, length int) []byte {
 
 func hexToInt(hexStr string) int {
 	var result int
-	fmt.Sscanf(hexStr, "%X", &result)
+	_, err := fmt.Sscanf(hexStr, "%X", &result)
+	if err != nil {
+		log.Printf("Failed to parse hex string: %v", err)
+	}
 	return result
 }
 

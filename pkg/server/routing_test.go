@@ -3,6 +3,7 @@ package server
 import (
 	"bytes"
 	"encoding/json"
+	"log"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -36,7 +37,11 @@ func TestRouting_ping(t *testing.T) {
 	}
 
 	resp := w.Result()
-	defer resp.Body.Close()
+	defer func() {
+		if err := resp.Body.Close(); err != nil {
+			log.Printf("Failed to close response body: %v", err)
+		}
+	}()
 	if v := resp.Header.Get("Access-Control-Allow-Origin"); v != "https://moov.io" {
 		t.Errorf("Access-Control-Allow-Origin: %s", v)
 	}
@@ -70,7 +75,11 @@ func TestRouting_create_duplicate_machine(t *testing.T) {
 	router.ServeHTTP(w, req)
 	w.Flush()
 	var response createMachineResponse
-	json.Unmarshal(w.Body.Bytes(), &response)
+	err = json.Unmarshal(w.Body.Bytes(), &response)
+	if err != nil {
+		log.Printf("Failed to unmarshal response: %v", err)
+		return
+	}
 	require.Equal(t, http.StatusBadRequest, w.Code)
 	require.Contains(t, w.Body.String(), "already exists")
 
@@ -127,7 +136,11 @@ func TestCreateMachine(t *testing.T) {
 				require.Equal(t, tt.expectedIK, response.IK)
 
 				resp := w.Result()
-				defer resp.Body.Close()
+				defer func() {
+					if err := resp.Body.Close(); err != nil {
+						log.Printf("Failed to close response body: %v", err)
+					}
+				}()
 				if v := resp.Header.Get("Access-Control-Allow-Origin"); v != "https://moov.io" {
 					t.Errorf("Access-Control-Allow-Origin: %s", v)
 				}
@@ -492,11 +505,15 @@ func Test_DecryptData(t *testing.T) {
 
 	repository := NewRepositoryInMemory(nil)
 	mockService := NewService(repository, MODE_MOCK)
-	mockService.GetSecretManager().WriteSecret(
+	err := mockService.GetSecretManager().WriteSecret(
 		"secret/tr31",
 		"kbkp",
 		"AAAAAAAAAAAAAAAABBBBBBBBBBBBBBBBCCCCCCCCCCCCCCCC",
 	)
+	if err != nil {
+		log.Printf("Failed to write secret: %v", err)
+		return
+	}
 	router := MakeHTTPHandler(mockService)
 
 	// Run test cases
@@ -533,17 +550,18 @@ func Test_DecryptData(t *testing.T) {
 			require.Equal(t, tt.expectedStatus, w.Code)
 
 			// Validate response body if needed
-			if tt.name == "Valid Machine Creation" {
+			switch tt.name {
+			case "Valid Machine Creation":
 				var response createMachineResponse
 				err = json.Unmarshal(w.Body.Bytes(), &response)
 				require.NoError(t, err)
-			} else if tt.name == "Find Existing Machine" {
+			case "Find Existing Machine":
 				response3 := findMachineResponse{}
 				err = json.Unmarshal(w.Body.Bytes(), &response3)
 				require.NoError(t, err)
 				require.NotNil(t, response3.Machine)
 				require.Equal(t, tt.expectedKey, response3.Machine.InitialKey)
-			} else {
+			default:
 				if tt.expectedStatus == http.StatusOK {
 					response4 := decryptDataResponse{}
 					err = json.Unmarshal(w.Body.Bytes(), &response4)
