@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/hex"
 	"errors"
+	"fmt"
 	"time"
 
 	"github.com/moov-io/tr31/pkg/tr31"
@@ -61,33 +62,43 @@ func readKey(vault SecretManager, params UnifiedParams) (string, error) {
 }
 
 func EncryptData(params UnifiedParams) (string, error) {
+	// Decode kbpk string
 	kbpkStr := params.Kbkp
-	kbpk, decErr := hex.DecodeString(kbpkStr)
-	if decErr != nil {
-		return "", decErr
+	kbpk, err := hex.DecodeString(kbpkStr)
+	if err != nil {
+		return "", fmt.Errorf("failed to decode kbpk string: %v", err)
 	}
-	enckey, decErr := hex.DecodeString(params.EncKey)
-	if decErr != nil {
-		return "", decErr
+
+	// Decode encryption key string
+	enckey, err := hex.DecodeString(params.EncKey)
+	if err != nil {
+		return "", fmt.Errorf("failed to decode encryption key: %v", err)
 	}
-	header, hErr := tr31.NewHeader(
+
+	// Create TR-31 header
+	header, err := tr31.NewHeader(
 		params.Header.VersionId,
 		params.Header.KeyUsage,
 		params.Header.Algorithm,
 		params.Header.ModeOfUse,
 		params.Header.KeyVersion,
 		params.Header.Exportability)
-	if hErr != nil {
-		return "", decErr
+	if err != nil {
+		return "", fmt.Errorf("failed to create TR-31 header: %v", err)
 	}
-	kblock, bErr := tr31.NewKeyBlock(kbpk, header)
-	if bErr != nil {
-		return "", bErr
+
+	// Create TR-31 key block
+	kblock, err := tr31.NewKeyBlock(kbpk, header)
+	if err != nil {
+		return "", fmt.Errorf("failed to create TR-31 key block: %v", err)
 	}
-	kb, wErr := kblock.Wrap(enckey, nil)
-	if wErr != nil {
-		return "", wErr
+
+	// Wrap the encryption key
+	kb, err := kblock.Wrap(enckey, nil)
+	if err != nil {
+		return "", fmt.Errorf("failed to wrap encryption key: %v", err)
 	}
+
 	return kb, nil
 }
 

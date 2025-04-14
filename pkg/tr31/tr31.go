@@ -52,7 +52,7 @@ const (
 	BlockErrorLenInvalid           string = "Block %s length (%s) is malformed. Expecting %d hexchars."
 	BlockErrorLenHasNoID           string = "Block %s length does not include block ID and length."
 	BlockErrorLenLenMalformed      string = "Block %s length of length (%s) is malformed. Expecting 2 hexchars."
-	BlockErrorLengthParse          string = "Failed to parse block length length (%s) for block %s: %v"
+	BlockErrorLengthParse          string = "Failed to parse block length of length (%s) for block %s: %v"
 	BlockErrorLengthZero           string = "Block %s length of length must not be 0."
 	BlockErrorHeaderLen            string = "Key block header length is malformed. Expecting 4 digits."
 	BlockErrorHeaderLenMalformed   string = "Key block header length (%s) is malformed. Expecting 4 digits."
@@ -778,6 +778,10 @@ func (kb *KeyBlock) BWrap(header string, key []byte, extraPad int) (string, erro
 
 	// Clear key data
 	clearKeyData := make([]byte, 2+len(key)+len(pad))
+	keyLength := len(key) * 8
+	if keyLength > 0xFFFF { // 0xFFFF is the maximum value for uint16
+		return "", fmt.Errorf("key length exceeds maximum allowable size for uint16: %d", keyLength)
+	}
 	binary.BigEndian.PutUint16(clearKeyData[:2], uint16(len(key)*8))
 	copy(clearKeyData[2:], key)
 	copy(clearKeyData[2+len(key):], pad)
@@ -1013,6 +1017,10 @@ func (kb *KeyBlock) CWrap(header string, key []byte, extraPad int) (string, erro
 
 	// Clear key data
 	clearKeyData := make([]byte, 2+len(key)+len(pad))
+	keyLength := len(key) * 8
+	if keyLength > 0xFFFF { // 0xFFFF is the maximum value for uint16
+		return "", fmt.Errorf("key length exceeds maximum allowable size for uint16: %d", keyLength)
+	}
 	binary.BigEndian.PutUint16(clearKeyData[:2], uint16(len(key)*8))
 	copy(clearKeyData[2:], key)
 	copy(clearKeyData[2+len(key):], pad)
@@ -1128,6 +1136,10 @@ func (kb *KeyBlock) DWrap(header string, key []byte, extraPad int) (string, erro
 	}
 
 	clearKeyData := make([]byte, 2+len(key)+len(pad))
+	keyLength := len(key) * 8
+	if keyLength > 0xFFFF { // 0xFFFF is the maximum value for uint16
+		return "", fmt.Errorf("key length exceeds maximum allowable size for uint16: %d", keyLength)
+	}
 	binary.BigEndian.PutUint16(clearKeyData[:2], uint16(len(key)*8))
 	copy(clearKeyData[2:], key)
 	copy(clearKeyData[2+len(key):], pad)
