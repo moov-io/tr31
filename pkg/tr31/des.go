@@ -79,7 +79,7 @@ func EncryptTDESCBC(key, iv, data []byte) ([]byte, error) {
 	} else if len(key) == 8 {
 		desKey = append(desKey, key...)
 	}
-	block, err := des.NewTripleDESCipher(desKey)//nolint:gosec 
+	block, err := des.NewTripleDESCipher(desKey) //nolint:gosec
 	if err != nil {
 		return nil, fmt.Errorf("failed to create 3DES cipher: %v", err)
 	}
@@ -111,7 +111,7 @@ func DecryptTDESCBC(key, iv, data []byte) ([]byte, error) {
 		desKey = append(desKey, key...)
 	}
 
-	block, err := des.NewTripleDESCipher(desKey)//nolint:gosec 
+	block, err := des.NewTripleDESCipher(desKey) //nolint:gosec
 	if err != nil {
 		return nil, fmt.Errorf("failed to create 3DES cipher: %v", err)
 	}
@@ -147,15 +147,15 @@ func EncryptTDSECB(key, data []byte) ([]byte, error) {
 	} else if len(key) == 8 {
 		desKey = append(desKey, key...)
 	}
-	block, err := des.NewTripleDESCipher(desKey)//nolint:gosec 
+	block, err := des.NewTripleDESCipher(desKey) //nolint:gosec
 	if err != nil {
 		return nil, err
 	}
 
 	// ECB mode does not require an IV
 	encryptedData := make([]byte, len(data))
-	for i := 0; i < len(data); i += des.BlockSize {//nolint:gosec 
-		block.Encrypt(encryptedData[i:i+des.BlockSize], data[i:i+des.BlockSize])//nolint:gosec 
+	for i := 0; i < len(data); i += des.BlockSize { //nolint:gosec
+		block.Encrypt(encryptedData[i:i+des.BlockSize], data[i:i+des.BlockSize]) //nolint:gosec
 	}
 
 	return encryptedData, nil
@@ -175,15 +175,15 @@ func DecryptTDSECB(key, data []byte) ([]byte, error) {
 	} else if len(key) == 8 {
 		desKey = append(desKey, key...)
 	}
-	block, err := des.NewTripleDESCipher(desKey)//nolint:gosec 
+	block, err := des.NewTripleDESCipher(desKey) //nolint:gosec
 	if err != nil {
 		return nil, err
 	}
 
 	// ECB mode does not require an IV
 	decryptedData := make([]byte, len(data))
-	for i := 0; i < len(data); i += des.BlockSize {//nolint:gosec 
-		block.Decrypt(decryptedData[i:i+des.BlockSize], data[i:i+des.BlockSize])//nolint:gosec 
+	for i := 0; i < len(data); i += des.BlockSize { //nolint:gosec
+		block.Decrypt(decryptedData[i:i+des.BlockSize], data[i:i+des.BlockSize]) //nolint:gosec
 	}
 
 	return decryptedData, nil
