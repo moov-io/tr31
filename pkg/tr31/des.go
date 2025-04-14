@@ -154,8 +154,8 @@ func EncryptTDSECB(key, data []byte) ([]byte, error) {
 
 	// ECB mode does not require an IV
 	encryptedData := make([]byte, len(data))
-	for i := 0; i < len(data); i += des.BlockSize { 
-		block.Encrypt(encryptedData[i:i+des.BlockSize], data[i:i+des.BlockSize]) 
+	for i := 0; i < len(data); i += des.BlockSize {
+		block.Encrypt(encryptedData[i:i+des.BlockSize], data[i:i+des.BlockSize])
 	}
 
 	return encryptedData, nil
@@ -182,8 +182,8 @@ func DecryptTDSECB(key, data []byte) ([]byte, error) {
 
 	// ECB mode does not require an IV
 	decryptedData := make([]byte, len(data))
-	for i := 0; i < len(data); i += des.BlockSize { 
-		block.Decrypt(decryptedData[i:i+des.BlockSize], data[i:i+des.BlockSize]) 
+	for i := 0; i < len(data); i += des.BlockSize {
+		block.Decrypt(decryptedData[i:i+des.BlockSize], data[i:i+des.BlockSize])
 	}
 
 	return decryptedData, nil
