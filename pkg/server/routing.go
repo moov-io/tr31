@@ -40,7 +40,9 @@ var (
 //
 // This is designed to be added as a ServerOption in our main http handler.
 type contextKeyType string
+
 const contextKey contextKeyType = "cors-origin"
+
 func saveCORSHeadersIntoContext() httptransport.RequestFunc {
 	return func(ctx context.Context, r *http.Request) context.Context {
 		origin := r.Header.Get("Origin")

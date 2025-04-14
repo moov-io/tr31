@@ -90,7 +90,7 @@ func (v *VaultClient) SetAddress(address string) *VaultError {
 	}
 	client := v.client
 	err := client.SetAddress(address)
-	if err != nil{
+	if err != nil {
 		return nil
 	}
 	return nil

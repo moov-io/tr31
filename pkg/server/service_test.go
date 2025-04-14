@@ -106,7 +106,7 @@ func TestService_Encrypt_Decrypt_Data_With_Mock(t *testing.T) {
 		log.Printf("Failed to write secret: %v", serr)
 		return
 	}
-	
+
 	header := HeaderParams{
 		VersionId:     "D",
 		KeyUsage:      "D0",
