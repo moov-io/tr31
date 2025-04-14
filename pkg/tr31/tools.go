@@ -151,7 +151,7 @@ func intToBytes(i int, length int) []byte {
 		}
 	}
 
-	return b 
+	return b
 }
 func hexToInt(hexStr string) int {
 	var result int
