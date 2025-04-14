@@ -4,6 +4,7 @@ import (
 	"crypto/rand"
 	"errors"
 	"fmt"
+	"strconv"
 )
 
 // KBPKOptions defines the options for generating a KBPK
@@ -112,7 +113,7 @@ func hasOddParityTDES(key []byte) bool {
 	for _, b := range key {
 		bits := 0
 		for j := 0; j < 8; j++ {
-			if b&(1<<uint(j)) != 0 {
+			if j >= 0 && j < strconv.IntSize && b&(1<<uint(j)) != 0 {
 				bits++
 			}
 		}

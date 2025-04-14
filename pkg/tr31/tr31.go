@@ -9,6 +9,7 @@ import (
 	"encoding/hex"
 	"errors"
 	"fmt"
+	"math"
 	"math/big"
 	"strconv"
 	"strings"
@@ -774,11 +775,12 @@ func (kb *KeyBlock) BWrap(header string, key []byte, extraPad int) (string, erro
 
 	// Clear key data
 	clearKeyData := make([]byte, 2+len(key)+len(pad))
-	keyLength := len(key) * 8
-	if keyLength > 0xFFFF { // 0xFFFF is the maximum value for uint16
-		return "", fmt.Errorf("key length exceeds maximum allowable size for uint16: %d", keyLength)
+
+	if len(key)*8 <= math.MaxUint16 {
+		binary.BigEndian.PutUint16(clearKeyData[:2], uint16(len(key)*8))
+	} else {
+		return "", fmt.Errorf("key length exceeds uint16 limit")
 	}
-	binary.BigEndian.PutUint16(clearKeyData[:2], uint16(len(key)*8))
 	copy(clearKeyData[2:], key)
 	copy(clearKeyData[2+len(key):], pad)
 
@@ -1013,11 +1015,12 @@ func (kb *KeyBlock) CWrap(header string, key []byte, extraPad int) (string, erro
 
 	// Clear key data
 	clearKeyData := make([]byte, 2+len(key)+len(pad))
-	keyLength := len(key) * 8
-	if keyLength > 0xFFFF { // 0xFFFF is the maximum value for uint16
-		return "", fmt.Errorf("key length exceeds maximum allowable size for uint16: %d", keyLength)
+
+	if len(key)*8 <= math.MaxUint16 {
+		binary.BigEndian.PutUint16(clearKeyData[:2], uint16(len(key)*8))
+	} else {
+		return "", fmt.Errorf("key length exceeds uint16 limit")
 	}
-	binary.BigEndian.PutUint16(clearKeyData[:2], uint16(len(key)*8))
 	copy(clearKeyData[2:], key)
 	copy(clearKeyData[2+len(key):], pad)
 
@@ -1132,11 +1135,12 @@ func (kb *KeyBlock) DWrap(header string, key []byte, extraPad int) (string, erro
 	}
 
 	clearKeyData := make([]byte, 2+len(key)+len(pad))
-	keyLength := len(key) * 8
-	if keyLength > 0xFFFF { // 0xFFFF is the maximum value for uint16
-		return "", fmt.Errorf("key length exceeds maximum allowable size for uint16: %d", keyLength)
+
+	if len(key)*8 <= math.MaxUint16 {
+		binary.BigEndian.PutUint16(clearKeyData[:2], uint16(len(key)*8))
+	} else {
+		return "", fmt.Errorf("key length exceeds uint16 limit")
 	}
-	binary.BigEndian.PutUint16(clearKeyData[:2], uint16(len(key)*8))
 	copy(clearKeyData[2:], key)
 	copy(clearKeyData[2+len(key):], pad)
 
