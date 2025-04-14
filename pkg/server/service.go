@@ -119,7 +119,7 @@ func (s *service) EncryptData(vaultAddr, vaultToken, keyPath, keyName, encKey st
 	if err != nil {
 		return "", err
 	}
-	
+
 	keyStr, vErr := readKey(s.GetSecretManager(), vaultParams)
 	if vErr != nil {
 		return "", vErr
@@ -151,7 +151,7 @@ func (s *service) DecryptData(vaultAddr, vaultToken, keyPath, keyName, keyBlock 
 		log.Printf("Failed to set address: %v", err)
 		return "", err
 	}
-	
+
 	keyStr, rerr := readKey(s.GetSecretManager(), vaultParams)
 	if rerr != nil {
 		return "", rerr
