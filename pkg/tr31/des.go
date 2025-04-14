@@ -2,7 +2,7 @@ package tr31
 
 import (
 	"crypto/cipher"
-	"crypto/des"
+	"crypto/des" //nolint:gosec
 	"errors"
 	"fmt"
 )
