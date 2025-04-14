@@ -135,23 +135,23 @@ func padISO3(data []byte, blockSize int) ([]byte, error) {
 	} else if blockSize < 8 {
 		// Ensure slice size is sufficient for PutUint32
 		if len(lengthBytes) < 4 {
-			panic("lengthBytes slice must be at least 4 bytes for PutUint32")
+			return nil, errors.New("lengthBytes slice must be at least 4 bytes for PutUint32")
 		}
 		// Prevent overflow for uint32
 		dataLen := len(data)
 		if dataLen > (1<<29)-1 { // Max value for uint32 after multiplication by 8
-			panic("data length too large to encode as uint32")
+			return nil, errors.New("data length too large to encode as uint32")
 		}
 		binary.BigEndian.PutUint32(lengthBytes, uint32(len(data)*8))
 	} else {
 		// Ensure slice size is sufficient for PutUint64
 		if len(lengthBytes) < 8 {
-			panic("lengthBytes slice must be at least 8 bytes for PutUint64")
+			return nil, errors.New("lengthBytes slice must be at least 8 bytes for PutUint64")
 		}
 		// Prevent overflow for uint64
 		dataLen := len(data)
 		if dataLen > (1<<61)-1 { // Max value for uint64 after multiplication by 8
-			panic("data length too large to encode as uint64")
+			return nil, errors.New("data length too large to encode as uint64")
 		}
 		binary.BigEndian.PutUint64(lengthBytes, uint64(len(data)*8))
 	}
