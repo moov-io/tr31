@@ -52,7 +52,7 @@ const (
 	BlockErrorLenInvalid           string = "Block %s length (%s) is malformed. Expecting %d hexchars."
 	BlockErrorLenHasNoID           string = "Block %s length does not include block ID and length."
 	BlockErrorLenLenMalformed      string = "Block %s length of length (%s) is malformed. Expecting 2 hexchars."
-	BlockErrorLengthParse          string = "Failed to parse block length length (%s) for block %s: %v"
+	BlockErrorLengthParse          string = "Failed to parse length of block length (%s) for block %s: %v"
 	BlockErrorLengthZero           string = "Block %s length of length must not be 0."
 	BlockErrorHeaderLen            string = "Key block header length is malformed. Expecting 4 digits."
 	BlockErrorHeaderLenMalformed   string = "Key block header length (%s) is malformed. Expecting 4 digits."
@@ -225,7 +225,7 @@ func (b *Blocks) Dump(algoBlockSize int) (int, string, error) {
 			hexString := hex.EncodeToString(byteSlice)
 			blocksList = append(blocksList, hexString)
 		} else {
-			blocksList = append(blocksList, "0002")
+			blocksList = append(blocksList, "0004")
 			blockLen := len(blockData) + 10
 			if blockLen > 0xFFFF {
 				return 0, "", &HeaderError{Message: fmt.Sprintf(BlockErrorLengthLong, blockID)}
@@ -269,7 +269,6 @@ func (b *Blocks) parseExtendedLen(blockID string, blocks string, i int) (int, in
 			Message: fmt.Sprintf(BlockErrorLengthParse, blockLenLenS, blockID, err),
 		}
 	}
-	blockLenLen *= 2
 
 	// Ensure blockLenLen is not zero.
 	if blockLenLen == 0 {
