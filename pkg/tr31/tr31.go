@@ -226,7 +226,7 @@ func (b *Blocks) Dump(algoBlockSize int) (int, string, error) {
 			hexString := hex.EncodeToString(byteSlice)
 			blocksList = append(blocksList, hexString)
 		} else {
-			blocksList = append(blocksList, "0002")
+			blocksList = append(blocksList, "0004")
 			blockLen := len(blockData) + 10
 			if blockLen > 0xFFFF {
 				return 0, "", &HeaderError{Message: fmt.Sprintf(BlockErrorLengthLong, blockID)}
@@ -270,7 +270,6 @@ func (b *Blocks) parseExtendedLen(blockID string, blocks string, i int) (int, in
 			Message: fmt.Sprintf(BlockErrorLengthParse, blockLenLenS, blockID, err),
 		}
 	}
-	blockLenLen *= 2
 
 	// Ensure blockLenLen is not zero.
 	if blockLenLen == 0 {
