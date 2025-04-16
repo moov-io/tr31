@@ -186,5 +186,3 @@ func DecryptTDSECB(key, data []byte) ([]byte, error) {
 
 	return decryptedData, nil
 }
-
-//gosec:enable G502
