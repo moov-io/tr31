@@ -4,7 +4,8 @@ import (
 	"encoding/binary"
 	"errors"
 	"fmt"
-	"math"
+
+	"github.com/ccoveille/go-safecast"
 )
 
 type Algorithm int
@@ -135,16 +136,18 @@ func padISO3(data []byte, blockSize int) ([]byte, error) {
 		}
 	} else if blockSize < 8 {
 		dataLen := len(data)
-		if uint64(dataLen)*8 > math.MaxUint32 {
+		size, err := safecast.ToUint32(dataLen * 8)
+		if err != nil {
 			return nil, errors.New("data length too large to encode as uint32")
 		}
-		binary.BigEndian.PutUint32(lengthBytes, uint32(uint64(dataLen)*8))
+		binary.BigEndian.PutUint32(lengthBytes, size)
 	} else {
 		dataLen := len(data)
-		if uint64(dataLen)*8 > math.MaxUint64 {
+		size, err := safecast.ToUint64(dataLen * 8)
+		if err != nil {
 			return nil, errors.New("data length too large to encode as uint64")
 		}
-		binary.BigEndian.PutUint64(lengthBytes, uint64(dataLen)*8)
+		binary.BigEndian.PutUint64(lengthBytes, size)
 	}
 	paddedData, err := padISO1(data, blockSize)
 	if err != nil {

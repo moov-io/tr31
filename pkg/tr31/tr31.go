@@ -13,6 +13,8 @@ import (
 	"math/big"
 	"strconv"
 	"strings"
+
+	"github.com/ccoveille/go-safecast"
 )
 
 // TR-31 version identifiers
@@ -776,10 +778,11 @@ func (kb *KeyBlock) BWrap(header string, key []byte, extraPad int) (string, erro
 	clearKeyData := make([]byte, 2+len(key)+len(pad))
 
 	if len(key)*8 <= math.MaxUint16 {
-		if len(key)*8 > math.MaxUint16 {
+		size, err := safecast.ToUint16(len(key) * 8)
+		if err != nil {
 			return "", errors.New("key length too large to encode as uint16")
 		}
-		binary.BigEndian.PutUint16(clearKeyData[:2], uint16(len(key)*8))
+		binary.BigEndian.PutUint16(clearKeyData[:2], size)
 	} else {
 		return "", fmt.Errorf("key length exceeds uint16 limit")
 	}
@@ -1019,10 +1022,11 @@ func (kb *KeyBlock) CWrap(header string, key []byte, extraPad int) (string, erro
 	clearKeyData := make([]byte, 2+len(key)+len(pad))
 
 	if len(key)*8 <= math.MaxUint16 {
-		if len(key)*8 > math.MaxUint16 {
+		size, err := safecast.ToUint16(len(key) * 8)
+		if err != nil {
 			return "", errors.New("key length too large to encode as uint16")
 		}
-		binary.BigEndian.PutUint16(clearKeyData[:2], uint16(len(key)*8))
+		binary.BigEndian.PutUint16(clearKeyData[:2], size)
 	} else {
 		return "", fmt.Errorf("key length exceeds uint16 limit")
 	}
@@ -1141,14 +1145,12 @@ func (kb *KeyBlock) DWrap(header string, key []byte, extraPad int) (string, erro
 
 	clearKeyData := make([]byte, 2+len(key)+len(pad))
 
-	if len(key)*8 <= math.MaxUint16 {
-		if len(key)*8 > math.MaxUint16 {
-			return "", errors.New("key length too large to encode as uint16")
-		}
-		binary.BigEndian.PutUint16(clearKeyData[:2], uint16(len(key)*8))
-	} else {
-		return "", fmt.Errorf("key length exceeds uint16 limit")
+	size, err := safecast.ToUint16(len(key) * 8)
+	if err != nil {
+		return "", errors.New("key length too large to encode as uint16")
 	}
+	binary.BigEndian.PutUint16(clearKeyData[:2], size)
+
 	copy(clearKeyData[2:], key)
 	copy(clearKeyData[2+len(key):], pad)
 
