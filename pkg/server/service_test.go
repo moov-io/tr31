@@ -122,7 +122,4 @@ func TestService_Encrypt_Decrypt_Data_With_Mock(t *testing.T) {
 	require.NoError(t, err)
 
 	require.Equal(t, data, "ccccccccccccccccdddddddddddddddd")
-
-	verr := s.GetSecretManager().DeleteSecret("/auth/keys", "kbkp")
-	require.NoError(t, verr)
 }

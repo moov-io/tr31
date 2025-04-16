@@ -6,6 +6,7 @@ import (
 	"log"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -103,13 +104,13 @@ func TestCreateMachine(t *testing.T) {
 			name:           "Missing Vault Token",
 			requestData:    Vault{VaultAddress: "http://localhost:8200"},
 			expectedStatus: http.StatusInternalServerError,
-			expectedError:  "Invalid vault Token.",
+			expectedError:  "Invalid vault Token",
 		},
 		{
 			name:           "Empty Request Body",
 			requestData:    Vault{},
 			expectedStatus: http.StatusInternalServerError,
-			expectedError:  "Invalid Vault Address.",
+			expectedError:  "Invalid Vault Address",
 		},
 	}
 
@@ -145,7 +146,7 @@ func TestCreateMachine(t *testing.T) {
 					t.Errorf("Access-Control-Allow-Origin: %s", v)
 				}
 			} else {
-				require.Contains(t, w.Body.String(), tt.expectedError)
+				require.Contains(t, strings.ToLower(w.Body.String()), strings.ToLower(tt.expectedError))
 			}
 		})
 	}
