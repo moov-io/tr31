@@ -777,7 +777,7 @@ func (kb *KeyBlock) BWrap(header string, key []byte, extraPad int) (string, erro
 	clearKeyData := make([]byte, 2+len(key)+len(pad))
 
 	if len(key)*8 <= math.MaxUint16 {
-		if len(key) > (1<<13)-1 { // Max value for uint16 after multiplication by 8
+		if len(key)*8 > math.MaxUint16 {
 			return "", errors.New("key length too large to encode as uint16")
 		}
 		binary.BigEndian.PutUint16(clearKeyData[:2], uint16(len(key)*8))
@@ -1020,7 +1020,7 @@ func (kb *KeyBlock) CWrap(header string, key []byte, extraPad int) (string, erro
 	clearKeyData := make([]byte, 2+len(key)+len(pad))
 
 	if len(key)*8 <= math.MaxUint16 {
-		if len(key) > (1<<13)-1 { // Max value for uint16 after multiplication by 8
+		if len(key)*8 > math.MaxUint16 {
 			return "", errors.New("key length too large to encode as uint16")
 		}
 		binary.BigEndian.PutUint16(clearKeyData[:2], uint16(len(key)*8))
@@ -1143,7 +1143,7 @@ func (kb *KeyBlock) DWrap(header string, key []byte, extraPad int) (string, erro
 	clearKeyData := make([]byte, 2+len(key)+len(pad))
 
 	if len(key)*8 <= math.MaxUint16 {
-		if len(key) > (1<<13)-1 { // Max value for uint16 after multiplication by 8
+		if len(key)*8 > math.MaxUint16 {
 			return "", errors.New("key length too large to encode as uint16")
 		}
 		binary.BigEndian.PutUint16(clearKeyData[:2], uint16(len(key)*8))
