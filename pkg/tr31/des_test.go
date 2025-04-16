@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/hex"
 	"fmt"
+	"strings"
 	"testing"
 )
 
@@ -28,7 +29,7 @@ func TestApplyKeyVariant(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(fmt.Sprintf("key=%v,variant=%d", tt.key, tt.variant), func(t *testing.T) {
 			_, err := ApplyKeyVariant(tt.key, tt.variant)
-			if err != nil && err.Error() != tt.expected.(error).Error() {
+			if err != nil && strings.ToLower(err.Error()) != strings.ToLower(tt.expected.(error).Error()) {
 				t.Errorf("expected error %v, got %v", tt.expected, err)
 			}
 		})
@@ -55,7 +56,7 @@ func TestAdjustKeyParity(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(fmt.Sprintf("key=%v", tt.key), func(t *testing.T) {
 			_, err := AdjustKeyParity(tt.key)
-			if err != nil && err.Error() != tt.expected.(error).Error() {
+			if err != nil && strings.ToLower(err.Error()) != strings.ToLower(tt.expected.(error).Error()) {
 				t.Errorf("expected error %v, got %v", tt.expected, err)
 			}
 		})

@@ -890,17 +890,27 @@ func (kb *KeyBlock) bGenerateMac(kbak []byte, header string, keyData []byte) ([]
 
 	return mac, nil
 }
+
 func shiftLeft1(inBytes []byte) []byte {
-	// Shift the byte array left by 1 bit
-	result := make([]byte, len(inBytes))
-	copy(result, inBytes)
-	result[0] = result[0] & 0b01111111
-	intIn := bytesToInt(result) << 1
-	return intToBytes(int(intIn), len(inBytes))
+	n := len(inBytes)
+	if n == 0 {
+		return nil
+	}
+	result := make([]byte, n)
+	carry := byte(0)
+	for i := n - 1; i >= 0; i-- {
+		b := inBytes[i]
+		result[i] = (b << 1) | carry
+		carry = (b & 0x80) >> 7 // Save the MSB as carry for next byte
+	}
+	return result
 }
 
 // _derive_des_cmac_subkey derives two subkeys (k1, k2) from a DES key
 func (kb *KeyBlock) deriveDesCmacSubkey(key []byte) ([]byte, []byte, error) {
+	if len(key) == 0 {
+		return nil, nil, fmt.Errorf("input slice cannot be empty")
+	}
 	// Define the constant for the shifting operation
 	r64 := []byte{0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x1B}
 

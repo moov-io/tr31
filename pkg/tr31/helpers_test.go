@@ -5,13 +5,23 @@ import (
 	"testing"
 )
 
+// func urandom(tb testing.TB, length int) []byte {
+// 	tb.Helper()
+
+//		pad := make([]byte, length)
+//		_, err := rand.Read(pad)
+//		if err != nil {
+//			tb.Fatal(err)
+//		}
+//		return pad
+//	}
 func urandom(tb testing.TB, length int) []byte {
 	tb.Helper()
 
-	pad := make([]byte, length)
-	_, err := rand.Read(pad)
+	buf := make([]byte, length)
+	_, err := rand.Read(buf)
 	if err != nil {
-		tb.Fatal(err)
+		tb.Fatalf("failed to generate random bytes: %v", err)
 	}
-	return pad
+	return buf
 }
