@@ -60,8 +60,6 @@ func bitsOn(b byte) int {
 }
 
 // Encrypt3DESCBC encrypts plaintext using 3DES in CBC mode with the provided 16-byte key.
-//
-//gosec:disable G502 -- Legacy system requires 3DES
 func EncryptTDESCBC(key, iv, data []byte) ([]byte, error) {
 	if len(key) != 8 && len(key) != 16 && len(key) != 24 {
 		return nil, fmt.Errorf("key length must be 8, 16, 24 bytes")

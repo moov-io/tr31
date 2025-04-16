@@ -152,7 +152,12 @@ func intToBytes(i int, length int) []byte {
 		// Write the integer into the last `length` bytes of the slice
 		for j := 0; j < length; j++ {
 			if i >= 0 && j >= 0 && j <= 7 {
-				b[len(b)-length+j] = byte(uint64(i) >> (8 * (7 - j)))
+				if i < 0 || uint64(i) > (1<<56)-1 { // Adjust range as needed
+					return nil
+				}
+				for j := 0; j < length; j++ {
+					b[len(b)-length+j] = byte(uint64(i) >> (8 * (7 - j)))
+				}
 			} else {
 				return nil
 			}
