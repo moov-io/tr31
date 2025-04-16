@@ -8,6 +8,8 @@ import (
 	"math"
 	"regexp"
 	"unicode"
+
+	"github.com/ccoveille/go-safecast"
 )
 
 /*
@@ -144,7 +146,11 @@ func intToBytes(i int, length int) []byte {
 	if length >= 8 {
 		// Directly write the integer into the last 8 bytes of the slice
 		if i >= 0 {
-			binary.BigEndian.PutUint64(b[len(b)-8:], uint64(i))
+			val, err := safecast.ToUint64(i)
+			if err != nil {
+				return nil
+			}
+			binary.BigEndian.PutUint64(b[len(b)-8:], uint64(val))
 		} else {
 			return nil
 		}

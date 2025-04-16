@@ -7,6 +7,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/ccoveille/go-safecast"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -222,12 +223,20 @@ func makeLengthPrefix(dataLen int, blockSize int) []byte {
 		if len(lengthBytes) < 4 {
 			return nil
 		}
-		binary.BigEndian.PutUint32(lengthBytes, uint32(dataLen*8))
+		size, err := safecast.ToUint32(dataLen * 8)
+		if err != nil {
+			return nil
+		}
+		binary.BigEndian.PutUint32(lengthBytes, uint32(size))
 	} else {
 		if len(lengthBytes) < 8 {
 			return nil
 		}
-		binary.BigEndian.PutUint64(lengthBytes, uint64(dataLen*8))
+		size, err := safecast.ToUint64(dataLen * 8)
+		if err != nil {
+			return nil
+		}
+		binary.BigEndian.PutUint64(lengthBytes, uint64(size))
 	}
 	return lengthBytes
 }
