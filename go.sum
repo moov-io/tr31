@@ -71,6 +71,8 @@ github.com/mitchellh/mapstructure v1.5.0 h1:jeMsZIYE/09sWLaz43PL7Gy6RuMjD2eJVyua
 github.com/mitchellh/mapstructure v1.5.0/go.mod h1:bFUtVrKA4DC2yAKiSyO/QUcy7e+RRV2QTWOzhPopBRo=
 github.com/moov-io/base v0.54.2 h1:afRCO5SLsxpKkbzNV187u9CQ61ku3BICWSlHMCaWpCA=
 github.com/moov-io/base v0.54.2/go.mod h1:m1cuKJ5kYxQl97xfYU/pF4em+aMOuGA+TMHuQL17KYc=
+github.com/moov-io/base v0.54.3 h1:icczGx5nYeUIpjvdjW86pulDecU/yM8NMrraM81gems=
+github.com/moov-io/base v0.54.3/go.mod h1:m1cuKJ5kYxQl97xfYU/pF4em+aMOuGA+TMHuQL17KYc=
 github.com/munnerz/goautoneg v0.0.0-20191010083416-a7dc8b61c822 h1:C3w9PqII01/Oq1c1nUAm88MOHcQC9l5mIlSMApZMrHA=
 github.com/munnerz/goautoneg v0.0.0-20191010083416-a7dc8b61c822/go.mod h1:+n7T8mK8HuQTcFwEeznm/DIxMOiR9yIdICNftLE1DvQ=
 github.com/pmezard/go-difflib v1.0.1-0.20181226105442-5d4384ee4fb2 h1:Jamvg5psRIccs7FGNTlIRMkT8wgtp5eCXdBlqhYGL6U=
