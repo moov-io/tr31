@@ -130,46 +130,6 @@ func bytesToInt(b []byte) int64 {
 	}
 	return int64(val)
 }
-
-// func intToBytes(i int, length int) []byte {
-// 	if length <= 0 {
-// 		return nil
-// 	}
-// 	if length > 8 {
-// 		return nil
-// 	}
-
-// 	b := make([]byte, length)
-
-// 	if length >= 8 {
-// 		// Directly write the integer into the last 8 bytes of the slice
-// 		if i >= 0 {
-// 			val, err := safecast.ToUint64(i)
-// 			if err != nil {
-// 				return nil
-// 			}
-// 			binary.BigEndian.PutUint64(b[len(b)-8:], uint64(val))
-// 		} else {
-// 			return nil
-// 		}
-// 	} else {
-// 		// Write the integer into the last `length` bytes of the slice
-// 		for j := 0; j < length; j++ {
-// 			if i >= 0 && j >= 0 && j <= 7 {
-// 				if i < 0 || uint64(i) > (1<<56)-1 { // Adjust range as needed
-// 					return nil
-// 				}
-// 				for j := 0; j < length; j++ {
-// 					b[len(b)-length+j] = byte(uint64(i) >> (8 * (7 - j)))
-// 				}
-// 			} else {
-// 				return nil
-// 			}
-// 		}
-// 	}
-
-//		return b
-//	}
 func intToBytes(i int, length int) []byte {
 	if length <= 0 || length > 8 {
 		return nil
