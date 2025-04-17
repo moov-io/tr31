@@ -58,9 +58,6 @@ func NewVaultClient(v Vault) (*VaultClient, error) {
 	return &VaultClient{vClient}, nil
 }
 
-// Vault Process Reference
-// var vaultCmd *exec.Cmd
-
 // createVaultClient initializes and returns a new Vault API client.
 //
 // Parameters:
@@ -227,10 +224,6 @@ func (v *VaultClient) ListSecrets(path string) ([]string, *VaultError) {
 	if !ok {
 		return nil, &VaultError{Message: fmt.Sprintf(VaultErrorReadResult, vErr)}
 	}
-	// values := make([]interface{}, 0, len(data))
-	// for _, value := range data {
-	// 	values = append(values, value) // Appending but not using the result
-	// }
 	stringValues := []string{}
 	for _, value := range data {
 		if str, ok := value.(string); ok {
