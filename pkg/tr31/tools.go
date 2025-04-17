@@ -4,6 +4,8 @@ import (
 	"crypto/subtle"
 	"encoding/binary"
 	"fmt"
+	"log"
+	"math"
 	"regexp"
 	"unicode"
 )
@@ -21,7 +23,7 @@ https://stackoverflow.com/a/29409299
 	A byte slice that is the result of XOR'ing data with the key.
 */
 func xor(data, key []byte) []byte {
-	if key == nil || len(key) == 0 {
+	if len(key) == 0 {
 		return nil
 	}
 	result := make([]byte, len(data))
@@ -122,26 +124,35 @@ func bytesToInt(b []byte) int64 {
 	if len(b) < 8 {
 		return 0 // or handle this case as per your requirements
 	}
-	return int64(binary.BigEndian.Uint64(b))
+	val := binary.BigEndian.Uint64(b)
+	if val > uint64(math.MaxInt64) {
+		return 0
+	}
+	return int64(val)
 }
-
 func intToBytes(i int, length int) []byte {
+	if length <= 0 || length > 8 {
+		return nil
+	}
+	// Only support non-negative values that fit in the given length
+	if i < 0 || i > (1<<(8*length))-1 {
+		return nil
+	}
 	b := make([]byte, length)
-	if length >= 8 {
-		// Use BigEndian to put the integer into the byte slice
-		binary.BigEndian.PutUint64(b[len(b)-8:], uint64(i))
-	} else {
-		// If length is less than 8, handle smaller slices
-		temp := make([]byte, 8)
-		binary.BigEndian.PutUint64(temp, uint64(i))
-		copy(b[len(b)-length:], temp[len(temp)-length:])
+	val := uint64(i)
+	// Write the least significant 'length' bytes of val into b
+	for j := length - 1; j >= 0; j-- {
+		b[j] = byte(val & 0xFF)
+		val >>= 8
 	}
 	return b
 }
-
 func hexToInt(hexStr string) int {
 	var result int
-	fmt.Sscanf(hexStr, "%X", &result)
+	_, err := fmt.Sscanf(hexStr, "%X", &result)
+	if err != nil {
+		log.Printf("Failed to parse hex string: %v", err)
+	}
 	return result
 }
 

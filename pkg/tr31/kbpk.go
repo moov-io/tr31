@@ -4,6 +4,7 @@ import (
 	"crypto/rand"
 	"errors"
 	"fmt"
+	"strconv"
 )
 
 // KBPKOptions defines the options for generating a KBPK
@@ -91,9 +92,12 @@ func adjustParityTDES(key []byte) {
 	for i := range key {
 		// Count the number of 1 bits
 		bits := 0
-		for j := 0; j < 7; j++ {
-			if key[i]&(1<<uint(j)) != 0 {
-				bits++
+		for _, b := range key {
+			bits := 0
+			for j := uint(0); j < 8; j++ { // Declare j as uint
+				if b&(1<<j) != 0 { // No conversion needed
+					bits++
+				}
 			}
 		}
 		// Set or clear the parity bit to ensure odd parity
@@ -109,7 +113,7 @@ func hasOddParityTDES(key []byte) bool {
 	for _, b := range key {
 		bits := 0
 		for j := 0; j < 8; j++ {
-			if b&(1<<uint(j)) != 0 {
+			if j >= 0 && j < strconv.IntSize && b&(1<<uint(j)) != 0 {
 				bits++
 			}
 		}

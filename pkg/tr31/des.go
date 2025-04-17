@@ -2,18 +2,19 @@ package tr31
 
 import (
 	"crypto/cipher"
-	"crypto/des"
+	"crypto/des" //nolint:gosec
+	"errors"
 	"fmt"
 )
 
 // ApplyKeyVariant applies the variant to the most significant byte of each DES key pair.
 func ApplyKeyVariant(key []byte, variant int) ([]byte, error) {
 	if len(key) != 8 && len(key) != 16 && len(key) != 24 {
-		return nil, fmt.Errorf("Key must be a single, double or triple DES key")
+		return nil, errors.New("key must be a single, double or triple DES key")
 	}
 
 	if variant < 0 || variant > 31 {
-		return nil, fmt.Errorf("Variant must be in the range of 0 to 31")
+		return nil, errors.New("variant must be in the range of 0 to 31")
 	}
 
 	mask := make([]byte, len(key))
@@ -28,7 +29,7 @@ func ApplyKeyVariant(key []byte, variant int) ([]byte, error) {
 // AdjustKeyParity adjusts the DES key parity to ensure odd parity.
 func AdjustKeyParity(key []byte) ([]byte, error) {
 	if len(key) != 8 && len(key) != 16 && len(key) != 24 {
-		return nil, fmt.Errorf("Key must be a single, double or triple DES key")
+		return nil, fmt.Errorf("key must be a single, double or triple DES key")
 	}
 
 	adjustedKey := make([]byte, len(key))
@@ -75,9 +76,8 @@ func EncryptTDESCBC(key, iv, data []byte) ([]byte, error) {
 		desKey = key
 	} else if len(key) == 8 {
 		desKey = append(desKey, key...)
-	} else {
 	}
-	block, err := des.NewTripleDESCipher(desKey)
+	block, err := des.NewTripleDESCipher(desKey) //nolint:gosec
 	if err != nil {
 		return nil, fmt.Errorf("failed to create 3DES cipher: %v", err)
 	}
@@ -109,7 +109,7 @@ func DecryptTDESCBC(key, iv, data []byte) ([]byte, error) {
 		desKey = append(desKey, key...)
 	}
 
-	block, err := des.NewTripleDESCipher(desKey)
+	block, err := des.NewTripleDESCipher(desKey) //nolint:gosec
 	if err != nil {
 		return nil, fmt.Errorf("failed to create 3DES cipher: %v", err)
 	}
@@ -136,7 +136,7 @@ func EncryptTDSECB(key, data []byte) ([]byte, error) {
 		return nil, fmt.Errorf("key length must be 16 bytes")
 	}
 	if len(data)%8 != 0 {
-		return nil, fmt.Errorf("Data length must be multiple of DES block size 8")
+		return nil, fmt.Errorf("data length must be multiple of DES block size 8")
 	}
 	// Create a 24-byte key for 3DES by appending the first 8 bytes of the key to itself.
 	desKey := append(key, key[:8]...)
@@ -145,7 +145,7 @@ func EncryptTDSECB(key, data []byte) ([]byte, error) {
 	} else if len(key) == 8 {
 		desKey = append(desKey, key...)
 	}
-	block, err := des.NewTripleDESCipher(desKey)
+	block, err := des.NewTripleDESCipher(desKey) //nolint:gosec
 	if err != nil {
 		return nil, err
 	}
@@ -165,7 +165,7 @@ func DecryptTDSECB(key, data []byte) ([]byte, error) {
 		return nil, fmt.Errorf("key length must be 16 bytes")
 	}
 	if len(data)%8 != 0 {
-		return nil, fmt.Errorf("Data length must be multiple of DES block size 8")
+		return nil, fmt.Errorf("data length must be multiple of DES block size 8")
 	}
 	desKey := append(key, key[:8]...)
 	if len(key) == 24 {
@@ -173,7 +173,7 @@ func DecryptTDSECB(key, data []byte) ([]byte, error) {
 	} else if len(key) == 8 {
 		desKey = append(desKey, key...)
 	}
-	block, err := des.NewTripleDESCipher(desKey)
+	block, err := des.NewTripleDESCipher(desKey) //nolint:gosec
 	if err != nil {
 		return nil, err
 	}

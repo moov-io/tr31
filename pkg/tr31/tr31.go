@@ -9,9 +9,12 @@ import (
 	"encoding/hex"
 	"errors"
 	"fmt"
+	"math"
 	"math/big"
 	"strconv"
 	"strings"
+
+	"github.com/ccoveille/go-safecast"
 )
 
 // TR-31 version identifiers
@@ -38,50 +41,50 @@ const (
 
 // Error message constants for various validation and processing errors
 const (
-	ErrKeyNotFound                 string = "Key not found"
-	ErrVersionID                   string = "Version ID (%s) is not supported."
-	ErrNoKBPK                      string = "KB is not supported"
-	ErrUnsupportedKBKP             string = "Unsupported KBPK length: %d"
-	ErrKBPKEmpty                   string = "Key Block Protection Key (KBPK) cannot be empty."
-	BlockErrorIdMalformed          string = "Block ID (%v) is malformed."
-	BlockErrorIdInvalid            string = "Block ID (%s) is invalid. Expecting 2 alphanumeric characters."
-	BlockErrorDataInvalid          string = "Block %s data is invalid. Expecting ASCII printable characters. Data: '%s'"
-	BlockErrorDataInvalidLen       string = "Block %s data is malformed. Received %d/%d. Block data: '%s'"
-	BlockErrorLengthLong           string = "Block %s length is too long."
-	BlockErrorLenMalformed         string = "Block %s length (%s) is malformed. Expecting 2 hexchars."
-	BlockErrorLenInvalid           string = "Block %s length (%s) is malformed. Expecting %d hexchars."
-	BlockErrorLenHasNoID           string = "Block %s length does not include block ID and length."
-	BlockErrorLenLenMalformed      string = "Block %s length of length (%s) is malformed. Expecting 2 hexchars."
-	BlockErrorLengthParse          string = "Failed to parse length of block length (%s) for block %s: %v"
-	BlockErrorLengthZero           string = "Block %s length of length must not be 0."
-	BlockErrorHeaderLen            string = "Key block header length is malformed. Expecting 4 digits."
-	BlockErrorHeaderLenMalformed   string = "Key block header length (%s) is malformed. Expecting 4 digits."
-	BlockErrorHeaderLenNoMatched   string = "Key block header length (%d) doesn't match input data length (%d)."
-	BlockErrorHeaderLenMismatched  string = "Key block length (%d) must be multiple of %d for key block version %s."
-	BlockErrorVersion              string = "Key block version ID (%s) is not supported"
-	BlockErrorMacEncode            string = "Key block MAC must be valid hexchars. MAC: '%s'"
-	BlockErrorEncKeyEncode         string = "Encrypted key must be valid hexchars."
-	BlockErrorMacNotMatched        string = "Key block MAC is not matched."
-	BlockErrorMacNotMalformed      string = "Key block MAC is malformed. Received %d bytes MAC. Expecting %d bytes for key block version %s. MAC: '%s'"
-	BlockErrorMacLenShort          string = "MacData is too short."
-	BlockErrorKBKPLenNotMatched    string = "KBPK length (%d) must be Double or Triple DES for key block version %s."
-	BlockErrorKBKPLenNotMatchedDES string = "KBPK length (%d) must be Single, Double or Triple DES for key block version %s."
-	BlockErrorKBKPLenNotMatchedAES string = "KBPK length (%d) must be AES-128, AES-192 or AES-256 for key block version D."
-	BlockErrorEncKeyMalformed      string = "Encrypted key is malformed"
-	BlockErrorDecKeyInvalid        string = "Decrypted key is invalid."
-	BlockErrorDecKeyMalformed      string = "Decrypted key is malformed."
-	BlockErrorExtraPadNegative     string = "ExtraPad cannot be negative."
-	HeaderErrLoad                  string = "Failed to load header: %v"
+	ErrKeyNotFound                 string = "key not found"
+	ErrVersionID                   string = "version ID (%s) is not supported"
+	ErrNoKBPK                      string = "kB is not supported"
+	ErrUnsupportedKBKP             string = "unsupported KBPK length: %d"
+	ErrKBPKEmpty                   string = "key Block Protection Key (KBPK) cannot be empty"
+	BlockErrorIdMalformed          string = "block ID (%v) is malformed"
+	BlockErrorIdInvalid            string = "block ID (%s) is invalid. Expecting 2 alphanumeric characters"
+	BlockErrorDataInvalid          string = "block %s data is invalid. Expecting ASCII printable characters. Data: '%s'"
+	BlockErrorDataInvalidLen       string = "block %s data is malformed. Received %d/%d. Block data: '%s'"
+	BlockErrorLengthLong           string = "block %s length is too long."
+	BlockErrorLenMalformed         string = "block %s length (%s) is malformed. Expecting 2 hexchars"
+	BlockErrorLenInvalid           string = "block %s length (%s) is malformed. Expecting %d hexchars"
+	BlockErrorLenHasNoID           string = "block %s length does not include block ID and length"
+	BlockErrorLenLenMalformed      string = "block %s length of length (%s) is malformed. Expecting 2 hexchars"
+	BlockErrorLengthParse          string = "failed to parse block length of length (%s) for block %s: %v"
+	BlockErrorLengthZero           string = "block %s length of length must not be 0."
+	BlockErrorHeaderLen            string = "key block header length is malformed. Expecting 4 digits"
+	BlockErrorHeaderLenMalformed   string = "key block header length (%s) is malformed. Expecting 4 digits"
+	BlockErrorHeaderLenNoMatched   string = "key block header length (%d) doesn't match input data length (%d)"
+	BlockErrorHeaderLenMismatched  string = "key block length (%d) must be multiple of %d for key block version %s"
+	BlockErrorVersion              string = "key block version ID (%s) is not supported"
+	BlockErrorMacEncode            string = "key block MAC must be valid hexchars. MAC: '%s'"
+	BlockErrorEncKeyEncode         string = "encrypted key must be valid hexchars"
+	BlockErrorMacNotMatched        string = "key block MAC is not matched"
+	BlockErrorMacNotMalformed      string = "key block MAC is malformed. Received %d bytes MAC. Expecting %d bytes for key block version %s. MAC: '%s'"
+	BlockErrorMacLenShort          string = "macData is too short"
+	BlockErrorKBKPLenNotMatched    string = "KBPK length (%d) must be Double or Triple DES for key block version %s"
+	BlockErrorKBKPLenNotMatchedDES string = "KBPK length (%d) must be Single, Double or Triple DES for key block version %s"
+	BlockErrorKBKPLenNotMatchedAES string = "KBPK length (%d) must be AES-128, AES-192 or AES-256 for key block version D"
+	BlockErrorEncKeyMalformed      string = "encrypted key is malformed"
+	BlockErrorDecKeyInvalid        string = "decrypted key is invalid"
+	BlockErrorDecKeyMalformed      string = "decrypted key is malformed"
+	BlockErrorExtraPadNegative     string = "extraPad cannot be negative"
+	HeaderErrLoad                  string = "failed to load header: %v"
 	HeaderErrEncoding              string = "Header must be ASCII alphanumeric. Header: '%s'"
 	HeaderErrLenLimit              string = "Header length (%d) must be >=16. Header: '%s'"
-	HeaderErrKeyUsage              string = "Key usage (%s) is invalid."
-	HeaderErrAlgorithm             string = "Algorithm (%s) is invalid."
-	HeaderErrModeOfUse             string = "Mode of use (%s) is invalid."
-	HeaderErrVersionNumber         string = "Version number (%s) is invalid."
-	HeaderErrExportability         string = "Exportability (%s) is invalid."
-	HeaderErrBlockLenMaxOver       string = "Total key block length (%d) exceeds limit of 9999."
-	HeaderErrNumberOfBlock         string = "Number of blocks (%s) is invalid. Expecting 2 digits."
-	HeaderErrOutOfBounds           string = "HeaderLen is out of bounds."
+	HeaderErrKeyUsage              string = "key usage (%s) is invalid"
+	HeaderErrAlgorithm             string = "Algorithm (%s) is invalid"
+	HeaderErrModeOfUse             string = "Mode of use (%s) is invalid"
+	HeaderErrVersionNumber         string = "Version number (%s) is invalid"
+	HeaderErrExportability         string = "Exportability (%s) is invalid"
+	HeaderErrBlockLenMaxOver       string = "Total key block length (%d) exceeds limit of 9999"
+	HeaderErrNumberOfBlock         string = "Number of blocks (%s) is invalid. Expecting 2 digits"
+	HeaderErrOutOfBounds           string = "HeaderLen is out of bounds"
 )
 
 // HeaderError is a custom error type that indicates an error in processing TR-31 header data.
@@ -607,7 +610,7 @@ func (kb *KeyBlock) GetHeader() *Header {
 func (kb *KeyBlock) Wrap(key []byte, maskedKeyLen *int) (string, error) {
 	// Check if header version is supported
 	if kb == nil {
-		return "", fmt.Errorf(ErrNoKBPK)
+		return "", errors.New(ErrNoKBPK)
 	}
 	wrapFunc, exists := _wrapDispatch[kb.header.VersionID]
 	if !exists {
@@ -636,12 +639,12 @@ func (kb *KeyBlock) Wrap(key []byte, maskedKeyLen *int) (string, error) {
 // Unwrap decrypts a key from a wrapped key block using the KeyBlock Protection Key (KBPK)
 func (kb *KeyBlock) Unwrap(keyBlock string) ([]byte, error) {
 	if kb == nil {
-		return nil, fmt.Errorf(ErrNoKBPK)
+		return nil, errors.New(ErrNoKBPK)
 	}
 	// Extract header from the key block
 	if len(keyBlock) < 5 {
 		return nil, &KeyBlockError{
-			Message: fmt.Sprintf(BlockErrorHeaderLen),
+			Message: BlockErrorHeaderLen,
 		}
 	}
 	headerLen, _ := kb.header.Load(keyBlock)
@@ -693,14 +696,10 @@ func (kb *KeyBlock) Unwrap(keyBlock string) ([]byte, error) {
 			// Extract encrypted key data from the key block
 			keyDataS := keyBlockBytes[headerLen:]
 			keyDataS = keyDataS[:len(keyDataS)-algoMacLen*2]
-			keyDataS_S := string(keyDataS)
-			if len(keyDataS_S) > 0 {
-
-			}
 			keyData, err := hex.DecodeString(string(keyDataS))
 			if err != nil {
 				return nil, &KeyBlockError{
-					Message: fmt.Sprintf(BlockErrorEncKeyEncode),
+					Message: BlockErrorEncKeyEncode,
 				}
 			}
 
@@ -722,7 +721,7 @@ func (kb *KeyBlock) Unwrap(keyBlock string) ([]byte, error) {
 		}
 	} else {
 		return nil, &KeyBlockError{
-			Message: fmt.Sprintf(HeaderErrOutOfBounds),
+			Message: HeaderErrOutOfBounds,
 		}
 	}
 }
@@ -753,7 +752,7 @@ func (kb *KeyBlock) BWrap(header string, key []byte, extraPad int) (string, erro
 	// Ensure KBPK length is valid
 	if extraPad < 0 {
 		return "", &KeyBlockError{
-			Message: fmt.Sprintf(BlockErrorExtraPadNegative),
+			Message: BlockErrorExtraPadNegative,
 		}
 	}
 	if len(kb.kbpk) != 16 && len(kb.kbpk) != 24 {
@@ -777,7 +776,16 @@ func (kb *KeyBlock) BWrap(header string, key []byte, extraPad int) (string, erro
 
 	// Clear key data
 	clearKeyData := make([]byte, 2+len(key)+len(pad))
-	binary.BigEndian.PutUint16(clearKeyData[:2], uint16(len(key)*8))
+
+	if len(key)*8 <= math.MaxUint16 {
+		size, err := safecast.ToUint16(len(key) * 8)
+		if err != nil {
+			return "", errors.New("key length too large to encode as uint16")
+		}
+		binary.BigEndian.PutUint16(clearKeyData[:2], size)
+	} else {
+		return "", fmt.Errorf("key length exceeds uint16 limit")
+	}
 	copy(clearKeyData[2:], key)
 	copy(clearKeyData[2+len(key):], pad)
 
@@ -871,7 +879,7 @@ func (kb *KeyBlock) bGenerateMac(kbak []byte, header string, keyData []byte) ([]
 	if len(macData) >= 8 {
 		macData = append(macData[:len(macData)-8], xor(macData[len(macData)-8:], km1)...)
 	} else {
-		return nil, &KeyBlockError{Message: fmt.Sprintf(BlockErrorMacLenShort)}
+		return nil, &KeyBlockError{Message: BlockErrorMacLenShort}
 	}
 
 	// Generate the CBC-MAC
@@ -882,17 +890,27 @@ func (kb *KeyBlock) bGenerateMac(kbak []byte, header string, keyData []byte) ([]
 
 	return mac, nil
 }
+
 func shiftLeft1(inBytes []byte) []byte {
-	// Shift the byte array left by 1 bit
-	result := make([]byte, len(inBytes))
-	copy(result, inBytes)
-	result[0] = result[0] & 0b01111111
-	intIn := bytesToInt(result) << 1
-	return intToBytes(int(intIn), len(inBytes))
+	n := len(inBytes)
+	if n == 0 {
+		return nil
+	}
+	result := make([]byte, n)
+	carry := byte(0)
+	for i := n - 1; i >= 0; i-- {
+		b := inBytes[i]
+		result[i] = (b << 1) | carry
+		carry = (b & 0x80) >> 7 // Save the MSB as carry for next byte
+	}
+	return result
 }
 
 // _derive_des_cmac_subkey derives two subkeys (k1, k2) from a DES key
 func (kb *KeyBlock) deriveDesCmacSubkey(key []byte) ([]byte, []byte, error) {
+	if len(key) == 0 {
+		return nil, nil, fmt.Errorf("input slice cannot be empty")
+	}
 	// Define the constant for the shifting operation
 	r64 := []byte{0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x1B}
 
@@ -933,7 +951,7 @@ func (kb *KeyBlock) BUnwrap(header string, keyData []byte, receivedMac []byte) (
 	// Ensure the key data is valid
 	if len(keyData) < 8 || len(keyData)%8 != 0 {
 		return nil, &KeyBlockError{
-			Message: fmt.Sprintf(BlockErrorEncKeyMalformed),
+			Message: BlockErrorEncKeyMalformed,
 		}
 	}
 
@@ -973,7 +991,7 @@ func (kb *KeyBlock) BUnwrap(header string, keyData []byte, receivedMac []byte) (
 	// Convert to bytes
 	keyLength = keyLength / 8
 	if len(clearKeyData) < int(keyLength)+2 {
-		return nil, &KeyBlockError{fmt.Sprintf(BlockErrorDecKeyMalformed)}
+		return nil, &KeyBlockError{BlockErrorDecKeyMalformed}
 	}
 	key := clearKeyData[2 : keyLength+2]
 	if len(key) != int(keyLength) {
@@ -1012,7 +1030,16 @@ func (kb *KeyBlock) CWrap(header string, key []byte, extraPad int) (string, erro
 
 	// Clear key data
 	clearKeyData := make([]byte, 2+len(key)+len(pad))
-	binary.BigEndian.PutUint16(clearKeyData[:2], uint16(len(key)*8))
+
+	if len(key)*8 <= math.MaxUint16 {
+		size, err := safecast.ToUint16(len(key) * 8)
+		if err != nil {
+			return "", errors.New("key length too large to encode as uint16")
+		}
+		binary.BigEndian.PutUint16(clearKeyData[:2], size)
+	} else {
+		return "", fmt.Errorf("key length exceeds uint16 limit")
+	}
 	copy(clearKeyData[2:], key)
 	copy(clearKeyData[2+len(key):], pad)
 
@@ -1064,7 +1091,7 @@ func (kb *KeyBlock) CUnwrap(header string, keyData []byte, receivedMAC []byte) (
 
 	// Validate key data length
 	if len(keyData) < 8 || len(keyData)%8 != 0 {
-		return nil, &KeyBlockError{fmt.Sprintf(BlockErrorEncKeyMalformed)}
+		return nil, &KeyBlockError{BlockErrorEncKeyMalformed}
 	}
 
 	// Derive Key Block Encryption and Authentication Keys
@@ -1073,7 +1100,7 @@ func (kb *KeyBlock) CUnwrap(header string, keyData []byte, receivedMAC []byte) (
 	// Validate MAC
 	mac, _ := kb.cGenerateMAC(kbak, header, keyData)
 	if !compareMAC(mac, receivedMAC) {
-		return nil, &KeyBlockError{fmt.Sprintf(BlockErrorMacNotMatched)}
+		return nil, &KeyBlockError{BlockErrorMacNotMatched}
 	}
 
 	// Decrypt key data
@@ -1087,16 +1114,16 @@ func (kb *KeyBlock) CUnwrap(header string, keyData []byte, receivedMAC []byte) (
 
 	// This library does not support keys not measured in whole bytes
 	if keyLength%8 != 0 {
-		return nil, &KeyBlockError{fmt.Sprintf(BlockErrorDecKeyInvalid)}
+		return nil, &KeyBlockError{BlockErrorDecKeyInvalid}
 	}
 
 	keyLength = keyLength / 8
 	if len(clearKeyData) < int(keyLength)+2 {
-		return nil, &KeyBlockError{fmt.Sprintf(BlockErrorDecKeyMalformed)}
+		return nil, &KeyBlockError{BlockErrorDecKeyMalformed}
 	}
 	key := clearKeyData[2 : keyLength+2]
 	if len(key) != int(keyLength) {
-		return nil, &KeyBlockError{fmt.Sprintf(BlockErrorDecKeyMalformed)}
+		return nil, &KeyBlockError{BlockErrorDecKeyMalformed}
 	}
 
 	return key, nil
@@ -1127,7 +1154,13 @@ func (kb *KeyBlock) DWrap(header string, key []byte, extraPad int) (string, erro
 	}
 
 	clearKeyData := make([]byte, 2+len(key)+len(pad))
-	binary.BigEndian.PutUint16(clearKeyData[:2], uint16(len(key)*8))
+
+	size, err := safecast.ToUint16(len(key) * 8)
+	if err != nil {
+		return "", errors.New("key length too large to encode as uint16")
+	}
+	binary.BigEndian.PutUint16(clearKeyData[:2], size)
+
 	copy(clearKeyData[2:], key)
 	copy(clearKeyData[2+len(key):], pad)
 
@@ -1233,7 +1266,7 @@ func (kb *KeyBlock) dGenerateMAC(kbak []byte, header, keyData []byte) ([]byte, e
 	macData := append([]byte(header), keyData...)
 	// Check if the macData length is at least 16 bytes
 	if len(macData) < 16 {
-		return nil, fmt.Errorf(BlockErrorMacLenShort)
+		return nil, errors.New(BlockErrorMacLenShort)
 	}
 
 	last16 := macData[len(macData)-16:]
@@ -1304,7 +1337,7 @@ func (kb *KeyBlock) DUnwrap(header string, keyData, receivedMAC []byte) ([]byte,
 
 	// Check if key data length is valid
 	if len(keyData) < 16 || len(keyData)%16 != 0 {
-		return nil, &KeyBlockError{fmt.Sprintf(BlockErrorEncKeyMalformed)}
+		return nil, &KeyBlockError{BlockErrorEncKeyMalformed}
 	}
 
 	// Derive Key Block Encryption and Authentication Keys
@@ -1318,7 +1351,7 @@ func (kb *KeyBlock) DUnwrap(header string, keyData, receivedMAC []byte) ([]byte,
 	// Validate MAC
 	mac, _ := kb.dGenerateMAC(kbak, []byte(header), clearKeyData)
 	if !CompareByte(mac, receivedMAC) {
-		return nil, &KeyBlockError{fmt.Sprintf(BlockErrorMacNotMatched)}
+		return nil, &KeyBlockError{BlockErrorMacNotMatched}
 	}
 
 	// Extract key length from clear key data (2 byte key length in bits)
@@ -1326,19 +1359,19 @@ func (kb *KeyBlock) DUnwrap(header string, keyData, receivedMAC []byte) ([]byte,
 
 	// Check if the key length is a valid multiple of 8
 	if keyLength%8 != 0 {
-		return nil, &KeyBlockError{fmt.Sprintf(BlockErrorDecKeyInvalid)}
+		return nil, &KeyBlockError{BlockErrorDecKeyInvalid}
 	}
 
 	// Convert key length from bits to bytes
 	keyLength = keyLength / 8
 	if len(clearKeyData) < int(keyLength)+2 {
-		return nil, &KeyBlockError{fmt.Sprintf(BlockErrorDecKeyMalformed)}
+		return nil, &KeyBlockError{BlockErrorDecKeyMalformed}
 	}
 	key := clearKeyData[2 : 2+keyLength]
 
 	// Check if key is malformed
 	if len(key) != int(keyLength) {
-		return nil, &KeyBlockError{fmt.Sprintf(BlockErrorDecKeyMalformed)}
+		return nil, &KeyBlockError{BlockErrorDecKeyMalformed}
 	}
 
 	return key, nil

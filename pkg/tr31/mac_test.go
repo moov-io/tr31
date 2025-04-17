@@ -4,9 +4,11 @@ import (
 	"bytes"
 	"encoding/binary"
 	"encoding/hex"
-	"github.com/stretchr/testify/assert"
 	"strings"
 	"testing"
+
+	"github.com/ccoveille/go-safecast"
+	"github.com/stretchr/testify/assert"
 )
 
 func Test_generate_cbc_mac_with_well_known(t *testing.T) {
@@ -218,9 +220,23 @@ func makeLengthPrefix(dataLen int, blockSize int) []byte {
 			lengthBytes[i] = byte(value >> (8 * (blockSize - 1 - i))) // Extract highest bytes first
 		}
 	} else if blockSize < 8 {
-		binary.BigEndian.PutUint32(lengthBytes, uint32(dataLen*8))
+		if len(lengthBytes) < 4 {
+			return nil
+		}
+		size, err := safecast.ToUint32(dataLen * 8)
+		if err != nil {
+			return nil
+		}
+		binary.BigEndian.PutUint32(lengthBytes, uint32(size))
 	} else {
-		binary.BigEndian.PutUint64(lengthBytes, uint64(dataLen*8))
+		if len(lengthBytes) < 8 {
+			return nil
+		}
+		size, err := safecast.ToUint64(dataLen * 8)
+		if err != nil {
+			return nil
+		}
+		binary.BigEndian.PutUint64(lengthBytes, uint64(size))
 	}
 	return lengthBytes
 }

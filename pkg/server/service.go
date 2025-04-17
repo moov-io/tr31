@@ -2,6 +2,7 @@ package server
 
 import (
 	"errors"
+	"log"
 	"sync"
 	"time"
 )
@@ -110,8 +111,14 @@ func (s *service) EncryptData(vaultAddr, vaultToken, keyPath, keyName, encKey st
 		timeout:    timeout,
 	}
 
-	s.GetSecretManager().SetAddress(vaultParams.VaultAddr)
-	s.GetSecretManager().SetToken(vaultParams.VaultToken)
+	err := s.GetSecretManager().SetAddress(vaultParams.VaultAddr)
+	if err != nil {
+		return "", err
+	}
+	err = s.GetSecretManager().SetToken(vaultParams.VaultToken)
+	if err != nil {
+		return "", err
+	}
 
 	keyStr, vErr := readKey(s.GetSecretManager(), vaultParams)
 	if vErr != nil {
@@ -134,12 +141,20 @@ func (s *service) DecryptData(vaultAddr, vaultToken, keyPath, keyName, keyBlock 
 		KeyName:    keyName,
 		timeout:    timeout,
 	}
-	s.GetSecretManager().SetAddress(vaultParams.VaultAddr)
-	s.GetSecretManager().SetToken(vaultParams.VaultToken)
-
-	keyStr, err := readKey(s.GetSecretManager(), vaultParams)
+	err := s.GetSecretManager().SetAddress(vaultParams.VaultAddr)
 	if err != nil {
+		log.Printf("Failed to set address: %v", err)
 		return "", err
+	}
+	err = s.GetSecretManager().SetToken(vaultParams.VaultToken)
+	if err != nil {
+		log.Printf("Failed to set address: %v", err)
+		return "", err
+	}
+
+	keyStr, rerr := readKey(s.GetSecretManager(), vaultParams)
+	if rerr != nil {
+		return "", rerr
 	}
 	params := UnifiedParams{
 		Kbkp:     keyStr,

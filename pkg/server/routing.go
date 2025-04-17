@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"log"
 	"net/http"
 	"reflect"
 	"strconv"
@@ -26,22 +27,22 @@ var (
 
 	errInvalidMachine = errors.New("invalid tr31 machine")
 
-	errInvalidVaultAddress = errors.New("Invalid Vault Address.")
-	errInvalidVaultToken   = errors.New("Invalid vault Token.")
-	errInvalidRequestId    = errors.New("Invalid Request ID.")
-	errInvalidKeyPath      = errors.New("Invalid Key Path.")
-	errInvalidKeyName      = errors.New("Invalid Key Name.")
-	errInvalidKeyBlock     = errors.New("Invalid Key Block.")
+	errInvalidVaultAddress = errors.New("invalid vault address")
+	errInvalidVaultToken   = errors.New("invalid vault token")
+	errInvalidRequestId    = errors.New("invalid request id")
+	errInvalidKeyPath      = errors.New("invalid key path")
+	errInvalidKeyName      = errors.New("invalid key name")
+	errInvalidKeyBlock     = errors.New("invalid key block")
 )
 
 // contextKey is a unique (and compariable) type we use
-// to store and retrieve additional information in the
-// go-kit context.
-var contextKey struct{}
-
 // saveCORSHeadersIntoContext saves CORS headers into the go-kit context.
 //
 // This is designed to be added as a ServerOption in our main http handler.
+type contextKeyType string
+
+const contextKey contextKeyType = "cors-origin"
+
 func saveCORSHeadersIntoContext() httptransport.RequestFunc {
 	return func(ctx context.Context, r *http.Request) context.Context {
 		origin := r.Header.Get("Origin")
@@ -96,7 +97,10 @@ func MakeHTTPHandler(s Service) http.Handler {
 	r.Methods("GET").Path("/ping").HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		moovhttp.SetAccessControlAllowHeaders(w, r.Header.Get("Origin"))
 		w.Header().Set("Content-Type", "text/plain")
-		w.Write([]byte("PONG"))
+		_, err := w.Write([]byte("PONG"))
+		if err != nil {
+			log.Printf("Failed to write response: %v", err)
+		}
 	})
 
 	// REST APIs
@@ -212,7 +216,10 @@ func encodeError(_ context.Context, err error, w http.ResponseWriter) {
 		"error": err.Error(),
 	})
 	if err != nil {
-		w.Write([]byte(fmt.Sprintf("problem rendering json: %v", err)))
+		_, writeErr := fmt.Fprintf(w, "problem rendering json: %v", err)
+		if writeErr != nil {
+			log.Printf("Failed to write response: %v", writeErr)
+		}
 	}
 }
 

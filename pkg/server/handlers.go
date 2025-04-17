@@ -143,7 +143,6 @@ func createMachineEndpoint(s Service) endpoint.Endpoint {
 
 type decryptDataRequest struct {
 	requestID  string
-	ik         string
 	vaultAddr  string
 	vaultToken string
 	keyPath    string

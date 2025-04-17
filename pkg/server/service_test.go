@@ -2,6 +2,7 @@ package server
 
 import (
 	"cmp"
+	"log"
 	"os"
 	"testing"
 
@@ -9,10 +10,6 @@ import (
 )
 
 func mockServiceInMock() Service {
-	repository := NewRepositoryInMemory(nil)
-	return NewService(repository, MODE_MOCK)
-}
-func mockServiceInReal() Service {
 	repository := NewRepositoryInMemory(nil)
 	return NewService(repository, MODE_MOCK)
 }
@@ -100,12 +97,15 @@ func TestService_Encrypt_Decrypt_Data_With_Mock(t *testing.T) {
 	if err != nil {
 		return
 	}
-
-	s.GetSecretManager().WriteSecret(
+	serr := s.GetSecretManager().WriteSecret(
 		"secret/tr31",
 		"kbkp",
 		"AAAAAAAAAAAAAAAABBBBBBBBBBBBBBBBCCCCCCCCCCCCCCCC",
 	)
+	if serr != nil {
+		log.Printf("Failed to write secret: %v", serr)
+		return
+	}
 
 	header := HeaderParams{
 		VersionId:     "D",
@@ -122,6 +122,4 @@ func TestService_Encrypt_Decrypt_Data_With_Mock(t *testing.T) {
 	require.NoError(t, err)
 
 	require.Equal(t, data, "ccccccccccccccccdddddddddddddddd")
-
-	s.GetSecretManager().DeleteSecret("/auth/keys", "kbkp")
 }

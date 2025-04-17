@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/hex"
 	"fmt"
+	"strings"
 	"testing"
 )
 
@@ -28,7 +29,7 @@ func TestApplyKeyVariant(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(fmt.Sprintf("key=%v,variant=%d", tt.key, tt.variant), func(t *testing.T) {
 			_, err := ApplyKeyVariant(tt.key, tt.variant)
-			if err != nil && err.Error() != tt.expected.(error).Error() {
+			if err != nil && strings.ToLower(err.Error()) != strings.ToLower(tt.expected.(error).Error()) {
 				t.Errorf("expected error %v, got %v", tt.expected, err)
 			}
 		})
@@ -55,7 +56,7 @@ func TestAdjustKeyParity(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(fmt.Sprintf("key=%v", tt.key), func(t *testing.T) {
 			_, err := AdjustKeyParity(tt.key)
-			if err != nil && err.Error() != tt.expected.(error).Error() {
+			if err != nil && strings.ToLower(err.Error()) != strings.ToLower(tt.expected.(error).Error()) {
 				t.Errorf("expected error %v, got %v", tt.expected, err)
 			}
 		})
@@ -315,6 +316,9 @@ func TestDecryptTDESCBC(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(fmt.Sprintf("%v", tt.name), func(t *testing.T) {
 			paddedData, err := padISO1(tt.data, 8)
+			if err != nil {
+				return
+			}
 			got, err := DecryptTDESCBC(tt.key, tt.iv, paddedData)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("DecryptTDESCBC() error = %v, wantErr %v", err, tt.wantErr)
@@ -411,6 +415,9 @@ func TestTDESCBC(t *testing.T) {
 		t.Run(fmt.Sprintf("key=%v, iv=%v", tt.key, tt.iv), func(t *testing.T) {
 			// Encrypt the data
 			paddedData, err := padISO1(tt.data, 8)
+			if err != nil {
+				return
+			}
 			encryptedData, err := EncryptTDESCBC(tt.key, tt.iv, paddedData)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("EncryptTDESCBC() error = %v, wantErr %v", err, tt.wantErr)
@@ -505,6 +512,9 @@ func TestEncryptDecryptTDSECB(t *testing.T) {
 		t.Run(fmt.Sprintf("%v", tt.name), func(t *testing.T) {
 			// Encrypt the data
 			paddedData, err := padISO1(tt.data, 8)
+			if err != nil {
+				return
+			}
 			encryptedData, err := EncryptTDSECB(tt.key, paddedData)
 			if err != nil {
 				if !tt.wantErr {

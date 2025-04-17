@@ -64,19 +64,6 @@ func (m *MockVaultClient) ListSecrets(path string) ([]string, *VaultError) {
 	if path == "" {
 		return nil, &VaultError{Message: "Invalid input: path and key are required"}
 	}
-
-	if data, exists := m.storage[path]; exists {
-		values := make([]interface{}, 0, len(data))
-		for _, value := range data {
-			values = append(values, value)
-		}
-		stringValues := []string{}
-		for _, value := range values {
-			if str, ok := value.(string); ok {
-				stringValues = append(stringValues, str)
-			}
-		}
-	}
 	return nil, &VaultError{Message: fmt.Sprintf("Values not found in path %s", path)}
 }
 
