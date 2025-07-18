@@ -20,6 +20,10 @@ A Go library implementing the TR-31 (ANSI X9.143) key block standard for secure 
 
 TR-31 is a method defined by ASC X9.143 for secure cryptographic key exchange between devices and systems, particularly in the financial industry. This format provides a structured way to protect sensitive key material while maintaining essential metadata about key usage, algorithms, and other attributes.
 
+## Project Status
+
+moov-io/tr31 is undergoing active development and testing within Moov. Please star the project and share feedback, bugs, questions, etc in the [`tr31` channel in slack](https://slack.moov.io/). If you find security vulnerabilities reach out to `oss@moov.io`.
+
 ## Features
 
 - Supports all major TR-31 key block versions:
@@ -74,7 +78,7 @@ func main() {
 		  KeyLength: 32,
 	  }
     kbpk, _ := GenerateKBPK(kbpkopts)
-    // Create a new KeyBlock 
+    // Create a new KeyBlock
     keyBlock, err := encryption.NewKeyBlock(kbpk, header)
     if err != nil {
         panic(err)
@@ -165,9 +169,9 @@ The library provides detailed error messages through two custom error types:
 - `HeaderError`: For issues related to TR-31 header processing
 - `KeyBlockError`: For issues related to key block processing
 
-## Benchmarks 
+## Benchmarks
 
-Unwraps a TR-31 formatted key block to retrieve the original key. 
+Unwraps a TR-31 formatted key block to retrieve the original key.
 
 ```bash
 Running tool: /opt/homebrew/bin/go test -benchmem -run=^$ -bench ^BenchmarkUnwrap_D_32_WithSetup$ github.com/moov-io/tr31/pkg/tr31
@@ -183,29 +187,29 @@ BenchmarkUnwrap_D_32_WithSetup-10    	  301116	      3619 ns/op	    8608 B/op	  
 
 tr31 is a tool for managing both 3DES and AES-derived unique keys per transaction (TR-31) key management.
 
-### USAGE 
+### USAGE
     tr31 [-v] [-algorithm] [-e] [-d]
 
 ### EXAMPLES
-    tr31 -v 
-      Print the version of tr31 (Example: v1.0.0) 
-    tr31 -e 
-      Encrypt a card data block using the TR-31 transaction key 
-    tr31 -d 
+    tr31 -v
+      Print the version of tr31 (Example: v1.0.0)
+    tr31 -e
+      Encrypt a card data block using the TR-31 transaction key
+    tr31 -d
       Decrypt a card data block using the TR-31 transaction key
 
 ### FLAGS
-    -vault_address string 
-      Vault address where the encryption/decryption key is stored 
-    -vault_token string 
-      Vault token for authentication 
-    -key_path string 
-      Path to the encryption/decryption key in the vault 
-    -key_name string 
-      Name of the encryption/decryption key in the vault 
-    -wrapper_key string 
+    -vault_address string
+      Vault address where the encryption/decryption key is stored
+    -vault_token string
+      Vault token for authentication
+    -key_path string
+      Path to the encryption/decryption key in the vault
+    -key_name string
+      Name of the encryption/decryption key in the vault
+    -wrapper_key string
       Symmetric key
-    -key_block string 
+    -key_block string
       Wrapped key block for decryption
 
 ### EXAMPLES
@@ -220,7 +224,7 @@ TR31 library provided web server. Please check following http endpoints
 | Method | Request Body | Route              | Action         |
 |--------|--------------|--------------------|----------------|
 | POST   | JSON         | /encrypt_data      | Encrypt Data   |
-| POST   | JSON         | /decrypt_data      | Decrypt Data   | 
+| POST   | JSON         | /decrypt_data      | Decrypt Data   |
 
 
 ## Contributing
