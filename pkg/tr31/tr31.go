@@ -1250,10 +1250,9 @@ func (kb *KeyBlock) dDerive() ([]byte, []byte, error) {
 		kdInput[1] = 0x00
 		kdInput[2] = 0x01
 		encData2, _ := GenerateCBCMAC(kb.kbpk, xor(kdInput, k2), 1, 16, AES)
-		kbak = append(kbek, encData2...)
+		kbak = append(kbak, encData2...)
 	}
-	cropedKbak := kbak[len(kbak)-len(kb.kbpk):]
-	return kbek[:len(kb.kbpk)], cropedKbak, nil
+	return kbek[:len(kb.kbpk)], kbak[:len(kb.kbpk)], nil
 }
 func (kb *KeyBlock) dGenerateMAC(kbak []byte, header, keyData []byte) ([]byte, error) {
 	// Derive AES-CMAC subkeys
