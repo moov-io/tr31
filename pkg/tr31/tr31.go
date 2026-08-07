@@ -224,7 +224,11 @@ func (b *Blocks) Dump(algoBlockSize int) (int, string, error) {
 
 		if len(blockData)+4 <= 255 {
 			length := len(blockData) + 4
-			byteSlice := []byte{byte(length)}
+			lb, err := safecast.ToUint8(length)
+			if err != nil {
+				return 0, "", err
+			}
+			byteSlice := []byte{lb}
 			hexString := hex.EncodeToString(byteSlice)
 			blocksList = append(blocksList, hexString)
 		} else {
@@ -843,7 +847,11 @@ func (kb *KeyBlock) BDerive() ([]byte, []byte, error) {
 	// Each call to CMAC produces 64 bits of keying material
 	for _, i := range callsToCmac {
 		// Increment counter for each call to CMAC
-		kdInput[0] = byte(i)
+		counter, err := safecast.ToUint8(i)
+		if err != nil {
+			return nil, nil, err
+		}
+		kdInput[0] = counter
 
 		// Encryption key
 		kdInput[1], kdInput[2] = 0x00, 0x00
@@ -1238,7 +1246,11 @@ func (kb *KeyBlock) dDerive() ([]byte, []byte, error) {
 	// AES-256 -> 2 calls to CMAC -> AES-256 KBEK/KBAK
 	for _, i := range callsToCmac {
 		// Counter is incremented for each call to CMAC
-		kdInput[0] = byte(i)
+		counter, err := safecast.ToUint8(i)
+		if err != nil {
+			return nil, nil, err
+		}
+		kdInput[0] = counter
 
 		// Encryption key
 		kdInput[1] = 0x00
