@@ -132,7 +132,12 @@ func padISO3(data []byte, blockSize int) ([]byte, error) {
 	if blockSize < 4 {
 		value := uint64(len(data)) * 8
 		for i := 0; i < blockSize; i++ {
-			lengthBytes[i] = byte(value >> (8 * (blockSize - 1 - i))) // Extract highest bytes first
+			shift := 8 * (blockSize - 1 - i)
+			b, err := safecast.ToUint8((value >> shift) & 0xff)
+			if err != nil {
+				return nil, err
+			}
+			lengthBytes[i] = b // Extract highest bytes first
 		}
 	} else if blockSize < 8 {
 		dataLen := len(data)
