@@ -3,7 +3,6 @@ module github.com/moov-io/tr31
 go 1.25.8
 
 require (
-	github.com/ccoveille/go-safecast v1.8.2
 	github.com/ccoveille/go-safecast/v2 v2.0.1
 	github.com/go-kit/kit v0.13.0
 	github.com/go-kit/log v0.2.1

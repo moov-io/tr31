@@ -14,7 +14,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/ccoveille/go-safecast"
+	"github.com/ccoveille/go-safecast/v2"
 )
 
 // TR-31 version identifiers
@@ -224,7 +224,7 @@ func (b *Blocks) Dump(algoBlockSize int) (int, string, error) {
 
 		if len(blockData)+4 <= 255 {
 			length := len(blockData) + 4
-			lb, err := safecast.ToUint8(length)
+			lb, err := safecast.Convert[uint8](length)
 			if err != nil {
 				return 0, "", err
 			}
@@ -782,7 +782,7 @@ func (kb *KeyBlock) BWrap(header string, key []byte, extraPad int) (string, erro
 	clearKeyData := make([]byte, 2+len(key)+len(pad))
 
 	if len(key)*8 <= math.MaxUint16 {
-		size, err := safecast.ToUint16(len(key) * 8)
+		size, err := safecast.Convert[uint16](len(key) * 8)
 		if err != nil {
 			return "", errors.New("key length too large to encode as uint16")
 		}
@@ -847,7 +847,7 @@ func (kb *KeyBlock) BDerive() ([]byte, []byte, error) {
 	// Each call to CMAC produces 64 bits of keying material
 	for _, i := range callsToCmac {
 		// Increment counter for each call to CMAC
-		counter, err := safecast.ToUint8(i)
+		counter, err := safecast.Convert[uint8](i)
 		if err != nil {
 			return nil, nil, err
 		}
@@ -1040,7 +1040,7 @@ func (kb *KeyBlock) CWrap(header string, key []byte, extraPad int) (string, erro
 	clearKeyData := make([]byte, 2+len(key)+len(pad))
 
 	if len(key)*8 <= math.MaxUint16 {
-		size, err := safecast.ToUint16(len(key) * 8)
+		size, err := safecast.Convert[uint16](len(key) * 8)
 		if err != nil {
 			return "", errors.New("key length too large to encode as uint16")
 		}
@@ -1163,7 +1163,7 @@ func (kb *KeyBlock) DWrap(header string, key []byte, extraPad int) (string, erro
 
 	clearKeyData := make([]byte, 2+len(key)+len(pad))
 
-	size, err := safecast.ToUint16(len(key) * 8)
+	size, err := safecast.Convert[uint16](len(key) * 8)
 	if err != nil {
 		return "", errors.New("key length too large to encode as uint16")
 	}
@@ -1246,7 +1246,7 @@ func (kb *KeyBlock) dDerive() ([]byte, []byte, error) {
 	// AES-256 -> 2 calls to CMAC -> AES-256 KBEK/KBAK
 	for _, i := range callsToCmac {
 		// Counter is incremented for each call to CMAC
-		counter, err := safecast.ToUint8(i)
+		counter, err := safecast.Convert[uint8](i)
 		if err != nil {
 			return nil, nil, err
 		}
