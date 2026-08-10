@@ -7,7 +7,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/ccoveille/go-safecast"
+	"github.com/ccoveille/go-safecast/v2"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -223,7 +223,7 @@ func makeLengthPrefix(dataLen int, blockSize int) []byte {
 		if len(lengthBytes) < 4 {
 			return nil
 		}
-		size, err := safecast.ToUint32(dataLen * 8)
+		size, err := safecast.Convert[uint32](dataLen * 8)
 		if err != nil {
 			return nil
 		}
@@ -232,7 +232,7 @@ func makeLengthPrefix(dataLen int, blockSize int) []byte {
 		if len(lengthBytes) < 8 {
 			return nil
 		}
-		size, err := safecast.ToUint64(dataLen * 8)
+		size, err := safecast.Convert[uint64](dataLen * 8)
 		if err != nil {
 			return nil
 		}
