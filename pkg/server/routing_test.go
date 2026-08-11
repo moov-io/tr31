@@ -9,8 +9,16 @@ import (
 	"strings"
 	"testing"
 
+	moovhttp "github.com/moov-io/base/http"
 	"github.com/stretchr/testify/require"
 )
+
+func allowTestCORS(t *testing.T) {
+	t.Helper()
+	t.Setenv(moovhttp.CORSAllowedOriginsEnv, "https://moov.io")
+	moovhttp.ResetCORSAllowlistForTest()
+	t.Cleanup(moovhttp.ResetCORSAllowlistForTest)
+}
 
 func mockHttpHandler() http.Handler {
 	repository := NewRepositoryInMemory(nil)
@@ -18,6 +26,7 @@ func mockHttpHandler() http.Handler {
 }
 
 func TestRouting_ping(t *testing.T) {
+	allowTestCORS(t)
 	repository := NewRepositoryInMemory(nil)
 	mockService := NewService(repository, MODE_MOCK)
 
@@ -49,6 +58,7 @@ func TestRouting_ping(t *testing.T) {
 }
 
 func TestRouting_create_duplicate_machine(t *testing.T) {
+	allowTestCORS(t)
 	router := mockHttpHandler()
 	requestBody, err := json.Marshal(mockVaultAuthOne())
 	require.NoError(t, err)
@@ -87,6 +97,7 @@ func TestRouting_create_duplicate_machine(t *testing.T) {
 }
 
 func TestCreateMachine(t *testing.T) {
+	allowTestCORS(t)
 	tests := []struct {
 		name           string
 		requestData    Vault
@@ -152,6 +163,7 @@ func TestCreateMachine(t *testing.T) {
 	}
 }
 func TestGetMachineHandler(t *testing.T) {
+	allowTestCORS(t)
 	router := mockHttpHandler() // Initialize your mock HTTP handler
 
 	// Define test cases
