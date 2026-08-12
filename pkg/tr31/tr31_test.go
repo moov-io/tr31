@@ -440,13 +440,16 @@ func Test_kb_known_values(t *testing.T) {
 		// key-derivation binding method used by version D, including a block that
 		// carries optional header blocks (kb length 0144).
 		//
-		// The clear key 3F419E1CB7079442AA37474C2EFBF8B8 is the same canonical
-		// value used by the version B example above (KBPK DD7515F2...), and these
-		// version D key blocks are cross-checked against the openemv/tr31
-		// reference implementation (github.com/openemv/tr31), so a pass here
-		// confirms AES unwrap interoperates with an independent implementation.
-		{"88E1AB2A2E3DD38C1FA039A536500CC8A87AB9D62DC92C01058FA79F44657DE6", "3F419E1CB7079442AA37474C2EFBF8B8", "D0112P0AE00E0000B82679114F470F540165EDFBF7E250FCEA43F810D215F8D207E2E417C07156A27E8E31DA05F7425509593D03A457DC34"},
-		{"88E1AB2A2E3DD38C1FA039A536500CC8A87AB9D62DC92C01058FA79F44657DE6", "3F419E1CB7079442AA37474C2EFBF8B8", "D0144P0AE00E00002C77FA3F4A553BED6E88AE5C172A4166E3D4ACA8E2AC71C158A476FAC12C13C3829DE55D3AB54C48F4C4FEF7AC75E90FC47F1B77E7B19A73ED46E64410082557"},
+		// Both are the worked examples published in the standards themselves, so a
+		// pass confirms this library decodes the standard's own version D vectors:
+		//   - ASC X9 TR-31:2018, Annex A.7.4
+		//   - ANSI X9.143:2021, section 8.1
+		// (both reproduced in the openemv/tr31 reference implementation's decrypt
+		// tests, which cite these sources). They share the standard's example KBPK
+		// and clear key 3F419E1CB7079442AA37474C2EFBF8B8, which is also the
+		// canonical value used by the version B example above (KBPK DD7515F2...).
+		{"88E1AB2A2E3DD38C1FA039A536500CC8A87AB9D62DC92C01058FA79F44657DE6", "3F419E1CB7079442AA37474C2EFBF8B8", "D0112P0AE00E0000B82679114F470F540165EDFBF7E250FCEA43F810D215F8D207E2E417C07156A27E8E31DA05F7425509593D03A457DC34"},                                 // ASC X9 TR-31:2018, A.7.4
+		{"88E1AB2A2E3DD38C1FA039A536500CC8A87AB9D62DC92C01058FA79F44657DE6", "3F419E1CB7079442AA37474C2EFBF8B8", "D0144P0AE00E00002C77FA3F4A553BED6E88AE5C172A4166E3D4ACA8E2AC71C158A476FAC12C13C3829DE55D3AB54C48F4C4FEF7AC75E90FC47F1B77E7B19A73ED46E64410082557"}, // ANSI X9.143:2021, 8.1
 	}
 
 	for _, tt := range testCases {
