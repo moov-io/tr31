@@ -9,7 +9,7 @@ require (
 	github.com/gorilla/mux v1.8.1
 	github.com/hashicorp/vault/api v1.23.0
 	github.com/moov-io/base v0.63.3
-	github.com/stretchr/testify v1.12.0
+	github.com/stretchr/testify v1.12.1
 )
 
 require (
@@ -38,6 +38,7 @@ require (
 	github.com/prometheus/procfs v0.21.1 // indirect
 	github.com/rickar/cal/v2 v2.1.29 // indirect
 	github.com/ryanuber/go-glob v1.0.0 // indirect
+	go.yaml.in/yaml/v3 v3.0.5 // indirect
 	golang.org/x/net v0.57.0 // indirect
 	golang.org/x/sys v0.47.0 // indirect
 	golang.org/x/text v0.40.0 // indirect
