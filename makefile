@@ -35,3 +35,7 @@ cover-test:
 	go test -coverprofile=cover.out ./...
 cover-web:
 	go tool cover -html=cover.out
+
+.PHONY: bench
+bench:
+	go test ./pkg/tr31 -count=1 -run '^$$' -bench '^BenchmarkUnwrap' -benchmem | tee output.txt
