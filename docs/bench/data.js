@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1790080253147,
+  "lastUpdate": 1790167289283,
   "repoUrl": "https://github.com/moov-io/tr31",
   "entries": {
     "moov-io/tr31": [
@@ -684,6 +684,82 @@ window.BENCHMARK_DATA = {
             "value": 60,
             "unit": "allocs/op",
             "extra": "326670 times\n4 procs"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "name": "renovate[bot]",
+            "username": "renovate[bot]",
+            "email": "29139614+renovate[bot]@users.noreply.github.com"
+          },
+          "committer": {
+            "name": "GitHub",
+            "username": "web-flow",
+            "email": "noreply@github.com"
+          },
+          "id": "f482e3ab597beaed9b08b571e7c9cc1f2b346c9a",
+          "message": "chore(deps): update github/codeql-action action to v4.38.1 (#66)\n\nCo-authored-by: renovate[bot] <29139614+renovate[bot]@users.noreply.github.com>",
+          "timestamp": "2026-09-18T22:08:57Z",
+          "url": "https://github.com/moov-io/tr31/commit/f482e3ab597beaed9b08b571e7c9cc1f2b346c9a"
+        },
+        "date": 1790167288336,
+        "tool": "go",
+        "benches": [
+          {
+            "name": "BenchmarkUnwrap_D_32_WithSetup",
+            "value": 5449,
+            "unit": "ns/op\t    8388 B/op\t      60 allocs/op",
+            "extra": "206942 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkUnwrap_D_32_WithSetup - ns/op",
+            "value": 5449,
+            "unit": "ns/op",
+            "extra": "206942 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkUnwrap_D_32_WithSetup - B/op",
+            "value": 8388,
+            "unit": "B/op",
+            "extra": "206942 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkUnwrap_D_32_WithSetup - allocs/op",
+            "value": 60,
+            "unit": "allocs/op",
+            "extra": "206942 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkUnwrap_D_32_Parallel",
+            "value": 3888,
+            "unit": "ns/op\t   8.23 MB/s\t    8388 B/op\t      60 allocs/op",
+            "extra": "316335 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkUnwrap_D_32_Parallel - ns/op",
+            "value": 3888,
+            "unit": "ns/op",
+            "extra": "316335 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkUnwrap_D_32_Parallel - MB/s",
+            "value": 8.23,
+            "unit": "MB/s",
+            "extra": "316335 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkUnwrap_D_32_Parallel - B/op",
+            "value": 8388,
+            "unit": "B/op",
+            "extra": "316335 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkUnwrap_D_32_Parallel - allocs/op",
+            "value": 60,
+            "unit": "allocs/op",
+            "extra": "316335 times\n4 procs"
           }
         ]
       }
