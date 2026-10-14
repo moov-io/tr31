@@ -38,4 +38,5 @@ cover-web:
 
 .PHONY: bench
 bench:
-	go test ./pkg/tr31 -count=1 -run '^$$' -bench '^BenchmarkUnwrap' -benchmem | tee output.txt
+	go test ./pkg/tr31 -count=6 -cpu=2 -run '^$$' -bench '^BenchmarkUnwrap' -benchmem > output.raw.txt
+	python3 scripts/bench-median.py output.raw.txt | tee output.txt
