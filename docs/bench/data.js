@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1791982077492,
+  "lastUpdate": 1791988617551,
   "repoUrl": "https://github.com/moov-io/tr31",
   "entries": {
     "moov-io/tr31": [
@@ -2356,6 +2356,82 @@ window.BENCHMARK_DATA = {
             "value": 60,
             "unit": "allocs/op",
             "extra": "413097 times\n4 procs"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "name": "Adam Shannon",
+            "username": "adamdecaf",
+            "email": "adamkshannon@gmail.com"
+          },
+          "committer": {
+            "name": "Adam Shannon",
+            "username": "adamdecaf",
+            "email": "adamkshannon@gmail.com"
+          },
+          "id": "e86a86bce4d20834ecf8940055e417360d9f5221",
+          "message": "test: unwrap WithSetup bench from a 500-key pool\n\nSize the wrapped key pool to 500 instead of b.N so setup cost\nstays bounded. Index with i%len during the timed loop.",
+          "timestamp": "2026-10-14T14:36:19Z",
+          "url": "https://github.com/moov-io/tr31/commit/e86a86bce4d20834ecf8940055e417360d9f5221"
+        },
+        "date": 1791988616787,
+        "tool": "go",
+        "benches": [
+          {
+            "name": "BenchmarkUnwrap_D_32_WithSetup",
+            "value": 6564,
+            "unit": "ns/op\t    8389 B/op\t      60 allocs/op",
+            "extra": "193741 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkUnwrap_D_32_WithSetup - ns/op",
+            "value": 6564,
+            "unit": "ns/op",
+            "extra": "193741 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkUnwrap_D_32_WithSetup - B/op",
+            "value": 8389,
+            "unit": "B/op",
+            "extra": "193741 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkUnwrap_D_32_WithSetup - allocs/op",
+            "value": 60,
+            "unit": "allocs/op",
+            "extra": "193741 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkUnwrap_D_32_Parallel",
+            "value": 4785,
+            "unit": "ns/op\t   6.69 MB/s\t    8387 B/op\t      59 allocs/op",
+            "extra": "244843 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkUnwrap_D_32_Parallel - ns/op",
+            "value": 4785,
+            "unit": "ns/op",
+            "extra": "244843 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkUnwrap_D_32_Parallel - MB/s",
+            "value": 6.69,
+            "unit": "MB/s",
+            "extra": "244843 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkUnwrap_D_32_Parallel - B/op",
+            "value": 8387,
+            "unit": "B/op",
+            "extra": "244843 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkUnwrap_D_32_Parallel - allocs/op",
+            "value": 59,
+            "unit": "allocs/op",
+            "extra": "244843 times\n4 procs"
           }
         ]
       }
