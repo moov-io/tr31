@@ -18,17 +18,15 @@ func BenchmarkUnwrap_D_32_WithSetup(b *testing.B) {
 		b.Fatalf("failed to create header: %v", err)
 	}
 
-	// Create a slice of different KBPKs for testing
-	kbpks := make([][]byte, b.N)
-	keyBlocks := make([]*KeyBlock, b.N)
-	rawKeyBlocks := make([]string, b.N)
-	expectedKeys := make([][]byte, b.N)
+	const poolSize = 500
+	kbpks := make([][]byte, poolSize)
+	keyBlocks := make([]*KeyBlock, poolSize)
+	rawKeyBlocks := make([]string, poolSize)
+	expectedKeys := make([][]byte, poolSize)
 
-	for i := 0; i < b.N; i++ {
-		// Generate a different KBPK for each iteration
+	for i := 0; i < poolSize; i++ {
 		key, _ := GenerateKBPK(kbpkopts)
 		kbpks[i] = key
-		// Create a key block for each KBPK
 		kblock, err := NewKeyBlock(kbpks[i], header)
 		if err != nil {
 			b.Fatalf("failed to create key block: %v", err)
@@ -42,16 +40,15 @@ func BenchmarkUnwrap_D_32_WithSetup(b *testing.B) {
 		}
 	}
 
-	// Reset timer after setup
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		keyOut, err := keyBlocks[i].Unwrap(rawKeyBlocks[i])
+		idx := i % len(keyBlocks)
+		keyOut, err := keyBlocks[idx].Unwrap(rawKeyBlocks[idx])
 		if err != nil {
-			b.Fatalf("failed to unwrap key %s: %v", hex.EncodeToString(kbpks[i]), err)
+			b.Fatalf("failed to unwrap key %s: %v", hex.EncodeToString(kbpks[idx]), err)
 		}
-		// check that the value of keyout matches the expectedKeys
-		if string(keyOut) != string(expectedKeys[i]) {
-			b.Fatalf("invalid key length: got %s, want %s", keyOut, expectedKeys[i])
+		if string(keyOut) != string(expectedKeys[idx]) {
+			b.Fatalf("invalid key length: got %s, want %s", keyOut, expectedKeys[idx])
 		}
 	}
 }
