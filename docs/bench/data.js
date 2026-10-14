@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1791989835273,
+  "lastUpdate": 1791990726169,
   "repoUrl": "https://github.com/moov-io/tr31",
   "entries": {
     "moov-io/tr31": [
@@ -2502,6 +2502,76 @@ window.BENCHMARK_DATA = {
             "value": 60,
             "unit": "allocs/op",
             "extra": "348982 times\n2 procs"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "name": "Adam Shannon",
+            "username": "adamdecaf",
+            "email": "adamkshannon@gmail.com"
+          },
+          "committer": {
+            "name": "Adam Shannon",
+            "username": "adamdecaf",
+            "email": "adamkshannon@gmail.com"
+          },
+          "id": "1f4cefc4eaa0939eecb6de98264bc92e554a9515",
+          "message": "ci: keep bench.yml on ubuntu-24.04\n\nRenovate automerged ubuntu-26.04 onto the benchmark workflow. Pin\n24.04 again and ignore that package in bench.yml so nightly samples\nstay comparable.",
+          "timestamp": "2026-10-14T14:59:52Z",
+          "url": "https://github.com/moov-io/tr31/commit/1f4cefc4eaa0939eecb6de98264bc92e554a9515"
+        },
+        "date": 1791990725528,
+        "tool": "go",
+        "benches": [
+          {
+            "name": "BenchmarkUnwrap_D_32_WithSetup",
+            "value": 2933,
+            "unit": "ns/op\t8388 B/op\t60 allocs/op",
+            "extra": "414476 times\n2 procs"
+          },
+          {
+            "name": "BenchmarkUnwrap_D_32_WithSetup - ns/op",
+            "value": 2933,
+            "unit": "ns/op",
+            "extra": "414476 times\n2 procs"
+          },
+          {
+            "name": "BenchmarkUnwrap_D_32_WithSetup - B/op",
+            "value": 8388,
+            "unit": "B/op",
+            "extra": "414476 times\n2 procs"
+          },
+          {
+            "name": "BenchmarkUnwrap_D_32_WithSetup - allocs/op",
+            "value": 60,
+            "unit": "allocs/op",
+            "extra": "414476 times\n2 procs"
+          },
+          {
+            "name": "BenchmarkUnwrap_D_32_Parallel",
+            "value": 2164.5,
+            "unit": "ns/op\t8388 B/op\t60 allocs/op",
+            "extra": "577426 times\n2 procs"
+          },
+          {
+            "name": "BenchmarkUnwrap_D_32_Parallel - ns/op",
+            "value": 2164.5,
+            "unit": "ns/op",
+            "extra": "577426 times\n2 procs"
+          },
+          {
+            "name": "BenchmarkUnwrap_D_32_Parallel - B/op",
+            "value": 8388,
+            "unit": "B/op",
+            "extra": "577426 times\n2 procs"
+          },
+          {
+            "name": "BenchmarkUnwrap_D_32_Parallel - allocs/op",
+            "value": 60,
+            "unit": "allocs/op",
+            "extra": "577426 times\n2 procs"
           }
         ]
       }
