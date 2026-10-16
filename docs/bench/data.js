@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1792067665731,
+  "lastUpdate": 1792152844601,
   "repoUrl": "https://github.com/moov-io/tr31",
   "entries": {
     "moov-io/tr31": [
@@ -2712,6 +2712,76 @@ window.BENCHMARK_DATA = {
             "value": 60,
             "unit": "allocs/op",
             "extra": "355122 times\n2 procs"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "name": "renovate[bot]",
+            "username": "renovate[bot]",
+            "email": "29139614+renovate[bot]@users.noreply.github.com"
+          },
+          "committer": {
+            "name": "GitHub",
+            "username": "web-flow",
+            "email": "noreply@github.com"
+          },
+          "id": "d9bb1b37612ab8d863202ceb51a7d49c206a9221",
+          "message": "chore(deps): update hashicorp/vault docker tag to v2.2 (#71)\n\nCo-authored-by: renovate[bot] <29139614+renovate[bot]@users.noreply.github.com>",
+          "timestamp": "2026-10-16T01:47:31Z",
+          "url": "https://github.com/moov-io/tr31/commit/d9bb1b37612ab8d863202ceb51a7d49c206a9221"
+        },
+        "date": 1792152844040,
+        "tool": "go",
+        "benches": [
+          {
+            "name": "BenchmarkUnwrap_D_32_WithSetup",
+            "value": 4986,
+            "unit": "ns/op\t8388 B/op\t60 allocs/op",
+            "extra": "240715 times\n2 procs"
+          },
+          {
+            "name": "BenchmarkUnwrap_D_32_WithSetup - ns/op",
+            "value": 4986,
+            "unit": "ns/op",
+            "extra": "240715 times\n2 procs"
+          },
+          {
+            "name": "BenchmarkUnwrap_D_32_WithSetup - B/op",
+            "value": 8388,
+            "unit": "B/op",
+            "extra": "240715 times\n2 procs"
+          },
+          {
+            "name": "BenchmarkUnwrap_D_32_WithSetup - allocs/op",
+            "value": 60,
+            "unit": "allocs/op",
+            "extra": "240715 times\n2 procs"
+          },
+          {
+            "name": "BenchmarkUnwrap_D_32_Parallel",
+            "value": 3560,
+            "unit": "ns/op\t8387 B/op\t59 allocs/op",
+            "extra": "347560 times\n2 procs"
+          },
+          {
+            "name": "BenchmarkUnwrap_D_32_Parallel - ns/op",
+            "value": 3560,
+            "unit": "ns/op",
+            "extra": "347560 times\n2 procs"
+          },
+          {
+            "name": "BenchmarkUnwrap_D_32_Parallel - B/op",
+            "value": 8387,
+            "unit": "B/op",
+            "extra": "347560 times\n2 procs"
+          },
+          {
+            "name": "BenchmarkUnwrap_D_32_Parallel - allocs/op",
+            "value": 59,
+            "unit": "allocs/op",
+            "extra": "347560 times\n2 procs"
           }
         ]
       }
