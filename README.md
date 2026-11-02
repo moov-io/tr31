@@ -58,34 +58,45 @@ import (
 )
 
 func main() {
-    // Create a new header with TR-31 version B
-    header, err := encryption.NewHeader(
-      encryption.TR31_VERSION_D, // Version ID
-      "B0",                      // Key Usage (Data Encryption Key)
-      "A",                       // Algorithm (AES)
-      "E",                       // Mode of Use (Encrypt)
-      "01",                      // Version Number
-      "X",                       // Exportability (Exportable with restrictions)
+    // Create a new header with TR-31 version D (AES)
+    header, err := tr31.NewHeader(
+      tr31.TR31_VERSION_D,            // Version ID
+      tr31.KEY_USAGE_DATA_ENCRYPTION, // Key Usage "D0" (symmetric data encryption key)
+      tr31.ENC_ALGORITHM_AES,         // Algorithm "A" (AES)
+      tr31.MODE_OF_USE_ENCRYPT,       // Mode of Use "E" (encrypt only)
+      "01",                           // Version Number
+      tr31.EXPORTABILITY_TRUSTED,     // Exportability "E" (exportable under a KEK, per X9.24)
     )
-
     if err != nil {
+        panic(err)
+    }
+
+    // Optional: check the key usage and mode of use agree. NewHeader does
+    // not, so a header such as B1 (Initial DUKPT Key) with mode E would
+    // otherwise be accepted.
+    if err := header.ValidateKeyUsageModeOfUse(); err != nil {
         panic(err)
     }
 
     // Create a key block with your Key Block Protection Key (KBPK)
-    kbpkopts := KBPKOptions{
-		  Version:   "D",
-		  KeyLength: 32,
-	  }
-    kbpk, _ := GenerateKBPK(kbpkopts)
+    kbpk, err := tr31.GenerateKBPK(tr31.KBPKOptions{
+        Version:   tr31.TR31_VERSION_D,
+        KeyLength: 32,
+    })
+    if err != nil {
+        panic(err)
+    }
     // Create a new KeyBlock
-    keyBlock, err := encryption.NewKeyBlock(kbpk, header)
+    keyBlock, err := tr31.NewKeyBlock(kbpk, header)
     if err != nil {
         panic(err)
     }
 
-    // Wrap a key
-    keyToWrap := []byte{...} // Your key to wrap
+    // Wrap a 16-byte AES-128 data encryption key
+    keyToWrap := []byte{
+        0x00, 0x11, 0x22, 0x33, 0x44, 0x55, 0x66, 0x77,
+        0x88, 0x99, 0xaa, 0xbb, 0xcc, 0xdd, 0xee, 0xff,
+    }
     wrappedKey, err := keyBlock.Wrap(keyToWrap, nil)
     if err != nil {
         panic(err)
@@ -96,6 +107,7 @@ func main() {
     if err != nil {
         panic(err)
     }
+    fmt.Printf("unwrapped a %d-byte key\n", len(unwrappedKey))
 }
 ```
 
