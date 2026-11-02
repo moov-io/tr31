@@ -65,7 +65,7 @@ func main() {
       tr31.ENC_ALGORITHM_AES,         // Algorithm "A" (AES)
       tr31.MODE_OF_USE_ENCRYPT,       // Mode of Use "E" (encrypt only)
       "01",                           // Version Number
-      "E",                            // Exportability (exportable under a trusted key)
+      tr31.EXPORTABILITY_TRUSTED,     // Exportability "E" (exportable under a KEK, per X9.24)
     )
     if err != nil {
         panic(err)
