@@ -92,8 +92,11 @@ func main() {
         panic(err)
     }
 
-    // Wrap a key
-    keyToWrap := []byte{...} // Your key to wrap
+    // Wrap a 16-byte AES-128 data encryption key
+    keyToWrap := []byte{
+        0x00, 0x11, 0x22, 0x33, 0x44, 0x55, 0x66, 0x77,
+        0x88, 0x99, 0xaa, 0xbb, 0xcc, 0xdd, 0xee, 0xff,
+    }
     wrappedKey, err := keyBlock.Wrap(keyToWrap, nil)
     if err != nil {
         panic(err)
