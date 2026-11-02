@@ -58,28 +58,36 @@ import (
 )
 
 func main() {
-    // Create a new header with TR-31 version B
-    header, err := encryption.NewHeader(
-      encryption.TR31_VERSION_D, // Version ID
-      "B0",                      // Key Usage (Data Encryption Key)
-      "A",                       // Algorithm (AES)
-      "E",                       // Mode of Use (Encrypt)
-      "01",                      // Version Number
-      "X",                       // Exportability (Exportable with restrictions)
+    // Create a new header with TR-31 version D (AES)
+    header, err := tr31.NewHeader(
+      tr31.TR31_VERSION_D,            // Version ID
+      tr31.KEY_USAGE_DATA_ENCRYPTION, // Key Usage "D0" (symmetric data encryption key)
+      tr31.ENC_ALGORITHM_AES,         // Algorithm "A" (AES)
+      tr31.MODE_OF_USE_ENCRYPT,       // Mode of Use "E" (encrypt only)
+      "01",                           // Version Number
+      "E",                            // Exportability (exportable under a trusted key)
     )
-
     if err != nil {
         panic(err)
     }
 
+    // Optional: check the key usage and mode of use agree. NewHeader does
+    // not, so a header such as B1 (Initial DUKPT Key) with mode E would
+    // otherwise be accepted.
+    if err := header.ValidateKeyUsageModeOfUse(); err != nil {
+        panic(err)
+    }
+
     // Create a key block with your Key Block Protection Key (KBPK)
-    kbpkopts := KBPKOptions{
-		  Version:   "D",
-		  KeyLength: 32,
-	  }
-    kbpk, _ := GenerateKBPK(kbpkopts)
+    kbpk, err := tr31.GenerateKBPK(tr31.KBPKOptions{
+        Version:   tr31.TR31_VERSION_D,
+        KeyLength: 32,
+    })
+    if err != nil {
+        panic(err)
+    }
     // Create a new KeyBlock
-    keyBlock, err := encryption.NewKeyBlock(kbpk, header)
+    keyBlock, err := tr31.NewKeyBlock(kbpk, header)
     if err != nil {
         panic(err)
     }
@@ -96,6 +104,7 @@ func main() {
     if err != nil {
         panic(err)
     }
+    fmt.Printf("unwrapped a %d-byte key\n", len(unwrappedKey))
 }
 ```
 
