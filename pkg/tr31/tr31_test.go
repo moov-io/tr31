@@ -730,3 +730,21 @@ func Test_Unrwap_Optional_and_Cert_From_Spec(t *testing.T) {
 		assert.Equal(t, 3, len(kblock.header.GetBlocks()))
 	}
 }
+
+// TestHeaderLoad_OptionalBlockLengthNotHex tests that an optional block whose
+// length isn't two hex characters is refused, never read as an extended length.
+func TestHeaderLoad_OptionalBlockLengthNotHex(t *testing.T) {
+	for _, tr31Str := range []string{
+		"B0000P0TE00N0100KSZZ00604B120F9292800000xxxxxxxx",
+		"B0000P0TE00N0100KS1G00604B120F9292800000xxxxxxxx",
+	} {
+		t.Run(tr31Str[16:20], func(t *testing.T) {
+			h := DefaultHeader()
+			_, err := h.Load(tr31Str)
+			var headerErr *HeaderError
+			if assert.ErrorAs(t, err, &headerErr) {
+				assert.Contains(t, headerErr.Error(), "is malformed")
+			}
+		})
+	}
+}
