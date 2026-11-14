@@ -4,7 +4,6 @@
 package tr31
 
 import (
-	"crypto/rand"
 	"encoding/binary"
 	"encoding/hex"
 	"errors"
@@ -771,7 +770,7 @@ func (kb *KeyBlock) BWrap(header string, key []byte, extraPad int) (string, erro
 	// Format key data: 2-byte key length measured in bits + key + pad
 	padLen := 8 - ((2 + len(key) + extraPad) % 8)
 	pad := make([]byte, padLen+extraPad)
-	_, err := rand.Read(pad)
+	err := Rand(pad)
 	if err != nil {
 		return "", &KeyBlockError{
 			Message: err.Error(),
@@ -1029,7 +1028,7 @@ func (kb *KeyBlock) CWrap(header string, key []byte, extraPad int) (string, erro
 	// Format key data: 2-byte key length measured in bits + key + pad
 	padLen := 8 - ((2 + len(key) + extraPad) % 8)
 	pad := make([]byte, padLen+extraPad)
-	_, err = rand.Read(pad)
+	err = Rand(pad)
 	if err != nil {
 		return "", &KeyBlockError{
 			Message: err.Error(),
@@ -1154,7 +1153,7 @@ func (kb *KeyBlock) DWrap(header string, key []byte, extraPad int) (string, erro
 	// Format key data: 2-byte key length measured in bits + key + pad
 	padLen := 16 - ((2 + len(key) + extraPad) % 16)
 	pad := make([]byte, padLen+extraPad)
-	_, err = rand.Read(pad)
+	err = Rand(pad)
 	if err != nil {
 		return "", &KeyBlockError{
 			Message: err.Error(),
