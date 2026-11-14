@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/hex"
 	"fmt"
+	"runtime"
 	"strings"
 	"testing"
 
@@ -729,4 +730,31 @@ func Test_Unrwap_Optional_and_Cert_From_Spec(t *testing.T) {
 		assert.Equal(t, "D", kblock.header.VersionID)
 		assert.Equal(t, 3, len(kblock.header.GetBlocks()))
 	}
+}
+
+func TestBlocksIter(t *testing.T) {
+	b := NewBlocks()
+	assert.NoError(t, b.Set("KS", "00604B120F9292800000"))
+	assert.NoError(t, b.Set("TS", "20260101000000Z"))
+
+	got := map[string]bool{}
+	for id := range b.Iter() {
+		got[id] = true
+	}
+	assert.Equal(t, map[string]bool{"KS": true, "TS": true}, got)
+}
+
+func TestBlocksIter_StoppingEarlyLeaksNothing(t *testing.T) {
+	b := NewBlocks()
+	assert.NoError(t, b.Set("KS", "00604B120F9292800000"))
+	assert.NoError(t, b.Set("TS", "20260101000000Z"))
+	before := runtime.NumGoroutine()
+
+	for i := 0; i < 100; i++ {
+		for range b.Iter() {
+			break
+		}
+	}
+
+	assert.Equal(t, before, runtime.NumGoroutine())
 }

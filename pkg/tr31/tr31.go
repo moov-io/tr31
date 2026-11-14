@@ -193,15 +193,15 @@ func (b *Blocks) Delete(key string) {
 	delete(b._blocks, key)
 }
 
-// Iter returns a channel that iterates over the block IDs in the container
+// Iter returns a channel that iterates over the block IDs in the container.
+// The channel is filled and closed before it is returned, so ranging over it
+// needs no goroutine and stopping early leaks nothing.
 func (b *Blocks) Iter() chan string {
-	ch := make(chan string)
-	go func() {
-		for key := range b._blocks {
-			ch <- key
-		}
-		close(ch)
-	}()
+	ch := make(chan string, len(b._blocks))
+	for key := range b._blocks {
+		ch <- key
+	}
+	close(ch)
 	return ch
 }
 
