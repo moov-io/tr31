@@ -1,7 +1,6 @@
 package tr31
 
 import (
-	"crypto/rand"
 	"errors"
 	"fmt"
 	"strconv"
@@ -24,7 +23,7 @@ func GenerateKBPK(opts KBPKOptions) ([]byte, error) {
 
 	// Generate random key of specified length
 	key := make([]byte, opts.KeyLength)
-	if _, err := rand.Read(key); err != nil {
+	if err := Rand(key); err != nil {
 		return nil, fmt.Errorf("failed to generate random key: %v", err)
 	}
 
