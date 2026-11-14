@@ -4,9 +4,9 @@ import (
 	"crypto/subtle"
 	"encoding/binary"
 	"fmt"
-	"log"
 	"math"
 	"regexp"
+	"strconv"
 	"unicode"
 )
 
@@ -147,13 +147,14 @@ func intToBytes(i int, length int) []byte {
 	}
 	return b
 }
-func hexToInt(hexStr string) int {
-	var result int
-	_, err := fmt.Sscanf(hexStr, "%X", &result)
+
+// hexToInt parses hexStr, every character of it, as a hexadecimal number.
+func hexToInt(hexStr string) (int, error) {
+	v, err := strconv.ParseUint(hexStr, 16, 31)
 	if err != nil {
-		log.Printf("Failed to parse hex string: %v", err)
+		return 0, fmt.Errorf("parse hex %q: %w", hexStr, err)
 	}
-	return result
+	return int(v), nil
 }
 
 func stringToInt(s string) int {
