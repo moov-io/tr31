@@ -280,9 +280,19 @@ func TestHexToInt(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got := hexToInt(tt.input)
-			if got != tt.want {
-				t.Errorf("hexToInt(%s) = %d, want %d", tt.input, got, tt.want)
+			got, err := hexToInt(tt.input)
+			if err != nil || got != tt.want {
+				t.Errorf("hexToInt(%s) = %d, %v, want %d", tt.input, got, err, tt.want)
+			}
+		})
+	}
+}
+
+func TestHexToInt_NotHex(t *testing.T) {
+	for _, input := range []string{"", "ZZ", "1G", "G1", "-1", " 1"} {
+		t.Run(input, func(t *testing.T) {
+			if got, err := hexToInt(input); err == nil {
+				t.Errorf("hexToInt(%q) = %d, want an error", input, got)
 			}
 		})
 	}

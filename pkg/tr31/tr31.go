@@ -340,7 +340,10 @@ func (b *Blocks) Load(blocksNum int, blocks string) (int, error) {
 		blockLenS := blocks[i : i+2]
 		i += 2
 
-		blockLen := hexToInt(blockLenS)
+		blockLen, err := hexToInt(blockLenS)
+		if err != nil {
+			return 0, &HeaderError{Message: fmt.Sprintf(BlockErrorLenMalformed, blockID, blockLenS)}
+		}
 		if blockLen == 0 {
 			// Handle extended length
 			// Add logic to parse extended length if necessary
