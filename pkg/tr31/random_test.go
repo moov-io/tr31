@@ -26,21 +26,22 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-// TestRand is not parallel: it replaces the package's random source.
-func TestRand(t *testing.T) {
+func wrapSampleKey() (string, error) {
 	kbpk, _ := hex.DecodeString("89E88CF7931444F334BD7547FC3F380C")
 	key, _ := hex.DecodeString("F039121BEC83D26B169BDCD5B22AAF8F")
-	wrap := func() (string, error) {
-		header, err := NewHeader(TR31_VERSION_B, "P0", "T", "E", "00", "N")
-		if err != nil {
-			return "", err
-		}
-		kb, err := NewKeyBlock(kbpk, header)
-		if err != nil {
-			return "", err
-		}
-		return kb.Wrap(key, nil)
+	header, err := NewHeader(TR31_VERSION_B, "P0", "T", "E", "00", "N")
+	if err != nil {
+		return "", err
 	}
+	kb, err := NewKeyBlock(kbpk, header)
+	if err != nil {
+		return "", err
+	}
+	return kb.Wrap(key, nil)
+}
+
+// TestRand is not parallel: it replaces the package's random source.
+func TestRand(t *testing.T) {
 	original := Rand
 	t.Cleanup(func() { Rand = original })
 
@@ -52,7 +53,7 @@ func TestRand(t *testing.T) {
 			return err
 		}
 
-		block, err := wrap()
+		block, err := wrapSampleKey()
 		assert.NoError(t, err)
 		assert.NotEmpty(t, block)
 		assert.Positive(t, read)
@@ -61,7 +62,7 @@ func TestRand(t *testing.T) {
 	t.Run("a source that fails stops the wrap", func(t *testing.T) {
 		Rand = func([]byte) error { return errors.New("no entropy") }
 
-		_, err := wrap()
+		_, err := wrapSampleKey()
 		assert.Error(t, err)
 	})
 }

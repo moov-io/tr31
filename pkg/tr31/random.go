@@ -15,7 +15,7 @@
 // specific language governing permissions and limitations
 // under the License.
 
-//go:build !wasm
+//go:build !tinygo.wasm
 
 package tr31
 
