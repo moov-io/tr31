@@ -5,10 +5,12 @@ VERSION := $(shell grep -Eo '(v[0-9]+[\.][0-9]+[\.][0-9]+(-[a-zA-Z0-9]*)?)' vers
 check:
 ifeq ($(OS),Windows_NT)
 	go test ./...
+	go test -tags=tinygo.wasm ./pkg/tr31
 else
 	@wget -O lint-project.sh https://raw.githubusercontent.com/moov-io/infra/master/go/lint-project.sh
 	@chmod +x ./lint-project.sh
 	COVER_THRESHOLD=50.0 ./lint-project.sh
+	go test -count=1 -tags=tinygo.wasm ./pkg/tr31
 endif
 
 dist: clean
