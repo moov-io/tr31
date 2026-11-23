@@ -1,7 +1,10 @@
 package tr31
 
 import (
+	"encoding/hex"
 	"testing"
+
+	"github.com/stretchr/testify/require"
 )
 
 // TestGenerateKBPK test for version D and key length 32
@@ -33,7 +36,7 @@ func TestGenerateKBPK(t *testing.T) {
 		{
 			name: "AES-128",
 			opts: KBPKOptions{
-				Version:   "C",
+				Version:   "D",
 				KeyLength: 16,
 			},
 			expected: 16,
@@ -90,7 +93,7 @@ func TestValidateKBPK(t *testing.T) {
 		{
 			name:     "AES-128",
 			key:      []byte("0123456789ABCDEF"),
-			version:  "C",
+			version:  "D",
 			expected: true,
 		},
 		{
@@ -144,4 +147,55 @@ func TestValidateKBPK(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestKBPK_TDES(t *testing.T) {
+	for _, version := range []string{"A", "B", "C"} {
+		for _, keyLength := range []int{16, 24} {
+			key, err := GenerateKBPK(KBPKOptions{Version: version, KeyLength: keyLength})
+			require.NoError(t, err, "version %s, length %d", version, keyLength)
+			require.Len(t, key, keyLength)
+			require.NoError(t, ValidateKBPK(key, version), "version %s, length %d", version, keyLength)
+		}
+	}
+
+	// Double-length TDES key with odd parity
+	key, err := hex.DecodeString("0123456789ABCDEFFEDCBA9876543210")
+	require.NoError(t, err)
+	require.NoError(t, ValidateKBPK(key, "B"))
+
+	// K1 == K2 is not a valid double-length key
+	key, err = hex.DecodeString("0123456789ABCDEF0123456789ABCDEF")
+	require.NoError(t, err)
+	require.ErrorContains(t, ValidateKBPK(key, "B"), "weak key")
+
+	// Invalid lengths
+	_, err = GenerateKBPK(KBPKOptions{Version: "B", KeyLength: 8})
+	require.ErrorContains(t, err, "TDES KBPK must be 16 or 24 bytes")
+	_, err = GenerateKBPK(KBPKOptions{Version: "C", KeyLength: 32})
+	require.ErrorContains(t, err, "TDES KBPK must be 16 or 24 bytes")
+	require.ErrorContains(t, ValidateKBPK(make([]byte, 32), "B"), "TDES KBPK must be 16 or 24 bytes")
+}
+
+func TestKBPK_TDES_WrapUnwrap(t *testing.T) {
+	kbpk, err := GenerateKBPK(KBPKOptions{Version: "B", KeyLength: 16})
+	require.NoError(t, err)
+
+	header, err := NewHeader("B", "P0", "T", "E", "00", "N")
+	require.NoError(t, err)
+
+	kb, err := NewKeyBlock(kbpk, header)
+	require.NoError(t, err)
+
+	key, err := hex.DecodeString("3F419E1CB7079442AA37474C2EFBF8B8")
+	require.NoError(t, err)
+
+	wrapped, err := kb.Wrap(key, nil)
+	require.NoError(t, err)
+
+	unwrapped, err := NewKeyBlock(kbpk, nil)
+	require.NoError(t, err)
+	got, err := unwrapped.Unwrap(wrapped)
+	require.NoError(t, err)
+	require.Equal(t, key, got)
 }
