@@ -1,9 +1,7 @@
 package server
 
 import (
-	"cmp"
 	"log"
-	"os"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -14,20 +12,20 @@ func mockServiceInMock() Service {
 	return NewService(repository, MODE_MOCK)
 }
 
+// mockVaultAuthOne and mockVaultAuthTwo return fixed values. The expected machine
+// keys in the tests come from these values, so do not read them from the environment
+// (for example VAULT_ADDR or VAULT_TOKEN).
 func mockVaultAuthOne() Vault {
-	address := cmp.Or(os.Getenv("VAULT_ADDR"), "http://localhost:8200")
-	token := cmp.Or(os.Getenv("VAULT_TOKEN"), "token")
-
 	return Vault{
-		VaultAddress: address,
-		VaultToken:   token,
+		VaultAddress: "http://localhost:8200",
+		VaultToken:   "token",
 	}
 }
 
 func mockVaultAuthTwo() Vault {
 	return Vault{
-		VaultAddress: os.Getenv("HASHICORP_VAULT_ADDRESS"),
-		VaultToken:   os.Getenv("HASHICORP_VAULT_TOKEN"),
+		VaultAddress: "http://localhost:8201",
+		VaultToken:   "token2",
 	}
 }
 

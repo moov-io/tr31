@@ -224,7 +224,7 @@ type encryptDataRequest struct {
 }
 type encryptDataResponse struct {
 	Data string `json:"data"`
-	Err  error  `json:"error"`
+	Err  string `json:"error"`
 }
 
 func decodeEncryptDataRequest(_ context.Context, request *http.Request) (interface{}, error) {
@@ -260,14 +260,28 @@ func encryptDataEndpoint(s Service) endpoint.Endpoint {
 	return func(_ context.Context, request interface{}) (interface{}, error) {
 		req, ok := request.(encryptDataRequest)
 		if !ok {
-			return encryptDataResponse{Err: ErrFoundABug}, ErrFoundABug
+			return encryptDataResponse{Err: ErrFoundABug.Error()}, ErrFoundABug
+		}
+
+		if req.keyPath == "" {
+			return encryptDataResponse{Err: errInvalidKeyPath.Error()}, errInvalidKeyPath
+		}
+		if req.keyName == "" {
+			return encryptDataResponse{Err: errInvalidKeyName.Error()}, errInvalidKeyName
+		}
+		if req.encryptKey == "" {
+			return encryptDataResponse{Err: errInvalidEncryptKey.Error()}, errInvalidEncryptKey
+		}
+		h := req.header
+		if h.VersionId == "" || h.KeyUsage == "" || h.Algorithm == "" || h.ModeOfUse == "" || h.KeyVersion == "" || h.Exportability == "" {
+			return encryptDataResponse{Err: errInvalidHeader.Error()}, errInvalidHeader
 		}
 
 		resp := encryptDataResponse{}
 		encrypted, err := s.EncryptData(req.vaultAddr, req.vaultToken, req.keyPath, req.keyName, req.encryptKey, req.header, req.timeout)
 		if err != nil {
-			resp.Err = err
-			return resp, nil
+			resp.Err = err.Error()
+			return resp, err
 		}
 
 		resp.Data = encrypted

@@ -1,6 +1,7 @@
 package main
 
 import (
+	"cmp"
 	"context"
 	"crypto/tls"
 	"flag"
@@ -20,9 +21,16 @@ import (
 	kitlog "github.com/go-kit/log"
 )
 
+const (
+	defaultHTTPAddr  = ":8096"
+	defaultAdminAddr = ":9106"
+)
+
 var (
-	httpAddr  = flag.String("http.addr", bind.HTTP("tr31"), "HTTP listen address")
-	adminAddr = flag.String("admin.addr", bind.Admin("tr31"), "Admin HTTP listen address")
+	// Use the moov-io/base ports for tr31, or the same ports as a local default
+	// when the base version does not have a tr31 entry.
+	httpAddr  = flag.String("http.addr", cmp.Or(bind.HTTP("tr31"), defaultHTTPAddr), "HTTP listen address")
+	adminAddr = flag.String("admin.addr", cmp.Or(bind.Admin("tr31"), defaultAdminAddr), "Admin HTTP listen address")
 
 	flagLogFormat = flag.String("log.format", "", "Format for log lines (Options: json, plain")
 

@@ -33,6 +33,21 @@ var (
 	errInvalidKeyPath      = errors.New("invalid key path")
 	errInvalidKeyName      = errors.New("invalid key name")
 	errInvalidKeyBlock     = errors.New("invalid key block")
+	errInvalidEncryptKey   = errors.New("invalid encrypt key")
+	errInvalidHeader       = errors.New("invalid header: VersionId, KeyUsage, Algorithm, ModeOfUse, KeyVersion and Exportability are required")
+
+	// validationErrors are returned when a request is missing a required field.
+	// They return HTTP 400 Bad Request.
+	validationErrors = []error{
+		errInvalidVaultAddress,
+		errInvalidVaultToken,
+		errInvalidRequestId,
+		errInvalidKeyPath,
+		errInvalidKeyName,
+		errInvalidKeyBlock,
+		errInvalidEncryptKey,
+		errInvalidHeader,
+	}
 )
 
 // contextKey is a unique (and compariable) type we use
@@ -236,6 +251,12 @@ func codeFrom(err error) int {
 	case
 		strings.Contains(errString, errInvalidMachine.Error()):
 		return http.StatusBadRequest
+	}
+
+	for _, verr := range validationErrors {
+		if errors.Is(err, verr) {
+			return http.StatusBadRequest
+		}
 	}
 
 	switch err {
