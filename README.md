@@ -318,6 +318,8 @@ vault kv put secret/tr31 kbpk=DD7515F2BFC17F85CE48F3CA25CB21F6
 
 A path without `data/` (for example `secret/tr31`) fails with `missing 'data' key in secret response`.
 
+`make setup` starts a Vault dev server with Docker Compose (address `http://localhost:8200`, token `myroot`) and stores this test KBPK at `secret/tr31` (field `kbpk`). Do not use the test KBPK in production.
+
 
 ## Contributing
 
