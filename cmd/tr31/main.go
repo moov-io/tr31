@@ -1,6 +1,7 @@
 package main
 
 import (
+	"errors"
 	"flag"
 	"fmt"
 	"os"
@@ -13,86 +14,124 @@ import (
 var (
 	flagVersion = flag.Bool("v", false, "Print tr31 cli version")
 
-	flagEncrypt         = flag.Bool("e", false, "encrypt card data block using tr31 transaction key")
-	flagDecrypt         = flag.Bool("d", false, "decrypt card data block using tr31 transaction key")
-	flagVaultAddress    = flag.String("vault_address", "", "key stored vault address")
-	flagVaultToken      = flag.String("vault_token", "", "key stored vault token")
-	flagKeyPath         = flag.String("key_path", "", "key stored vault key path")
-	flagKeyName         = flag.String("key_name", "", "key stored vault key name")
-	flagWrapperKey      = flag.String("wrapper_key", "", "Symmetric key")
-	flagDecryptKeyBlock = flag.String("key_block", "", "wrapped key block for decryption")
+	flagEncrypt         = flag.Bool("e", false, "Wrap a key (-wrapper_key) under the KBPK stored in Vault")
+	flagDecrypt         = flag.Bool("d", false, "Unwrap a key block (-key_block) with the KBPK stored in Vault")
+	flagVaultAddress    = flag.String("vault_address", "", "Vault address, for example http://127.0.0.1:8200")
+	flagVaultToken      = flag.String("vault_token", "", "Vault token for authentication")
+	flagKeyPath         = flag.String("key_path", "", "Vault KV v2 API path of the secret that holds the KBPK, for example secret/data/tr31")
+	flagKeyName         = flag.String("key_name", "", "Field in the Vault secret that holds the hex-encoded KBPK, for example kbpk")
+	flagWrapperKey      = flag.String("wrapper_key", "", "Hex-encoded key to wrap (used with -e)")
+	flagDecryptKeyBlock = flag.String("key_block", "", "TR-31 key block to unwrap (used with -d)")
+
+	// Key block header flags (used with -e)
+	flagVersionID     = flag.String("version_id", "", "Key block version ID: A, B, C or D (used with -e)")
+	flagKeyUsage      = flag.String("key_usage", "", "Key usage, for example P0, D0, K0 or B0 (used with -e)")
+	flagAlgorithm     = flag.String("algorithm", "", "Algorithm of the wrapped key: T (TDES), D (DES) or A (AES) (used with -e)")
+	flagModeOfUse     = flag.String("mode_of_use", "", "Mode of use, for example E, D, B, N or X (used with -e)")
+	flagKeyVersion    = flag.String("key_version", "00", "Key version number (used with -e)")
+	flagExportability = flag.String("exportability", "N", "Exportability: E, N or S (used with -e)")
 )
 
 func main() {
 	flag.Usage = help
 	flag.Parse()
-	params := server.UnifiedParams{}
 
-	switch {
-	case *flagVersion:
+	if *flagVersion {
 		fmt.Printf("moov-io/tr31:%s cli tool\n", tr31.Version)
 		return
 	}
 
-	// wrap
-	if *flagEncrypt {
-		if *flagVaultAddress == "" {
-			fmt.Printf("please select vault address key with vault_address flag\n")
-			os.Exit(1)
-		}
-		if *flagVaultToken == "" {
-			fmt.Printf("please select vault token with vault_token flag\n")
-			os.Exit(1)
-		}
-		if *flagKeyPath == "" {
-			fmt.Printf("please select vault key path with key_path flag\n")
-			os.Exit(1)
-		}
-		if *flagKeyName == "" {
-			fmt.Printf("please select vault key name with key_name flag\n")
-			os.Exit(1)
-		}
-		if *flagWrapperKey == "" {
-			fmt.Printf("please select vault block with wrapper_key flag\n")
-			os.Exit(1)
-		}
-		params.VaultAddr = *flagVaultAddress
-		params.VaultToken = *flagVaultToken
-		params.KeyPath = *flagKeyPath
-		params.KeyName = *flagKeyName
-		params.EncKey = *flagWrapperKey
-		makeFuncCall(server.Encrypt, params)
+	params, err := buildParams()
+	if err != nil {
+		fmt.Printf("%v\n", err)
+		os.Exit(1)
 	}
 
-	// unwrap
-	if *flagDecrypt {
-		if *flagVaultAddress == "" {
-			fmt.Printf("please select vault address key with vault_address flag\n")
-			os.Exit(1)
-		}
-		if *flagVaultToken == "" {
-			fmt.Printf("please select vault token with vault_token flag\n")
-			os.Exit(1)
-		}
-		if *flagKeyPath == "" {
-			fmt.Printf("please select vault key path with key_path flag\n")
-			os.Exit(1)
-		}
-		if *flagKeyName == "" {
-			fmt.Printf("please select vault key name with key_name flag\n")
-			os.Exit(1)
-		}
-		if *flagDecryptKeyBlock == "" {
-			fmt.Printf("please select vault block with key_block flag\n")
-			os.Exit(1)
-		}
-		params.VaultAddr = *flagVaultAddress
-		params.VaultToken = *flagVaultToken
-		params.KeyPath = *flagKeyPath
-		params.KeyName = *flagKeyName
-		params.KeyBlock = *flagDecryptKeyBlock
+	switch {
+	case *flagEncrypt:
+		makeFuncCall(server.Encrypt, params)
+	case *flagDecrypt:
 		makeFuncCall(server.Decrypt, params)
+	default:
+		flag.Usage()
+		os.Exit(1)
 	}
+}
+
+// buildParams checks the flags and returns the parameters for the selected action.
+func buildParams() (server.UnifiedParams, error) {
+	params := server.UnifiedParams{}
+
+	if *flagEncrypt && *flagDecrypt {
+		return params, errors.New("use only one of -e or -d")
+	}
+	if !*flagEncrypt && !*flagDecrypt {
+		return params, nil
+	}
+
+	if *flagVaultAddress == "" {
+		return params, errors.New("please select vault address with vault_address flag")
+	}
+	if *flagVaultToken == "" {
+		return params, errors.New("please select vault token with vault_token flag")
+	}
+	if *flagKeyPath == "" {
+		return params, errors.New("please select vault key path with key_path flag")
+	}
+	if *flagKeyName == "" {
+		return params, errors.New("please select vault key name with key_name flag")
+	}
+	params.VaultAddr = *flagVaultAddress
+	params.VaultToken = *flagVaultToken
+	params.KeyPath = *flagKeyPath
+	params.KeyName = *flagKeyName
+
+	if *flagEncrypt {
+		if *flagWrapperKey == "" {
+			return params, errors.New("please select the key to wrap with wrapper_key flag")
+		}
+		header := server.HeaderParams{
+			VersionId:     *flagVersionID,
+			KeyUsage:      *flagKeyUsage,
+			Algorithm:     *flagAlgorithm,
+			ModeOfUse:     *flagModeOfUse,
+			KeyVersion:    *flagKeyVersion,
+			Exportability: *flagExportability,
+		}
+		var missing []string
+		if header.VersionId == "" {
+			missing = append(missing, "-version_id")
+		}
+		if header.KeyUsage == "" {
+			missing = append(missing, "-key_usage")
+		}
+		if header.Algorithm == "" {
+			missing = append(missing, "-algorithm")
+		}
+		if header.ModeOfUse == "" {
+			missing = append(missing, "-mode_of_use")
+		}
+		if header.KeyVersion == "" {
+			missing = append(missing, "-key_version")
+		}
+		if header.Exportability == "" {
+			missing = append(missing, "-exportability")
+		}
+		if len(missing) > 0 {
+			return params, fmt.Errorf("please set the key block header with %s", strings.Join(missing, ", "))
+		}
+		params.EncKey = *flagWrapperKey
+		params.Header = header
+	}
+
+	if *flagDecrypt {
+		if *flagDecryptKeyBlock == "" {
+			return params, errors.New("please select the key block to unwrap with key_block flag")
+		}
+		params.KeyBlock = *flagDecryptKeyBlock
+	}
+
+	return params, nil
 }
 
 func makeFuncCall(f server.WrapperCall, params server.UnifiedParams) {
@@ -108,14 +147,21 @@ func makeFuncCall(f server.WrapperCall, params server.UnifiedParams) {
 func help() {
 	fmt.Printf(strings.TrimSpace(`
 tr31 is a CLI implementing the TR-31 (ANSI X9.143) key block standard for secure cryptographic key exchange.
+It wraps and unwraps keys with a Key Block Protection Key (KBPK) that is stored in a Vault KV v2 secret.
 
 USAGE
-   tr31 [-v] [-e] [-d]
+   tr31 [-v] [-e] [-d] [flags]
 
 EXAMPLES
   tr31 -v           Print the version of tr31 (Example: %s)
-  tr31 -e			Encrypt card data block using tr31 kbkp key
-  tr31 -d           Decrypt card data block using tr31 kbkp key
+  tr31 -e           Wrap a key (-wrapper_key) under the KBPK
+  tr31 -d           Unwrap a key block (-key_block) with the KBPK
+
+  tr31 -e -vault_address=http://127.0.0.1:8200 -vault_token=<token> -key_path=secret/data/tr31 -key_name=kbpk \
+     -version_id=B -key_usage=P0 -algorithm=T -mode_of_use=E -wrapper_key=<hex key>
+
+  tr31 -d -vault_address=http://127.0.0.1:8200 -vault_token=<token> -key_path=secret/data/tr31 -key_name=kbpk \
+     -key_block=<key block>
 
 FLAGS
 `), tr31.Version)
