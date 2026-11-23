@@ -339,13 +339,7 @@ Use only one of `-e` or `-d`.
 
 ### Vault KBPK
 
-Store the hex-encoded KBPK in a Vault KV v2 secret. Then set `-key_path` to the KV v2 API path (with `data/`) and `-key_name` to the field name:
-
-```bash
-vault kv put secret/tr31 kbpk=DD7515F2BFC17F85CE48F3CA25CB21F6
-```
-
-A path without `data/` (for example `-key_path=secret/tr31`) fails with `missing 'data' key in secret response`.
+The CLI reads the KBPK from a Vault KV v2 secret. Set `-key_path` to the KV v2 API path (for example `secret/data/tr31`) and `-key_name` to the field name. See [Vault setup](#vault-setup).
 
 ### EXAMPLES
 ```
