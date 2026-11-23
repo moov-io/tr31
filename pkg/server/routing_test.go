@@ -114,13 +114,13 @@ func TestCreateMachine(t *testing.T) {
 		{
 			name:           "Missing Vault Token",
 			requestData:    Vault{VaultAddress: "http://localhost:8200"},
-			expectedStatus: http.StatusInternalServerError,
+			expectedStatus: http.StatusBadRequest,
 			expectedError:  "Invalid vault Token",
 		},
 		{
 			name:           "Empty Request Body",
 			requestData:    Vault{},
-			expectedStatus: http.StatusInternalServerError,
+			expectedStatus: http.StatusBadRequest,
 			expectedError:  "Invalid Vault Address",
 		},
 	}
@@ -463,7 +463,7 @@ func Test_DecryptData(t *testing.T) {
 				KeyPath: "secret/tr31",
 				KeyName: "kbkp",
 			},
-			expectedStatus: http.StatusInternalServerError,
+			expectedStatus: http.StatusBadRequest,
 			validateResp:   false,
 		},
 		{
@@ -486,7 +486,7 @@ func Test_DecryptData(t *testing.T) {
 				KeyName:  "kbkp",
 				KeyBlock: "A0088M3TC00E000022BD7EC46BBE2A6A73389D1BA6DB63120B386F912839F4679C0523399E4D8D0F1D9A356E", // gitleaks:allow
 			},
-			expectedStatus: http.StatusInternalServerError,
+			expectedStatus: http.StatusBadRequest,
 			validateResp:   false,
 		},
 		{
@@ -511,7 +511,7 @@ func Test_DecryptData(t *testing.T) {
 			body: map[string]interface{}{
 				"wrongField": "unexpected",
 			},
-			expectedStatus: http.StatusInternalServerError,
+			expectedStatus: http.StatusBadRequest,
 			validateResp:   false,
 		},
 	}
@@ -583,6 +583,103 @@ func Test_DecryptData(t *testing.T) {
 					require.NotNil(t, response4.Data)
 					require.Equal(t, tt.expectedKey, response4.Data)
 				}
+			}
+		})
+	}
+}
+
+func TestRouting_EncryptData(t *testing.T) {
+	allowTestCORS(t)
+
+	repository := NewRepositoryInMemory(nil)
+	mockService := NewService(repository, MODE_MOCK)
+	verr := mockService.GetSecretManager().WriteSecret(
+		"secret/tr31",
+		"kbkp",
+		"AAAAAAAAAAAAAAAABBBBBBBBBBBBBBBBCCCCCCCCCCCCCCCC",
+	)
+	require.Nil(t, verr)
+	router := MakeHTTPHandler(mockService)
+
+	header := HeaderParams{
+		VersionId:     "B",
+		KeyUsage:      "P0",
+		Algorithm:     "T",
+		ModeOfUse:     "E",
+		KeyVersion:    "00",
+		Exportability: "N",
+	}
+
+	tests := []struct {
+		name           string
+		body           map[string]interface{}
+		expectedStatus int
+		expectedError  string
+	}{
+		{
+			name: "Valid request",
+			body: map[string]interface{}{
+				"VaultAddr": "mock", "VaultToken": "mock",
+				"KeyPath": "secret/tr31", "KeyName": "kbkp",
+				"EncryptKey": "ccccccccccccccccdddddddddddddddd",
+				"Header":     header,
+			},
+			expectedStatus: http.StatusOK,
+		},
+		{
+			name: "Missing Header",
+			body: map[string]interface{}{
+				"VaultAddr": "mock", "VaultToken": "mock",
+				"KeyPath": "secret/tr31", "KeyName": "kbkp",
+				"EncryptKey": "ccccccccccccccccdddddddddddddddd",
+			},
+			expectedStatus: http.StatusBadRequest,
+			expectedError:  "invalid header",
+		},
+		{
+			name: "Missing EncryptKey",
+			body: map[string]interface{}{
+				"KeyPath": "secret/tr31", "KeyName": "kbkp",
+				"Header": header,
+			},
+			expectedStatus: http.StatusBadRequest,
+			expectedError:  "invalid encrypt key",
+		},
+		{
+			name: "Invalid Header value",
+			body: map[string]interface{}{
+				"KeyPath": "secret/tr31", "KeyName": "kbkp",
+				"EncryptKey": "ccccccccccccccccdddddddddddddddd",
+				"Header": HeaderParams{
+					VersionId: "Z", KeyUsage: "P0", Algorithm: "T",
+					ModeOfUse: "E", KeyVersion: "00", Exportability: "N",
+				},
+			},
+			expectedStatus: http.StatusInternalServerError,
+			expectedError:  "version ID",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			bs, err := json.Marshal(tt.body)
+			require.NoError(t, err)
+
+			req := httptest.NewRequest("POST", "/encrypt_data", bytes.NewReader(bs))
+			w := httptest.NewRecorder()
+			router.ServeHTTP(w, req)
+			w.Flush()
+
+			require.Equal(t, tt.expectedStatus, w.Code, w.Body.String())
+
+			var resp map[string]interface{}
+			require.NoError(t, json.Unmarshal(w.Body.Bytes(), &resp))
+			if tt.expectedError != "" {
+				errMsg, ok := resp["error"].(string)
+				require.True(t, ok, "error must be a string: %v", resp)
+				require.Contains(t, errMsg, tt.expectedError)
+			} else {
+				require.True(t, strings.HasPrefix(resp["data"].(string), "B0096P0TE00N0000"), resp)
 			}
 		})
 	}

@@ -266,12 +266,96 @@ tr31 is a tool for managing both 3DES and AES-derived unique keys per transactio
 ```
 
 ### Rest APIs
-TR31 library provided web server. Please check following http endpoints
+TR31 library provided web server. The server reads the KBPK from a Vault KV v2 secret (see [Vault setup](#vault-setup)).
+
+Start the server:
+
+```bash
+go run ./cmd/server
+# or
+go install github.com/moov-io/tr31/cmd/server@latest
+```
+
+By default the HTTP server listens on `:8096` and the admin server listens on `:9106`. Use `-http.addr` and `-admin.addr` (or `HTTP_BIND_ADDRESS` and `HTTP_ADMIN_BIND_ADDRESS`) to change them. Set `HTTPS_CERT_FILE` and `HTTPS_KEY_FILE` to serve HTTPS. Set `LOG_FORMAT=json` for JSON logs.
 
 | Method | Request Body | Route              | Action         |
 |--------|--------------|--------------------|----------------|
-| POST   | JSON         | /encrypt_data      | Encrypt Data   |
-| POST   | JSON         | /decrypt_data      | Decrypt Data   |
+| GET    |              | /ping              | Health check (returns `PONG`) |
+| POST   | JSON         | /encrypt_data      | Wrap a key under the KBPK in Vault |
+| POST   | JSON         | /decrypt_data      | Unwrap a key block with the KBPK in Vault |
+| POST   | JSON         | /machine           | Create a machine |
+| GET    |              | /machines          | List machines  |
+| GET    |              | /machine/{ik}      | Get a machine  |
+| GET    |              | :9106/version      | Server version (admin server) |
+
+Errors return a JSON body `{"error": "..."}`. A missing required field returns `400 Bad Request`.
+
+**Encrypt Data** (all fields are required)
+
+```bash
+ENCRYPT_KEY="3F419E1CB7079442AA37474C2EFBF8B8" # gitleaks:allow
+curl -X POST http://localhost:8096/encrypt_data -d '{
+  "VaultAddr": "http://127.0.0.1:8200",
+  "VaultToken": "myroot",
+  "KeyPath": "secret/data/tr31",
+  "KeyName": "kbpk",
+  "EncryptKey": "'"$ENCRYPT_KEY"'",
+  "Header": {
+    "VersionId": "B",
+    "KeyUsage": "P0",
+    "Algorithm": "T",
+    "ModeOfUse": "E",
+    "KeyVersion": "00",
+    "Exportability": "N"
+  }
+}'
+```
+```json
+{"data":"B0096P0TE00N0000464e4b02...","error":""}
+```
+
+**Decrypt Data**
+
+```bash
+KEY_BLOCK="B0080P0TE00E000094B420079CC80BA3461F86FE26EFC4A3B8E4FA4C5F5341176EED7B727B8A248E" # gitleaks:allow
+curl -X POST http://localhost:8096/decrypt_data -d '{
+  "VaultAddr": "http://127.0.0.1:8200",
+  "VaultToken": "myroot",
+  "KeyPath": "secret/data/tr31",
+  "KeyName": "kbpk",
+  "KeyBlock": "'"$KEY_BLOCK"'"
+}'
+```
+```json
+{"data":"3f419e1cb7079442aa37474c2efbf8b8","error":""}
+```
+
+**Machines**
+
+```bash
+curl -X POST http://localhost:8096/machine -d '{"VaultAddress":"http://127.0.0.1:8200","VaultToken":"myroot"}'
+```
+```json
+{"ik":"4c1be97a6604c657","machine":{"InitialKey":"4c1be97a6604c657","TransactionKey":"9724a226da2801c2","CreatedAt":"0001-01-01T00:00:00Z"},"error":""}
+```
+
+```bash
+curl http://localhost:8096/machines
+curl http://localhost:8096/machine/4c1be97a6604c657
+```
+
+#### Vault setup
+
+The CLI and the server read the KBPK (hex encoded) from a Vault KV v2 secret. `-key_path` / `KeyPath` is the KV v2 API path, which includes `data/`. `-key_name` / `KeyName` is the field in the secret.
+
+```bash
+vault kv put secret/tr31 kbpk=DD7515F2BFC17F85CE48F3CA25CB21F6
+# then use: KeyPath "secret/data/tr31", KeyName "kbpk"
+```
+
+A path without `data/` (for example `secret/tr31`) fails with `missing 'data' key in secret response`.
+
+`make setup` starts a Vault dev server with Docker Compose (address `http://localhost:8200`, token `myroot`) and stores this test KBPK at `secret/tr31` (field `kbpk`). Do not use the test KBPK in production.
 
 
 ## Contributing

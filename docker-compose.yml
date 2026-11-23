@@ -33,7 +33,7 @@ services:
     command:
       - "/bin/sh"
       - "-c"
-      - "vault secrets enable transit; vault write -f transit/keys/testkey"
+      - "vault secrets enable transit; vault write -f transit/keys/testkey; vault kv put secret/tr31 kbpk=DD7515F2BFC17F85CE48F3CA25CB21F6"
 
 networks:
   intranet:
