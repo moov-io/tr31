@@ -1,9 +1,9 @@
 [![Moov Banner Logo](https://user-images.githubusercontent.com/20115216/104214617-885b3c80-53ec-11eb-8ce0-9fc745fb5bfc.png)](https://github.com/moov-io)
 
 <p align="center">
-  <a href="https://moov-io.github.io/tr31/">Project Documentation</a>
+  <a href="https://pkg.go.dev/github.com/moov-io/tr31/pkg/tr31">Go Documentation</a>
   ·
-  <a href="https://moov-io.github.io/tr31/api/#overview">API Endpoints</a>
+  <a href="#rest-apis">API Endpoints</a>
   ·
   <a href="https://slack.moov.io/">Community</a>
   ·
@@ -37,13 +37,26 @@ moov-io/tr31 is undergoing active development and testing within Moov. Please st
   - AES
 - Comprehensive error handling with detailed error messages
 - Thread-safe operations
-- No external dependencies
+- The `pkg/tr31` library depends only on the Go standard library and [`go-safecast`](https://github.com/ccoveille/go-safecast). The CLI and server also use Vault, go-kit and moov-io/base.
 
 ## Installation
 
+tr31 requires Go 1.26 or newer.
+
+Add the library to your Go module:
+
 ```bash
-go get github.com/moov-io/tr31
+go get github.com/moov-io/tr31/pkg/tr31@latest
 ```
+
+Install the CLI and the server:
+
+```bash
+go install github.com/moov-io/tr31/cmd/tr31@latest
+go install github.com/moov-io/tr31/cmd/server@latest
+```
+
+The releases do not include prebuilt binaries.
 
 ## Usage
 
@@ -108,6 +121,44 @@ func main() {
         panic(err)
     }
     fmt.Printf("unwrapped a %d-byte key\n", len(unwrappedKey))
+}
+```
+
+### Unwrap a key block from another system
+
+To unwrap a key block from an HSM or another system, you need only the KBPK. Give `nil` as the header to `NewKeyBlock`. `Unwrap` reads the header from the key block. The `header` parameter of `NewKeyBlock` also accepts a `*tr31.Header` or a header string.
+
+```go
+package main
+
+import (
+    "encoding/hex"
+    "fmt"
+
+    "github.com/moov-io/tr31/pkg/tr31"
+)
+
+func main() {
+    kbpk, err := hex.DecodeString("DD7515F2BFC17F85CE48F3CA25CB21F6") // double-length TDES KBPK
+    if err != nil {
+        panic(err)
+    }
+
+    keyBlock, err := tr31.NewKeyBlock(kbpk, nil)
+    if err != nil {
+        panic(err)
+    }
+
+    key, err := keyBlock.Unwrap("B0080P0TE00E000094B420079CC80BA3461F86FE26EFC4A3B8E4FA4C5F5341176EED7B727B8A248E")
+    if err != nil {
+        panic(err)
+    }
+    fmt.Printf("key: %X\n", key) // key: 3F419E1CB7079442AA37474C2EFBF8B8
+
+    // Read the header (and optional blocks) of the unwrapped key block
+    header := keyBlock.GetHeader()
+    fmt.Printf("version=%s key usage=%s algorithm=%s mode of use=%s\n",
+        header.VersionID, header.KeyUsage, header.Algorithm, header.ModeOfUse)
 }
 ```
 
@@ -183,17 +234,21 @@ The library provides detailed error messages through two custom error types:
 
 ## Benchmarks
 
-Unwraps a TR-31 formatted key block to retrieve the original key.
+The benchmarks measure `Unwrap` for each key block version. Run them with:
 
 ```bash
-Running tool: /opt/homebrew/bin/go test -benchmem -run=^$ -bench ^BenchmarkUnwrap_D_32_WithSetup$ github.com/moov-io/tr31/pkg/tr31
+go test ./pkg/tr31 -run '^$' -bench '^BenchmarkUnwrap' -benchmem
+# or, to get the median of 6 runs:
+make bench
+```
 
-goos: darwin
-goarch: arm64
-pkg: github.com/moov-io/tr31/pkg/tr31
-cpu: Apple M1 Pro
+Example result (Apple M1 Pro):
+
+```
 BenchmarkUnwrap_D_32_WithSetup-10    	  301116	      3619 ns/op	    8608 B/op	      64 allocs/op
 ```
+
+The results from CI are stored in the [`bench-data` branch](https://github.com/moov-io/tr31/tree/bench-data/docs/bench).
 
 ### Command Line Usage
 
@@ -243,13 +298,23 @@ TR31 library provided web server. Please check following http endpoints
 
 Contributions are welcome! Please feel free to submit a Pull Request.
 
+To run the tests:
+
+```bash
+make setup     # start a Vault dev server with Docker Compose
+go test ./...
+make teardown
+```
+
+`make check` runs the full set of checks that CI runs.
+
 ## License
 
 This project is licensed under the Apache License 2.0 - see the [LICENSE](LICENSE) file for details.
 
 ## References
 
-- [ASC X9.143 Standard](https://x9.org/standards/tr-31-interoperable-secure-key-exchange-key-block-specification-for-symmetric-algorithms/)
+- [ANSI X9.143-2022 Standard](https://webstore.ansi.org/standards/ascx9/ansix91432022)
 - [ANSI TR-31 Documentation](https://www.ncr.com/content/dam/ncrcom/content-type/documents/ncr-tr31-security.pdf)
 
 ---
