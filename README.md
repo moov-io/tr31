@@ -167,6 +167,41 @@ The library supports different TR-31 versions with specific characteristics:
   - 16-byte MAC
   - Supports AES-128, AES-192, and AES-256
 
+### Key Block Protection Keys (KBPK)
+
+`GenerateKBPK` and `ValidateKBPK` accept these KBPK lengths:
+
+| Version | KBPK algorithm | KBPK length (bytes) |
+|---------|----------------|---------------------|
+| A, B, C | TDES           | 16 (double-length) or 24 (triple-length) |
+| D       | AES            | 16, 24, or 32       |
+
+TDES KBPKs must have odd parity, and the 8-byte parts of the key must be different. `GenerateKBPK` sets the parity for you.
+
+```go
+// Double-length TDES KBPK for version B (the usual ZMK size on many HSMs)
+kbpk, err := tr31.GenerateKBPK(tr31.KBPKOptions{
+    Version:   tr31.TR31_VERSION_B,
+    KeyLength: 16,
+})
+if err != nil {
+    panic(err)
+}
+
+header, err := tr31.NewHeader(
+    tr31.TR31_VERSION_B,
+    tr31.KEY_USAGE_PIN_ENCRYPTION, // "P0"
+    tr31.ENC_ALGORITHM_TRIPLE_DES, // "T"
+    tr31.MODE_OF_USE_ENCRYPT,      // "E"
+    "00",
+    tr31.EXPORTABILITY_NONE, // "N"
+)
+if err != nil {
+    panic(err)
+}
+keyBlock, err := tr31.NewKeyBlock(kbpk, header)
+```
+
 ## Security Considerations
 
 - Always use strong, random Key Block Protection Keys (KBPK)
