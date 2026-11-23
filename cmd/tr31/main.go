@@ -157,11 +157,11 @@ EXAMPLES
   tr31 -e           Wrap a key (-wrapper_key) under the KBPK
   tr31 -d           Unwrap a key block (-key_block) with the KBPK
 
-  tr31 -e -vault_address=http://127.0.0.1:8200 -vault_token=myroot -key_path=secret/data/tr31 -key_name=kbpk \
-     -wrapper_key=3F419E1CB7079442AA37474C2EFBF8B8 -version_id=B -key_usage=P0 -algorithm=T -mode_of_use=E
+  tr31 -e -vault_address=http://127.0.0.1:8200 -vault_token=<token> -key_path=secret/data/tr31 -key_name=kbpk \
+     -version_id=B -key_usage=P0 -algorithm=T -mode_of_use=E -wrapper_key=<hex key>
 
-  tr31 -d -vault_address=http://127.0.0.1:8200 -vault_token=myroot -key_path=secret/data/tr31 -key_name=kbpk \
-     -key_block=B0080P0TE00E000094B420079CC80BA3461F86FE26EFC4A3B8E4FA4C5F5341176EED7B727B8A248E
+  tr31 -d -vault_address=http://127.0.0.1:8200 -vault_token=<token> -key_path=secret/data/tr31 -key_name=kbpk \
+     -key_block=<key block>
 
 FLAGS
 `), tr31.Version)

@@ -260,12 +260,12 @@ A path without `data/` (for example `-key_path=secret/tr31`) fails with `missing
 ### EXAMPLES
 ```
 tr31 -e -vault_address=http://127.0.0.1:8200 -vault_token=myroot -key_path=secret/data/tr31 -key_name=kbpk \
-   -wrapper_key=3F419E1CB7079442AA37474C2EFBF8B8 \
-   -version_id=B -key_usage=P0 -algorithm=T -mode_of_use=E -key_version=00 -exportability=N
+   -version_id=B -key_usage=P0 -algorithm=T -mode_of_use=E -key_version=00 -exportability=N \
+   -wrapper_key=3F419E1CB7079442AA37474C2EFBF8B8 # gitleaks:allow
 RESULT: B0096P0TE00N0000...
 
 tr31 -d -vault_address=http://127.0.0.1:8200 -vault_token=myroot -key_path=secret/data/tr31 -key_name=kbpk \
-   -key_block=B0080P0TE00E000094B420079CC80BA3461F86FE26EFC4A3B8E4FA4C5F5341176EED7B727B8A248E
+   -key_block=B0080P0TE00E000094B420079CC80BA3461F86FE26EFC4A3B8E4FA4C5F5341176EED7B727B8A248E # gitleaks:allow
 RESULT: 3f419e1cb7079442aa37474c2efbf8b8
 ```
 

@@ -40,7 +40,7 @@ func TestBuildParams_EncryptAndDecrypt(t *testing.T) {
 func TestBuildParams_EncryptMissingHeader(t *testing.T) {
 	setBool(t, flagEncrypt, true)
 	setVaultFlags(t)
-	setFlag(t, flagWrapperKey, "3F419E1CB7079442AA37474C2EFBF8B8")
+	setFlag(t, flagWrapperKey, "3F419E1CB7079442AA37474C2EFBF8B8") // gitleaks:allow
 
 	_, err := buildParams()
 	require.ErrorContains(t, err, "-version_id, -key_usage, -algorithm, -mode_of_use")
@@ -49,7 +49,7 @@ func TestBuildParams_EncryptMissingHeader(t *testing.T) {
 func TestBuildParams_Encrypt(t *testing.T) {
 	setBool(t, flagEncrypt, true)
 	setVaultFlags(t)
-	setFlag(t, flagWrapperKey, "3F419E1CB7079442AA37474C2EFBF8B8")
+	setFlag(t, flagWrapperKey, "3F419E1CB7079442AA37474C2EFBF8B8") // gitleaks:allow
 	setFlag(t, flagVersionID, "B")
 	setFlag(t, flagKeyUsage, "P0")
 	setFlag(t, flagAlgorithm, "T")
@@ -81,7 +81,7 @@ func TestBuildParams_Decrypt(t *testing.T) {
 	_, err := buildParams()
 	require.ErrorContains(t, err, "key_block")
 
-	setFlag(t, flagDecryptKeyBlock, "B0080P0TE00E000094B420079CC80BA3461F86FE26EFC4A3B8E4FA4C5F5341176EED7B727B8A248E")
+	setFlag(t, flagDecryptKeyBlock, "B0080P0TE00E000094B420079CC80BA3461F86FE26EFC4A3B8E4FA4C5F5341176EED7B727B8A248E") // gitleaks:allow
 	params, err := buildParams()
 	require.NoError(t, err)
 	require.Equal(t, "secret/data/tr31", params.KeyPath)
