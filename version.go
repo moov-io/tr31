@@ -18,4 +18,4 @@
 package tr31
 
 // Version Number
-const Version = "v1.2.0"
+const Version = "v1.3.0"

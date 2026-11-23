@@ -8,7 +8,7 @@ require (
 	github.com/go-kit/log v0.2.1
 	github.com/gorilla/mux v1.8.1
 	github.com/hashicorp/vault/api v1.23.0
-	github.com/moov-io/base v0.68.2
+	github.com/moov-io/base v0.68.3
 	github.com/stretchr/testify v1.12.1
 )
 
@@ -35,7 +35,7 @@ require (
 	github.com/prometheus/client_model v0.6.3 // indirect
 	github.com/prometheus/common v0.72.0 // indirect
 	github.com/prometheus/procfs v0.22.0 // indirect
-	github.com/rickar/cal/v2 v2.1.32 // indirect
+	github.com/rickar/cal/v2 v2.1.34 // indirect
 	github.com/ryanuber/go-glob v1.0.0 // indirect
 	go.yaml.in/yaml/v3 v3.0.5 // indirect
 	golang.org/x/net v0.61.0 // indirect
