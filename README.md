@@ -197,37 +197,76 @@ BenchmarkUnwrap_D_32_WithSetup-10    	  301116	      3619 ns/op	    8608 B/op	  
 
 ### Command Line Usage
 
-tr31 is a tool for managing both 3DES and AES-derived unique keys per transaction (TR-31) key management.
+tr31 is a tool that wraps a key under a Key Block Protection Key (KBPK) and unwraps TR-31 key blocks. The KBPK is stored in a Vault KV v2 secret.
+
+```bash
+go install github.com/moov-io/tr31/cmd/tr31@latest
+```
 
 ### USAGE
-    tr31 [-v] [-algorithm] [-e] [-d]
+    tr31 [-v] [-e] [-d] [flags]
 
 ### EXAMPLES
     tr31 -v
       Print the version of tr31 (Example: v1.0.0)
     tr31 -e
-      Encrypt a card data block using the TR-31 transaction key
+      Wrap a key (-wrapper_key) under the KBPK. Requires the key block header flags.
     tr31 -d
-      Decrypt a card data block using the TR-31 transaction key
+      Unwrap a key block (-key_block) with the KBPK
+
+Use only one of `-e` or `-d`.
 
 ### FLAGS
-    -vault_address string
-      Vault address where the encryption/decryption key is stored
-    -vault_token string
-      Vault token for authentication
-    -key_path string
-      Path to the encryption/decryption key in the vault
-    -key_name string
-      Name of the encryption/decryption key in the vault
-    -wrapper_key string
-      Symmetric key
-    -key_block string
-      Wrapped key block for decryption
+```
+  -algorithm string
+    	Algorithm of the wrapped key: T (TDES), D (DES) or A (AES) (used with -e)
+  -d	Unwrap a key block (-key_block) with the KBPK stored in Vault
+  -e	Wrap a key (-wrapper_key) under the KBPK stored in Vault
+  -exportability string
+    	Exportability: E, N or S (used with -e) (default "N")
+  -key_block string
+    	TR-31 key block to unwrap (used with -d)
+  -key_name string
+    	Field in the Vault secret that holds the hex-encoded KBPK, for example kbpk
+  -key_path string
+    	Vault KV v2 API path of the secret that holds the KBPK, for example secret/data/tr31
+  -key_usage string
+    	Key usage, for example P0, D0, K0 or B0 (used with -e)
+  -key_version string
+    	Key version number (used with -e) (default "00")
+  -mode_of_use string
+    	Mode of use, for example E, D, B, N or X (used with -e)
+  -v	Print tr31 cli version
+  -vault_address string
+    	Vault address, for example http://127.0.0.1:8200
+  -vault_token string
+    	Vault token for authentication
+  -version_id string
+    	Key block version ID: A, B, C or D (used with -e)
+  -wrapper_key string
+    	Hex-encoded key to wrap (used with -e)
+```
+
+### Vault KBPK
+
+Store the hex-encoded KBPK in a Vault KV v2 secret. Then set `-key_path` to the KV v2 API path (with `data/`) and `-key_name` to the field name:
+
+```bash
+vault kv put secret/tr31 kbpk=DD7515F2BFC17F85CE48F3CA25CB21F6
+```
+
+A path without `data/` (for example `-key_path=secret/tr31`) fails with `missing 'data' key in secret response`.
 
 ### EXAMPLES
 ```
-      tr31 -e -vault_address="https://vault-cluster....com:8200" -vault_token="hvs.CA******Ak" -key_path="kv/.../key" -key_name="wrapper_key" -wrapper_key="A0088******A356E"
-      tr31 -d -vault_address="https://vault-cluster....com:8200" -vault_token="hvs.CA******Ak" -key_path="kv/.../key" -key_name="kbkp" -key_block="A0088******A356E"
+tr31 -e -vault_address=http://127.0.0.1:8200 -vault_token=myroot -key_path=secret/data/tr31 -key_name=kbpk \
+   -wrapper_key=3F419E1CB7079442AA37474C2EFBF8B8 \
+   -version_id=B -key_usage=P0 -algorithm=T -mode_of_use=E -key_version=00 -exportability=N
+RESULT: B0096P0TE00N0000...
+
+tr31 -d -vault_address=http://127.0.0.1:8200 -vault_token=myroot -key_path=secret/data/tr31 -key_name=kbpk \
+   -key_block=B0080P0TE00E000094B420079CC80BA3461F86FE26EFC4A3B8E4FA4C5F5341176EED7B727B8A248E
+RESULT: 3f419e1cb7079442aa37474c2efbf8b8
 ```
 
 ### Rest APIs
