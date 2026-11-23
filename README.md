@@ -153,7 +153,7 @@ func main() {
     if err != nil {
         panic(err)
     }
-    fmt.Printf("key: %X\n", key) // key: 3F419E1CB7079442AA37474C2EFBF8B8
+    fmt.Printf("key: %X\n", key) // prints 3F419E1CB7079442AA37474C2EFBF8B8
 
     // Read the header (and optional blocks) of the unwrapped key block
     header := keyBlock.GetHeader()
