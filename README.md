@@ -258,12 +258,13 @@ Errors return a JSON body `{"error": "..."}`. A missing required field returns `
 **Encrypt Data** (all fields are required)
 
 ```bash
+ENCRYPT_KEY="3F419E1CB7079442AA37474C2EFBF8B8" # gitleaks:allow
 curl -X POST http://localhost:8096/encrypt_data -d '{
   "VaultAddr": "http://127.0.0.1:8200",
   "VaultToken": "myroot",
   "KeyPath": "secret/data/tr31",
   "KeyName": "kbpk",
-  "EncryptKey": "3F419E1CB7079442AA37474C2EFBF8B8",
+  "EncryptKey": "'"$ENCRYPT_KEY"'",
   "Header": {
     "VersionId": "B",
     "KeyUsage": "P0",
@@ -281,12 +282,13 @@ curl -X POST http://localhost:8096/encrypt_data -d '{
 **Decrypt Data**
 
 ```bash
+KEY_BLOCK="B0080P0TE00E000094B420079CC80BA3461F86FE26EFC4A3B8E4FA4C5F5341176EED7B727B8A248E" # gitleaks:allow
 curl -X POST http://localhost:8096/decrypt_data -d '{
   "VaultAddr": "http://127.0.0.1:8200",
   "VaultToken": "myroot",
   "KeyPath": "secret/data/tr31",
   "KeyName": "kbpk",
-  "KeyBlock": "B0080P0TE00E000094B420079CC80BA3461F86FE26EFC4A3B8E4FA4C5F5341176EED7B727B8A248E"
+  "KeyBlock": "'"$KEY_BLOCK"'"
 }'
 ```
 ```json
